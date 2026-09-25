@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Genesis · Orquesta de Laptops UC</title>
+  <meta name="description" content="Hub de la obra Genesis (Robin Callaway) para la Orquesta de Laptops UC: elige tu instrumento y toca.">
+  <link rel="stylesheet" href="css/estilo.css">
+</head>
+<body>
+<main class="wrap">
+  <div class="hero">
+    <div>
+      <span class="badge">Orquesta de Laptops UC · obra</span>
+      <h1 id="titulo">Genesis</h1>
+      <p class="muted" id="subtitulo"></p>
+    </div>
+    <div class="card small" style="max-width:420px">
+      <strong>Inicio sincronizado (opcional)</strong>
+      <p class="muted" style="margin:4px 0 8px">Si todos eligen la misma hora antes de entrar, las laptops parten juntas usando el reloj de cada computador.</p>
+      <div class="fila">
+        <input type="time" id="hora" step="1" aria-label="Hora de inicio común">
+        <button class="btn peq" id="en1min">En 1 min</button>
+        <button class="btn peq" id="limpiar">Sin hora</button>
+      </div>
+    </div>
+  </div>
+
+  <section class="card">
+    <h2>Elige tu instrumento</h2>
+    <p class="muted small">Cada perfil abre su propia página de control con la partitura, las instrucciones y sus sonidos.
+      Usa audífonos o la salida de la estación.</p>
+    <div id="perfiles"></div>
+  </section>
+
+  <section class="card" style="margin-top:16px">
+    <div class="fila" style="justify-content:space-between">
+      <h2 style="margin:0">Partitura</h2>
+      <span class="muted small" id="meta"></span>
+    </div>
+    <p class="muted small">Vista general para dirigir o ensayar. Se edita en <code>js/partitura.js</code>.</p>
+    <div class="tabla-scroll"><table class="part" id="tabla"></table></div>
+    <h3 style="margin-top:16px">Avisos</h3>
+    <ul id="eventos" class="small"></ul>
+  </section>
+
+  <p class="muted small" style="margin-top:18px">
+    Obra original: “genesis” de Robin Callaway, del álbum <em>i saw an angel in the mirror</em> (2024).
+    Adaptación para Orquesta de Laptops UC. Sonidos sintetizados en el navegador con Web Audio.
+  </p>
+</main>
+
+<script src="js/partitura.js"></script>
+<script src="js/comun.js"></script>
+<script>
+(function () {
+  const { P, perfilesActivos, SECCIONES, EVENTOS, fmt, nombreGrupo, DURACION } = G;
+  document.getElementById("titulo").textContent = P.titulo;
+  document.getElementById("subtitulo").textContent = P.artista + " · " + P.album;
+  document.getElementById("meta").textContent = `${fmt(DURACION)} · ${P.bpm} BPM · ${P.compas}/4 · ${SECCIONES.length} secciones`;
+  document.documentElement.style.setProperty("--sec", SECCIONES[0].colores[0]);
+
+  const hora = document.getElementById("hora");
+  hora.value = G.leer("hora", "");
+  const cont = document.getElementById("perfiles");
+  function dibujarPerfiles() {
+    G.guardar("hora", hora.value);
+    const q = hora.value ? "&inicio=" + encodeURIComponent(hora.value) : "";
+    const grupos = [["guitarra", "Guitarra"], ["bateria", "Batería"], ["teclados", "Teclados"], ["ambiente", "Ambientes · controlan los colores"]];
+    cont.innerHTML = grupos.map(([g, t]) => {
+      const ps = perfilesActivos.filter(p => p.grupo === g);
+      return `<div class="grupo-titulo">${t}</div><div class="grid-perfiles">` + ps.map(p =>
+        `<a class="perfil" href="tocar.html?p=${p.id}${q}"><span class="icono">${p.icono}</span><strong>${p.nombre}</strong><span class="muted small">${p.desc}</span></a>`
+      ).join("") + "</div>";
+    }).join("");
+  }
+  hora.addEventListener("change", dibujarPerfiles);
+  document.getElementById("en1min").onclick = () => {
+    const d = new Date(Date.now() + 60000); d.setSeconds(0);
+    if (d - Date.now() < 30000) d.setMinutes(d.getMinutes() + 1);
+    hora.value = [d.getHours(), d.getMinutes(), d.getSeconds()].map(x => String(x).padStart(2, "0")).join(":");
+    dibujarPerfiles();
+  };
+  document.getElementById("limpiar").onclick = () => { hora.value = ""; dibujarPerfiles(); };
+  dibujarPerfiles();
+
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const tabla = document.getElementById("tabla");
+  tabla.innerHTML = "<tr><th>Tiempo</th><th>Sección</th><th>Acordes</th><th>Colores</th><th>Instrucciones</th></tr>" +
+    SECCIONES.map(s => {
+      const ins = Object.entries(s.instrucciones || {}).map(([k, v]) => {
+        const perf = G.PERFILES.find(p => p.id === k);
+        return `<div><b>${esc(perf ? perf.nombre : k === "todos" ? "Todos" : nombreGrupo(k))}:</b> ${esc(v)}</div>`;
+      }).join("");
+      return `<tr><td>${fmt(s.ini)}–${fmt(s.fin)}</td><td><strong>${esc(s.nombre)}</strong></td>
+        <td class="acordes-lista">${s.acordes.map(esc).join(" · ")}<div class="muted small">${s.cpa} compás/acorde</div></td>
+        <td>${s.colores.map(c => `<span class="swatch" style="background:${esc(c)}"></span>`).join("")}</td>
+        <td class="small">${ins}</td></tr>`;
+    }).join("");
+  document.getElementById("eventos").innerHTML = EVENTOS.map(e =>
+    `<li><strong>${fmt(e.seg)}</strong> · ${esc((e.perfiles || ["todos"]).join(", "))}: ${esc(e.texto)}</li>`).join("") || "<li class='muted'>Sin avisos.</li>";
+})();
+</script>
+</body>
+</html>

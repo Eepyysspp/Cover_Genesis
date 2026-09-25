@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Genesis · Tocar</title>
+  <link rel="stylesheet" href="css/estilo.css">
+</head>
+<body>
+<canvas class="visual oculto" id="visual"></canvas>
+<button class="btn salir-visual" id="salirVisual">Salir de pantalla completa (Esc)</button>
+
+<header class="barra">
+  <div class="in">
+    <div class="fila" style="gap:12px">
+      <a class="btn peq" href="index.html" title="Volver al hub">← Hub</a>
+      <div>
+        <div style="font-weight:800" id="perfilNombre"></div>
+        <div class="muted small" id="obraNombre"></div>
+      </div>
+    </div>
+    <div class="fila" style="gap:14px">
+      <div class="reloj" id="reloj">0:00</div>
+      <div class="cuenta" id="cuenta"></div>
+    </div>
+    <div class="transporte">
+      <button class="btn primario" id="btnIniciar">▶ Iniciar ahora</button>
+      <input type="time" id="hora" step="1" aria-label="Hora de inicio">
+      <button class="btn" id="btnProgramar">Iniciar a esa hora</button>
+      <button class="btn" id="btnDetener">■ Detener</button>
+      <select id="irA" aria-label="Ir a sección"></select>
+    </div>
+  </div>
+  <div class="in" style="padding-top:0;display:block">
+    <div class="linea" id="linea" title="Haz clic para saltar a ese punto"><div class="cursor" id="cursor"></div></div>
+  </div>
+</header>
+
+<div class="banner" id="banner"></div>
+
+<main class="wrap">
+  <div class="layout">
+    <section class="card">
+      <span class="badge" id="estado">Detenido · práctica libre</span>
+      <div class="seccion-nombre" id="seccion" style="margin-top:8px"></div>
+      <div class="acorde-grande"><span class="ahora" id="acorde">—</span><span class="sig" id="acordeSig"></span></div>
+      <div class="barrita"><i id="barraAcorde"></i></div>
+      <ul class="instr" id="instr"></ul>
+      <div class="proxima" id="proxima"></div>
+    </section>
+
+    <section class="card controles" id="panel"></section>
+  </div>
+</main>
+
+<div class="overlay" id="overlay">
+  <div class="card">
+    <div class="icono" id="ovIcono">🎛️</div>
+    <h2 id="ovTitulo">Tocar</h2>
+    <p class="muted" id="ovDesc"></p>
+    <button class="btn primario" id="btnActivar" style="font-size:18px;padding:14px 22px">Activar audio y entrar</button>
+    <p class="muted small" style="margin-top:12px">El navegador necesita un clic para permitir el sonido.</p>
+  </div>
+</div>
+
+<script src="js/partitura.js"></script>
+<script src="js/comun.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/tocar.js"></script>
+</body>
+</html>
