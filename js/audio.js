@@ -52,6 +52,18 @@
       for (let i = 0; i < n; i++) { const x = (i * 2) / n - 1; c[i] = ((1 + k) * x) / (1 + k * Math.abs(x)); }
       ws.curve = c; ws.oversample = "2x"; return ws;
     },
+    // Distorsión con mezcla seco/mojado: entrada → (seco | saturador) → salida. mezcla(0..1)
+    bloqueDistorsion(dureza = 40) {
+      const ctx = this.ctx, ent = ctx.createGain(), sal = ctx.createGain();
+      const seco = ctx.createGain(), moj = ctx.createGain(), ws = ctx.createWaveShaper();
+      const n = 2048, c = new Float32Array(n);
+      for (let i = 0; i < n; i++) { const x = (i * 2) / n - 1; c[i] = Math.tanh(dureza * x) / Math.tanh(dureza); }
+      ws.curve = c; ws.oversample = "2x";
+      const pre = ctx.createBiquadFilter(); pre.type = "highpass"; pre.frequency.value = 80;
+      ent.connect(seco).connect(sal); ent.connect(pre).connect(ws).connect(moj).connect(sal);
+      seco.gain.value = 1; moj.gain.value = 0;
+      return { ent, sal, mezcla(v, t = Motor.t) { seco.gain.setTargetAtTime(1 - v * 0.85, t, 0.05); moj.gain.setTargetAtTime(v * 0.35, t, 0.05); } };
+    },
     async decodificar(arrayBuffer) { this.init(); return await this.ctx.decodeAudioData(arrayBuffer); },
     async cargarArchivo(file) { return this.decodificar(await file.arrayBuffer()); },
     async cargarURL(url) { const r = await fetch(url); if (!r.ok) throw new Error(url + " → " + r.status); return this.decodificar(await r.arrayBuffer()); },
@@ -86,7 +98,7 @@
       this.ws = M.distorsion(this.p.fuzz);
       this.filtro = ctx.createBiquadFilter(); this.filtro.type = "lowpass";
       this.pre.connect(this.ws).connect(this.filtro).connect(this.out.entrada);
-      this.voces = []; this.buffer = null; this.base = 60;
+      this.voces = []; this.buffer = null; this.base = 60; this.porAcorde = {};
       this.aplicar();
     }
     aplicar() {
@@ -110,14 +122,24 @@
       this.apagar(0.06);
       let notas = this.voicing(acorde); if (arriba) notas = notas.slice().reverse();
       const rel = this.p.sostener ? 9 : 2.2;
+      // Sonidos propios: un acorde grabado se toca una vez (transpuesto a la raíz si no hay uno para ese acorde)
+      const propio = this.porAcorde[acorde] || (this.buffer ? { buffer: this.buffer, base: this.base, transponer: true } : null);
+      if (propio) {
+        const g = M.ctx.createGain(); g.connect(this.pre);
+        const raiz = Math.min(...this.voicing(acorde));
+        const b = M.tocarBuffer(propio.buffer, g, { midi: propio.transponer ? raiz : propio.base, base: propio.base, t: t0 });
+        g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.5, t0 + 0.01);
+        if (this.p.sostener) b.fuente.loop = true;
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + (this.p.sostener ? rel : propio.buffer.duration + 0.3));
+        b.fuente.stop(t0 + rel + 0.1);
+        this.voces.push({ g, fuentes: [b.fuente] });
+        return;
+      }
       notas.forEach((m, i) => {
         const t = t0 + i * 0.018;
         const g = M.ctx.createGain(); g.connect(this.pre);
         let fuentes;
-        if (this.buffer) {
-          const b = M.tocarBuffer(this.buffer, g, { midi: m, base: this.base, t });
-          fuentes = [b.fuente];
-        } else {
+        {
           const o1 = M.fuente("sawtooth", mtof(m)), o2 = M.fuente("sawtooth", mtof(m) * 1.004), o3 = M.fuente("square", mtof(m) * 0.5);
           const g3 = M.ctx.createGain(); g3.gain.value = 0.3;
           o1.connect(g); o2.connect(g); o3.connect(g3).connect(g);
@@ -148,9 +170,10 @@
   ];
   // 16 pasos por compás (semicorcheas en 4/4)
   const PATRONES = {
-    suave:    { bombo: "x.......x.......", caja: "........x.......", hihat: "x.x.x.x.x.x.x.x." },
-    completo: { bombo: "x.....x.x.......", caja: "....x.......x...", hihat: "x.x.x.x.x.x.x.x.", abierto: "..............x." },
-    muro:     { bombo: "x.x.x.x.x.x.x.x.", caja: "....x.......x...", hihat: "xxxxxxxxxxxxxxxx", crash: "x..............." },
+    pulso:        { tom: "x...x...x...x..." },                                         // "Ritmo batería" de la intro
+    sinplatillos: { bombo: "x.....x.x.......", caja: "....x.......x..." },
+    platillos:    { bombo: "x.....x.x.......", caja: "....x.......x...", hihat: "x.x.x.x.x.x.x.x.", crash: "x..............." },
+    muro:         { bombo: "x.x.x.x.x.x.x.x.", caja: "....x.......x...", hihat: "xxxxxxxxxxxxxxxx", crash: "x.......x......." },
   };
   class Bateria {
     constructor() {
@@ -195,10 +218,11 @@
     constructor(preset) {
       this.preset = preset;
       const def = { pad: [0.5, 0.45, 0.5], epiano: [0.7, 0.55, 0.35], bajo: [0.35, 0.6, 0.1], lead: [0.6, 0.45, 0.35] }[preset] || [0.5, 0.5, 0.3];
-      this.p = { filtro: def[0], vol: def[1], reverb: def[2], octava: preset === "bajo" ? 2 : preset === "lead" ? 4 : 3 };
+      this.p = { filtro: def[0], vol: def[1], reverb: def[2], dist: 0, octava: preset === "bajo" ? 2 : preset === "lead" ? 4 : 3 };
       this.out = Motor.salida(this.p.vol, this.p.reverb);
       this.filtro = Motor.ctx.createBiquadFilter(); this.filtro.type = "lowpass"; this.filtro.Q.value = preset === "bajo" ? 4 : 1;
-      this.filtro.connect(this.out.entrada);
+      this.dist = Motor.bloqueDistorsion(30);
+      this.filtro.connect(this.dist.ent); this.dist.sal.connect(this.out.entrada);
       this.activas = new Map(); this.buffer = null; this.base = 60;
       this.mono = null; // para lead
       this.aplicar();
@@ -206,6 +230,7 @@
     aplicar() {
       const t = Motor.t;
       this.filtro.frequency.setTargetAtTime(150 + Math.pow(this.p.filtro, 2) * 9000, t, 0.05);
+      this.dist.mezcla(this.p.dist, t);
       this.out.volumen.gain.setTargetAtTime(this.p.vol, t, 0.05);
       this.out.envio.gain.setTargetAtTime(this.p.reverb, t, 0.05);
     }
@@ -276,11 +301,12 @@
   class Ambiente {
     constructor(preset) {
       this.preset = preset;
-      this.p = { vol: 0.5, reverb: 0.7, x: 0.4, y: 0.5 };
+      this.p = { vol: 0.5, reverb: 0.7, x: preset === "brillo" ? 0.7 : 0.4, y: 0.5 };
       this.out = Motor.salida(this.p.vol, this.p.reverb);
       this.filtro = Motor.ctx.createBiquadFilter(); this.filtro.type = preset === "viento" ? "bandpass" : "lowpass";
       this.nivel = Motor.ctx.createGain(); this.nivel.gain.value = 0;
-      this.filtro.connect(this.nivel).connect(this.out.entrada);
+      this.dist = Motor.bloqueDistorsion(25);
+      this.filtro.connect(this.dist.ent); this.dist.sal.connect(this.nivel); this.nivel.connect(this.out.entrada);
       // Eco para "pulso"
       if (preset === "pulso") {
         const ctx = Motor.ctx; this.eco = ctx.createDelay(2); const fb = ctx.createGain(); fb.gain.value = 0.45;
@@ -293,8 +319,9 @@
     }
     aplicar() {
       const t = Motor.t, { x, y } = this.p;
-      const f = this.preset === "viento" ? 200 + x * x * 5000 : 200 + x * x * 8000;
+      const f = this.buffer ? 400 + x * x * 19000 : this.preset === "viento" ? 200 + x * x * 5000 : 200 + x * x * 8000;
       this.filtro.frequency.setTargetAtTime(f, t, 0.1);
+      this.dist.mezcla(x * x, t);
       if (this.preset === "viento" && !this.buffer) this.filtro.Q.value = 2 + (1 - y) * 6;
       this.nivel.gain.setTargetAtTime(this.encendido ? y : 0, t, 0.3);
       this.out.volumen.gain.setTargetAtTime(this.p.vol, t, 0.1);

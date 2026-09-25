@@ -3,30 +3,32 @@
   const P = window.PARTITURA;
 
   // ---------- Perfiles ----------
+  // Dotación según la propuesta: 1 guitarra, 1 batería, 2 teclados medios/altos,
+  // 2 teclados bajos/medios y 1 ambiente (teclados bajos permanentes). Ambientes 2–4 son opcionales.
   const PERFILES = [
     { id: "guitarra", grupo: "guitarra", tipo: "guitarra", nombre: "Guitarra", icono: "🎸",
-      desc: "Guitarra con fuzz y reverb. Rasguea los acordes de la sección." },
+      desc: "Guitarra real o sintetizada. Si tocas guitarra real, usa esta página para el reloj, las entradas y las luces." },
     { id: "bateria", grupo: "bateria", tipo: "bateria", nombre: "Batería", icono: "🥁",
-      desc: "Pads y patrones automáticos sincronizados al tempo." },
-    { id: "teclado-1", grupo: "teclados", tipo: "teclado", preset: "pad", nombre: "Teclado 1 · Pad", icono: "🎹",
-      desc: "Colchón de sintetizador ancho y lento." },
-    { id: "teclado-2", grupo: "teclados", tipo: "teclado", preset: "epiano", nombre: "Teclado 2 · Campanas", icono: "🎹",
-      desc: "Piano eléctrico brillante, notas cortas." },
-    { id: "teclado-3", grupo: "teclados", tipo: "teclado", preset: "bajo", nombre: "Teclado 3 · Bajo", icono: "🎹",
-      desc: "Bajo sintetizado con sub-octava." },
-    { id: "teclado-4", grupo: "teclados", tipo: "teclado", preset: "lead", nombre: "Teclado 4 · Lead", icono: "🎹",
-      desc: "Melodía con vibrato y glide." },
-    { id: "ambiente-1", grupo: "ambiente", tipo: "ambiente", preset: "viento", nombre: "Ambiente 1 · Ruido", icono: "🌫️",
-      desc: "Ruido filtrado que respira. Controla colores." },
-    { id: "ambiente-2", grupo: "ambiente", tipo: "ambiente", preset: "drone", nombre: "Ambiente 2 · Drone", icono: "🌊",
-      desc: "Drone que sigue la raíz del acorde. Controla colores." },
-    { id: "ambiente-3", grupo: "ambiente", tipo: "ambiente", preset: "brillo", nombre: "Ambiente 3 · Brillo", icono: "✨",
-      desc: "Destellos agudos de las notas del acorde. Controla colores." },
-    { id: "ambiente-4", grupo: "ambiente", tipo: "ambiente", preset: "pulso", nombre: "Ambiente 4 · Pulso", icono: "💠",
-      desc: "Arpegio lento con eco que sigue la progresión. Controla colores." },
+      desc: "Pads y patrones: pulso, sin platillos, con platillos y muro. Puede manejar las luces." },
+    { id: "teclado-1", grupo: "teclados", sub: "teclados-altos", tipo: "teclado", preset: "epiano", nombre: "Teclado medio/alto 1", icono: "🎹",
+      desc: "Líneas melódicas medias. Sube a registro alto cuando se indica." },
+    { id: "teclado-2", grupo: "teclados", sub: "teclados-altos", tipo: "teclado", preset: "lead", nombre: "Teclado medio/alto 2", icono: "🎹",
+      desc: "Líneas medias y la subida aguda. En 1:54 hace el desfase." },
+    { id: "teclado-3", grupo: "teclados", sub: "teclados-bajos", tipo: "teclado", preset: "bajo", nombre: "Teclado bajo/medio 1", icono: "🎹",
+      desc: "Línea grave. Al final hace la 2.ª línea melódica." },
+    { id: "teclado-4", grupo: "teclados", sub: "teclados-bajos", tipo: "teclado", preset: "pad", nombre: "Teclado bajo/medio 2", icono: "🎹",
+      desc: "Colchón grave/medio. Al final hace la 2.ª línea melódica." },
+    { id: "ambiente-1", grupo: "ambiente", sub: "ambiente-principal", tipo: "ambiente", preset: "drone", nombre: "Ambiente · Teclados bajos permanentes", icono: "🌊",
+      desc: "La 1.ª línea grave que nunca se detiene. Controla la distorsión (X), el volumen (Y) y los colores." },
+    { id: "ambiente-2", grupo: "ambiente", sub: "ambiente-extra", opcional: true, tipo: "ambiente", preset: "viento", nombre: "Ambiente extra · Ruido", icono: "🌫️",
+      desc: "Opcional. Ruido y distorsión de fondo, y colores." },
+    { id: "ambiente-3", grupo: "ambiente", sub: "ambiente-extra", opcional: true, tipo: "ambiente", preset: "brillo", nombre: "Ambiente extra · Brillo", icono: "✨",
+      desc: "Opcional. Destellos agudos, y colores." },
+    { id: "ambiente-4", grupo: "ambiente", sub: "ambiente-extra", opcional: true, tipo: "ambiente", preset: "pulso", nombre: "Ambiente extra · Pulso", icono: "💠",
+      desc: "Opcional. Arpegio con eco, y colores." },
   ];
-  const nTeclados = Math.min(4, Math.max(2, P.teclados || 4));
-  const perfilesActivos = PERFILES.filter(p => !(p.grupo === "teclados" && +p.id.split("-")[1] > nTeclados));
+  const ocultos = P.ocultar || [];
+  const perfilesActivos = PERFILES.filter(p => !ocultos.includes(p.id));
 
   // ---------- Tiempos ----------
   function aSeg(t) {
@@ -65,18 +67,32 @@
     return { seccion: s, idx: i, nombre: s.acordes[i], siguiente, falta: tSig - t, color: s.colores[i % s.colores.length] };
   }
 
+  // Claves que aplican a un perfil, de lo general a lo particular
+  const claves = p => ["todos", p.grupo, p.sub, p.id].filter((k, i, a) => k && a.indexOf(k) === i);
   function instrucciones(sec, perfil) {
     const ins = sec.instrucciones || {};
-    const out = [];
-    if (ins.todos) out.push({ quien: "Todos", texto: ins.todos });
-    if (perfil.grupo !== perfil.id && ins[perfil.grupo]) out.push({ quien: nombreGrupo(perfil.grupo), texto: ins[perfil.grupo] });
-    if (ins[perfil.id]) out.push({ quien: perfil.nombre, texto: ins[perfil.id], propio: true });
-    return out;
+    return claves(perfil).filter(k => ins[k]).map(k => ({
+      quien: k === "todos" ? "Todos" : k === perfil.id ? perfil.nombre : nombreGrupo(k), texto: ins[k], propio: k !== "todos",
+    }));
   }
-  function nombreGrupo(g) { return { teclados: "Teclados", ambiente: "Ambientes", guitarra: "Guitarra", bateria: "Batería" }[g] || g; }
+  // ¿Toca este perfil en la sección? (sección.tocan = lista de perfiles/grupos; sin lista = todos)
+  function toca(sec, perfil) {
+    if (!sec.tocan) return true;
+    return claves(perfil).some(k => sec.tocan.includes(k));
+  }
+  // Próximo cambio (entrada o silencio) para el perfil a partir de t
+  function proximoCambio(t, perfil) {
+    const s = seccionEn(t), ahora = toca(s, perfil);
+    for (let i = s.idx + 1; i < SECCIONES.length; i++) if (toca(SECCIONES[i], perfil) !== ahora) return { seccion: SECCIONES[i], entra: !ahora };
+    return null;
+  }
+  function nombreGrupo(g) {
+    return { teclados: "Teclados", "teclados-altos": "Teclados medios/altos", "teclados-bajos": "Teclados bajos/medios", ambiente: "Ambientes",
+      "ambiente-principal": "Ambiente principal", "ambiente-extra": "Ambientes extra", guitarra: "Guitarra", bateria: "Batería" }[g] || g;
+  }
   function eventoAplica(e, perfil) {
     const ps = e.perfiles || ["todos"];
-    return ps.includes("todos") || ps.includes(perfil.id) || ps.includes(perfil.grupo);
+    return claves(perfil).some(k => ps.includes(k));
   }
 
   // ---------- Acordes ----------
@@ -124,7 +140,7 @@
 
   window.G = {
     P, PERFILES, perfilesActivos, aSeg, fmt, DURACION, SECCIONES, EVENTOS, SEG_POR_COMPAS,
-    seccionEn, acordeEn, instrucciones, eventoAplica, nombreGrupo,
+    seccionEn, acordeEn, instrucciones, toca, proximoCambio, eventoAplica, nombreGrupo,
     parseAcorde, notasAcorde, mtof, nombreNota, guardar, leer,
   };
 })();

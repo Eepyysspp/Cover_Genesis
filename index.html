@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Genesis · Orquesta de Laptops UC</title>
+  <title>Cover de Genesis · Orquesta de Laptops UC</title>
   <meta name="description" content="Hub de la obra Genesis (Robin Callaway) para la Orquesta de Laptops UC: elige tu instrumento y toca.">
   <link rel="stylesheet" href="css/estilo.css">
 </head>
@@ -25,6 +25,34 @@
       </div>
     </div>
   </div>
+
+  <section class="card" style="margin-bottom:16px">
+    <h2>La obra</h2>
+    <p id="nota" class="muted"></p>
+    <div class="dos-col">
+      <div class="small">
+        <h3 style="margin-top:0">Distribución</h3>
+        <p class="muted">Batería al fondo, con el ambiente y los teclados bajos permanentes cerca. Guitarra al centro y los teclados rodeándola: mientras más agudo, más hacia el público.</p>
+        <p class="muted"><b>Riesgo:</b> falta de coordinación, que se resuelve practicando. La obra no depende de una red: cada laptop lleva su propio reloj.</p>
+        <p class="muted"><b>Dificultad:</b> menos de 4 líneas que se repiten. Lo difícil es saber cuándo entrar y cuándo no tocar: cada pantalla muestra <b>▶ TOCAS / ⏸ SILENCIO</b> y cuánto falta para el próximo cambio.</p>
+      </div>
+      <svg class="escenario" viewBox="0 0 420 300" role="img" aria-label="Distribución en el escenario">
+        <rect x="4" y="4" width="412" height="262" rx="16" fill="rgba(255,255,255,.03)" stroke="rgba(255,255,255,.12)"/>
+        <text x="210" y="22" fill="#9a9cb3" font-size="11" text-anchor="middle">FONDO</text>
+        <g font-size="12" text-anchor="middle" fill="#e8e8f0" font-family="system-ui,sans-serif">
+          <circle cx="210" cy="58" r="26" fill="#3a1c71"/><text x="210" y="62">🥁 Batería</text>
+          <circle cx="120" cy="80" r="24" fill="#1d2b64"/><text x="120" y="78">🌊</text><text x="120" y="92" font-size="9">Ambiente</text>
+          <circle cx="300" cy="80" r="24" fill="#23307a"/><text x="300" y="78">🌫️✨💠</text><text x="300" y="92" font-size="9">Extras</text>
+          <circle cx="140" cy="150" r="22" fill="#2a2f8f"/><text x="140" y="148">🎹</text><text x="140" y="161" font-size="9">Bajo 1</text>
+          <circle cx="280" cy="150" r="22" fill="#2a2f8f"/><text x="280" y="148">🎹</text><text x="280" y="161" font-size="9">Bajo 2</text>
+          <circle cx="210" cy="165" r="28" fill="#c0392b"/><text x="210" y="169">🎸 Guitarra</text>
+          <circle cx="130" cy="225" r="22" fill="#ff7a3c"/><text x="130" y="223">🎹</text><text x="130" y="236" font-size="9" fill="#14060c">Alto 1</text>
+          <circle cx="290" cy="225" r="22" fill="#ff7a3c"/><text x="290" y="223">🎹</text><text x="290" y="236" font-size="9" fill="#14060c">Alto 2</text>
+        </g>
+        <text x="210" y="290" fill="#ff6b9a" font-size="12" text-anchor="middle">▼ PÚBLICO ▼</text>
+      </svg>
+    </div>
+  </section>
 
   <section class="card">
     <h2>Elige tu instrumento</h2>
@@ -56,7 +84,8 @@
 (function () {
   const { P, perfilesActivos, SECCIONES, EVENTOS, fmt, nombreGrupo, DURACION } = G;
   document.getElementById("titulo").textContent = P.titulo;
-  document.getElementById("subtitulo").textContent = P.artista + " · " + P.album;
+  document.getElementById("subtitulo").textContent = P.artista + " · " + P.album + (P.formato ? " · " + P.formato : "");
+  document.getElementById("nota").textContent = P.nota || "";
   document.getElementById("meta").textContent = `${fmt(DURACION)} · ${P.bpm} BPM · ${P.compas}/4 · ${SECCIONES.length} secciones`;
   document.documentElement.style.setProperty("--sec", SECCIONES[0].colores[0]);
 
@@ -66,11 +95,13 @@
   function dibujarPerfiles() {
     G.guardar("hora", hora.value);
     const q = hora.value ? "&inicio=" + encodeURIComponent(hora.value) : "";
-    const grupos = [["guitarra", "Guitarra"], ["bateria", "Batería"], ["teclados", "Teclados"], ["ambiente", "Ambientes · controlan los colores"]];
+    const grupos = [["guitarra", "Guitarra"], ["bateria", "Batería"], ["teclados-altos", "Teclados medios/altos"], ["teclados-bajos", "Teclados bajos/medios"],
+      ["ambiente-principal", "Ambiente · teclados bajos permanentes y colores"], ["ambiente-extra", "Opcionales · si hay integrantes extra (sonido o luces)"]];
     cont.innerHTML = grupos.map(([g, t]) => {
-      const ps = perfilesActivos.filter(p => p.grupo === g);
+      const ps = perfilesActivos.filter(p => (p.sub || p.grupo) === g);
+      if (!ps.length) return "";
       return `<div class="grupo-titulo">${t}</div><div class="grid-perfiles">` + ps.map(p =>
-        `<a class="perfil" href="tocar.html?p=${p.id}${q}"><span class="icono">${p.icono}</span><strong>${p.nombre}</strong><span class="muted small">${p.desc}</span></a>`
+        `<a class="perfil${p.opcional ? " opcional" : ""}" href="tocar.html?p=${p.id}${q}"><span class="icono">${p.icono}</span><strong>${p.nombre}</strong><span class="muted small">${p.desc}</span></a>`
       ).join("") + "</div>";
     }).join("");
   }
@@ -86,14 +117,15 @@
 
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const tabla = document.getElementById("tabla");
-  tabla.innerHTML = "<tr><th>Tiempo</th><th>Sección</th><th>Acordes</th><th>Colores</th><th>Instrucciones</th></tr>" +
+  tabla.innerHTML = "<tr><th>Tiempo</th><th>Sección</th><th>Tocan</th><th>Acordes</th><th>Colores</th><th>Instrucciones</th></tr>" +
     SECCIONES.map(s => {
       const ins = Object.entries(s.instrucciones || {}).map(([k, v]) => {
         const perf = G.PERFILES.find(p => p.id === k);
         return `<div><b>${esc(perf ? perf.nombre : k === "todos" ? "Todos" : nombreGrupo(k))}:</b> ${esc(v)}</div>`;
       }).join("");
-      return `<tr><td>${fmt(s.ini)}–${fmt(s.fin)}</td><td><strong>${esc(s.nombre)}</strong></td>
-        <td class="acordes-lista">${s.acordes.map(esc).join(" · ")}<div class="muted small">${s.cpa} compás/acorde</div></td>
+      const tocan = (s.tocan || ["todos"]).map(k => { const pf = G.PERFILES.find(p => p.id === k); return pf ? pf.nombre : k === "todos" ? "Todos" : nombreGrupo(k); });
+      return `<tr><td>${fmt(s.ini)}–${fmt(s.fin)}</td><td><strong>${esc(s.nombre)}</strong></td><td class="small">${tocan.map(esc).join("<br>")}</td>
+        <td class="acordes-lista">${[...new Set(s.acordes)].map(esc).join(" · ")}<div class="muted small">${s.acordes.length > 4 ? "secuencia de " + s.acordes.length + " compases" : s.cpa + (s.cpa > 1 ? " compases" : " compás") + " por acorde"}</div></td>
         <td>${s.colores.map(c => `<span class="swatch" style="background:${esc(c)}"></span>`).join("")}</td>
         <td class="small">${ins}</td></tr>`;
     }).join("");

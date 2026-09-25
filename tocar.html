@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Genesis · Tocar</title>
+  <title>Cover de Genesis · Tocar</title>
   <link rel="stylesheet" href="css/estilo.css">
 </head>
 <body>
@@ -41,10 +41,13 @@
 <main class="wrap">
   <div class="layout">
     <section class="card">
+      <div class="estado-toca no" id="toca"><strong>⏸ SILENCIO</strong><span></span></div>
       <span class="badge" id="estado">Detenido · práctica libre</span>
       <div class="seccion-nombre" id="seccion" style="margin-top:8px"></div>
       <div class="acorde-grande"><span class="ahora" id="acorde">—</span><span class="sig" id="acordeSig"></span></div>
       <div class="barrita"><i id="barraAcorde"></i></div>
+      <div class="muted small" id="restaSeccion"></div>
+      <div class="barrita seccion"><i id="barraSeccion"></i></div>
       <ul class="instr" id="instr"></ul>
       <div class="proxima" id="proxima"></div>
     </section>

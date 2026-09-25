@@ -1,6 +1,6 @@
 /* Página de control de cada perfil: reloj, partitura, instrucciones y controles del instrumento. */
 (function () {
-  const { P, PERFILES, SECCIONES, EVENTOS, DURACION, fmt, seccionEn, acordeEn, instrucciones, eventoAplica, notasAcorde, nombreNota } = G;
+  const { P, PERFILES, SECCIONES, EVENTOS, DURACION, fmt, seccionEn, acordeEn, instrucciones, toca, proximoCambio, eventoAplica, notasAcorde, nombreNota } = G;
   const { Motor, Guitarra, Bateria, Teclado, Ambiente, PADS, PATRONES } = window.Audio2;
   const $ = id => document.getElementById(id);
   const params = new URLSearchParams(location.search);
@@ -61,6 +61,61 @@
     const r = linea.getBoundingClientRect(); saltar(((e.clientX - r.left) / r.width) * DURACION);
   });
 
+  /* ============================== LUCES (colores de la obra) ============================== */
+  const Luces = (() => {
+    const canvas = $("visual"); let ctx2d = null, activo = false;
+    let actual = [11, 16, 38], fase = 0, destello = 0; const datos = new Uint8Array(128);
+    let cfg = { intens: () => 0.55, vel: () => 0.35, alPintar: null, alClic: null };
+    function activar(c) { Object.assign(cfg, c || {}); activo = true; canvas.classList.remove("oculto"); ctx2d = canvas.getContext("2d"); }
+    function desactivar() { activo = false; canvas.classList.add("oculto"); pantalla(false); }
+    function pantalla(v) {
+      document.body.classList.toggle("pantalla-completa", v);
+      if (v && canvas.requestFullscreen) canvas.requestFullscreen().catch(() => {});
+      if (!v && document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    }
+    $("salirVisual").onclick = () => pantalla(false);
+    document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement) document.body.classList.remove("pantalla-completa"); });
+    canvas.addEventListener("click", () => { if (document.body.classList.contains("pantalla-completa")) { destellar(); cfg.alClic && cfg.alClic(); } });
+    function destellar(f = 1) { destello = Math.max(destello, f); }
+    function cuadro(t, dt) {
+      if (!activo) return;
+      const w = canvas.width = canvas.clientWidth * devicePixelRatio, h = canvas.height = canvas.clientHeight * devicePixelRatio;
+      const objetivo = aRGB(colorEn(Math.min(Math.max(0, t), DURACION)));
+      const k = 1 - Math.exp(-dt * 1.5);
+      actual = actual.map((c, i) => c + (objetivo[i] - c) * k);
+      let nivel = 0;
+      if (Motor.analizador) { Motor.analizador.getByteFrequencyData(datos); nivel = datos.reduce((a, b) => a + b, 0) / datos.length / 255; }
+      const intens = cfg.intens();
+      fase += dt * cfg.vel();
+      const brillo = Math.min(1.6, intens + nivel * 0.8);
+      const [r, g, b] = actual.map(c => Math.min(255, c * brillo));
+      ctx2d.fillStyle = `rgb(${r * 0.25},${g * 0.25},${b * 0.25})`; ctx2d.fillRect(0, 0, w, h);
+      for (let i = 0; i < 3; i++) {
+        const cx = w * (0.5 + 0.32 * Math.sin(fase * (0.7 + i * 0.3) + i * 2));
+        const cy = h * (0.5 + 0.28 * Math.cos(fase * (0.5 + i * 0.25) + i));
+        const rad = Math.max(w, h) * (0.35 + 0.15 * i + nivel * 0.3);
+        const gr = ctx2d.createRadialGradient(cx, cy, 0, cx, cy, rad);
+        gr.addColorStop(0, `rgba(${r},${g},${b},${0.55 * intens + 0.1})`); gr.addColorStop(1, "rgba(0,0,0,0)");
+        ctx2d.fillStyle = gr; ctx2d.fillRect(0, 0, w, h);
+      }
+      if (cfg.alPintar) cfg.alPintar(r, g, b, intens, destello);
+      if (destello > 0.01) { ctx2d.fillStyle = `rgba(255,255,255,${destello * 0.8})`; ctx2d.fillRect(0, 0, w, h); destello *= Math.exp(-dt * 4); }
+    }
+    return { activar, desactivar, pantalla, destellar, cuadro, get activo() { return activo; } };
+  })();
+  // Botones de luces para guitarra y batería (si no hay intérpretes extra para los visuales)
+  function controlesLuces() {
+    const fila = el(`<div class="fila"><span class="muted small">Luces de la obra:</span></div>`);
+    const on = el(`<button class="btn peq">💡 Luces <kbd>V</kbd></button>`);
+    const proy = el(`<button class="btn peq">⛶ Proyectar</button>`);
+    fila.append(on, proy);
+    const toggle = () => { if (Luces.activo) Luces.desactivar(); else Luces.activar({ intens: () => 0.55, vel: () => 0.35 }); on.classList.toggle("on", Luces.activo); };
+    on.onclick = toggle;
+    proy.onclick = () => { if (!Luces.activo) toggle(); Luces.pantalla(true); };
+    document.addEventListener("keydown", e => { if (!escribiendo(e) && !e.repeat && e.key.toLowerCase() === "v") toggle(); });
+    return fila;
+  }
+
   /* ============================== INSTRUMENTO ============================== */
   let inst = null;
   let alAcorde = () => {};   // lo define cada panel
@@ -80,7 +135,7 @@
   // Selector de nota base para sonidos propios con altura
   function selectorBase(valor) {
     const s = document.createElement("select");
-    for (let m = 36; m <= 84; m++) s.add(new Option(nombreNota(m), m, false, m === valor));
+    for (let m = 24; m <= 96; m++) s.add(new Option(nombreNota(m), m, false, m === valor));
     s.title = "Nota en la que está grabado tu sonido"; return s;
   }
   // Cargador de sonido propio
@@ -152,8 +207,11 @@
     panel.append(fila, el(`<div class="muted small">Acordes de la sección</div>`), ab.el,
       sliders([slider("Fuzz", inst.p, "fuzz", () => inst.aplicar()), slider("Tono", inst.p, "tono", () => inst.aplicar()),
                slider("Reverb", inst.p, "reverb", () => inst.aplicar()), slider("Volumen", inst.p, "vol", () => inst.aplicar())]));
-    const carg = cargador("Sonido de guitarra (una nota)", { base: 60,
-      alCargar: (b, base, soloBase) => { if (!soloBase) inst.buffer = b; inst.base = base; }, alQuitar: () => { inst.buffer = null; } });
+    const rasgOrig = inst.rasguear.bind(inst);
+    inst.rasguear = (...a) => { rasgOrig(...a); Luces.destellar(0.6); };
+    panel.appendChild(controlesLuces());
+    const carg = cargador("Sonido de guitarra (un acorde o nota; se transpone a la raíz)", { base: 60,
+      alCargar: (b, base, soloBase) => { if (!soloBase) { inst.buffer = b; inst.porAcorde = {}; } inst.base = base; }, alQuitar: () => { inst.buffer = null; inst.porAcorde = {}; } });
     panel.appendChild(cajaSonidos([carg]));
     alAcorde = info => { acordeActual = info.nombre; ab.render(info.seccion); ab.marcar(info.idx); };
     alDetener = () => {};
@@ -165,7 +223,12 @@
       else if (e.key === "Escape") inst.apagar();
       else if (/^[1-9]$/.test(e.key)) { const a = ab.acorde(+e.key - 1); if (a) inst.rasguear(a); }
     });
-    return { sonidoDefecto: b => { inst.buffer = b; carg.marcar("Propio (partitura)"); } };
+    return { sonidoDefecto: (b, clave, base) => {
+      if (clave) inst.porAcorde[clave] = { buffer: b, base: base || 60 };
+      else { inst.buffer = b; if (base) inst.base = base; }
+      if (!inst.buffer) { inst.buffer = b; inst.base = base || 60; }
+      carg.marcar("Propio (partitura)");
+    } };
   }
 
   /* ---------- BATERÍA ---------- */
@@ -179,17 +242,18 @@
       d.addEventListener("pointerdown", e => { e.preventDefault(); inst.tocar(p.id); });
       pads.appendChild(d); mapa[p.id] = d;
     });
-    inst.alGolpe = id => { const d = mapa[id]; if (!d) return; d.classList.add("golpe"); setTimeout(() => d.classList.remove("golpe"), 90); };
+    const fuerza = { bombo: 0.5, caja: 0.75, tom: 0.4, crash: 1, abierto: 0.35, hihat: 0 };
+    inst.alGolpe = id => { const d = mapa[id]; if (d) { d.classList.add("golpe"); setTimeout(() => d.classList.remove("golpe"), 90); } if (fuerza[id]) Luces.destellar(fuerza[id]); };
     let ultimoPaso = null;
     const pats = el(`<div class="fila"><span class="muted small">Patrón:</span></div>`);
-    const opciones = [["", "Ninguno", "0"], ["suave", "Suave", "Q"], ["completo", "Completo", "W"], ["muro", "Muro", "E"]];
+    const opciones = [["", "Ninguno", "0"], ["pulso", "Pulso (tom)", "Q"], ["sinplatillos", "Sin platillos", "W"], ["platillos", "Con platillos", "E"], ["muro", "Muro", "R"]];
     const botonesPat = opciones.map(([id, n, k]) => {
       const b = el(`<button class="btn peq">${n} <kbd>${k}</kbd></button>`);
       b.onclick = () => ponerPatron(id); pats.appendChild(b); return b;
     });
     function ponerPatron(id) { inst.p.patron = id || null; botonesPat.forEach((b, i) => b.classList.toggle("on", opciones[i][0] === id)); ultimoPaso = null; }
     ponerPatron("");
-    panel.append(pads, pats, sliders([slider("Volumen", inst.p, "vol", () => inst.aplicar()), slider("Reverb", inst.p, "reverb", () => inst.aplicar())]));
+    panel.append(pads, pats, sliders([slider("Volumen", inst.p, "vol", () => inst.aplicar()), slider("Reverb", inst.p, "reverb", () => inst.aplicar())]), controlesLuces());
 
     const cargs = PADS.map(p => cargador(p.nombre, { alCargar: b => { inst.samples[p.id] = b; }, alQuitar: () => { delete inst.samples[p.id]; } }));
     panel.appendChild(cajaSonidos(cargs));
@@ -236,8 +300,8 @@
     const mas = el(`<button class="btn peq">+ Octava</button>`); filaOct.append(octEl, mas);
     const piano = el(`<div class="piano"></div>`);
     panel.append(el(`<div class="muted small">Acordes de la sección</div>`), ab.el, filaOct, piano,
-      sliders([slider("Filtro", inst.p, "filtro", () => inst.aplicar()), slider("Volumen", inst.p, "vol", () => inst.aplicar()),
-               slider("Reverb", inst.p, "reverb", () => inst.aplicar())]));
+      sliders([slider("Filtro", inst.p, "filtro", () => inst.aplicar()), slider("Distorsión", inst.p, "dist", () => inst.aplicar()),
+               slider("Volumen", inst.p, "vol", () => inst.aplicar()), slider("Reverb", inst.p, "reverb", () => inst.aplicar())]));
     const carg = cargador("Sonido del teclado (una nota)", { base: 60,
       alCargar: (b, base, soloBase) => { inst.todoOff(); if (!soloBase) inst.buffer = b; inst.base = base; }, alQuitar: () => { inst.todoOff(); inst.buffer = null; } });
     panel.appendChild(cajaSonidos([carg]));
@@ -318,22 +382,21 @@
       const a = G.parseAcorde(info.nombre); guia = a ? a.intervalos.map(i => (a.raiz + i) % 12) : []; marcarGuia();
     };
     alDetener = () => { [...activas].forEach(noteOff); };
-    return { sonidoDefecto: b => { inst.buffer = b; carg.marcar("Propio (partitura)"); } };
+    return { sonidoDefecto: (b, _c, base) => { inst.buffer = b; if (base) inst.base = base; carg.marcar("Propio (partitura)"); } };
   }
 
   /* ---------- AMBIENTE (sonido + colores) ---------- */
   function panelAmbiente() {
     inst = new Ambiente(perfil.preset);
-    const canvas = $("visual"); canvas.classList.remove("oculto");
     panel.appendChild(el(`<h3>${esc(perfil.nombre)}</h3>`));
-    panel.appendChild(el(`<p class="muted small"><kbd>Espacio</kbd> enciende/apaga. Arrastra en el recuadro: <b>X</b> = brillo/filtro, <b>Y</b> = volumen e intensidad del color.
+    panel.appendChild(el(`<p class="muted small"><kbd>Espacio</kbd> enciende/apaga. Arrastra en el recuadro: <b>X</b> = distorsión y brillo, <b>Y</b> = volumen e intensidad del color.
       <kbd>F</kbd> destello, <kbd>V</kbd> pantalla completa (para proyectar). Los colores siguen la progresión de la obra.</p>`));
     const fila = el(`<div class="fila"></div>`);
     const on = el(`<button class="btn primario gran-btn">Encender</button>`);
     const flash = el(`<button class="btn gran-btn">✦ Destello</button>`);
     const full = el(`<button class="btn gran-btn">⛶ Pantalla completa</button>`);
     fila.append(on, flash, full);
-    const xy = el(`<div class="xy"><span class="et" style="left:8px;bottom:6px">oscuro</span><span class="et" style="right:8px;bottom:6px">brillante</span>
+    const xy = el(`<div class="xy"><span class="et" style="left:8px;bottom:6px">limpio</span><span class="et" style="right:8px;bottom:6px">distorsión</span>
       <span class="et" style="left:8px;top:6px">intenso ↑</span><div class="punto"></div></div>`);
     const punto = xy.querySelector(".punto");
     panel.append(fila, xy, sliders([slider("Volumen", inst.p, "vol", () => inst.aplicar()), slider("Reverb", inst.p, "reverb", () => inst.aplicar())]));
@@ -377,15 +440,10 @@
 
     const toggle = () => { if (inst.encendido) inst.apagar(); else inst.encender(); on.textContent = inst.encendido ? "Apagar" : "Encender"; on.classList.toggle("on", inst.encendido); };
     on.onclick = toggle;
-    let destello = 0;
-    const hacerDestello = () => { destello = 1; inst.destello(); };
+    const hacerDestello = () => { Luces.destellar(); inst.destello(); };
     flash.onclick = hacerDestello;
-    const pantalla = v => { document.body.classList.toggle("pantalla-completa", v); if (v && canvas.requestFullscreen) canvas.requestFullscreen().catch(() => {}); };
-    full.onclick = () => pantalla(true);
-    $("salirVisual").onclick = () => { pantalla(false); if (document.fullscreenElement) document.exitFullscreen(); };
-    document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement) document.body.classList.remove("pantalla-completa"); });
-    canvas.addEventListener("click", () => { if (document.body.classList.contains("pantalla-completa")) hacerDestello(); });
-
+    full.onclick = () => Luces.pantalla(true);
+    const pantalla = v => Luces.pantalla(v);
     function ponerXY(x, y) {
       inst.p.x = Math.min(1, Math.max(0, x)); inst.p.y = Math.min(1, Math.max(0, y)); inst.aplicar();
       punto.style.left = inst.p.x * 100 + "%"; punto.style.top = (1 - inst.p.y) * 100 + "%";
@@ -406,37 +464,18 @@
       else if (e.key === "ArrowLeft") ponerXY(inst.p.x - 0.05, inst.p.y);
     });
 
-    // Visual: mezcla suave hacia el color del acorde actual
-    const ctx2d = canvas.getContext("2d");
-    let actual = [11, 16, 38], fase = 0;
-    const datos = new Uint8Array(128);
-    alCuadro = (t, dt) => {
-      const w = canvas.width = canvas.clientWidth * devicePixelRatio, h = canvas.height = canvas.clientHeight * devicePixelRatio;
-      const objetivo = aRGB(colorEn(Math.max(0, t)));
-      const k = 1 - Math.exp(-dt * 1.5);
-      actual = actual.map((c, i) => c + (objetivo[i] - c) * k);
-      let nivel = 0;
-      if (Motor.analizador) { Motor.analizador.getByteFrequencyData(datos); nivel = datos.reduce((a, b) => a + b, 0) / datos.length / 255; }
-      const intens = inst.encendido ? 0.25 + inst.p.y * 0.75 : 0.18;
-      fase += dt * (0.1 + inst.p.x * 0.9);
-      const brillo = Math.min(1.6, intens + nivel * 0.8);
-      const [r, g, b] = actual.map(c => Math.min(255, c * brillo));
-      ctx2d.fillStyle = `rgb(${r * 0.25},${g * 0.25},${b * 0.25})`; ctx2d.fillRect(0, 0, w, h);
-      for (let i = 0; i < 3; i++) {
-        const cx = w * (0.5 + 0.32 * Math.sin(fase * (0.7 + i * 0.3) + i * 2));
-        const cy = h * (0.5 + 0.28 * Math.cos(fase * (0.5 + i * 0.25) + i));
-        const rad = Math.max(w, h) * (0.35 + 0.15 * i + nivel * 0.3);
-        const gr = ctx2d.createRadialGradient(cx, cy, 0, cx, cy, rad);
-        gr.addColorStop(0, `rgba(${r},${g},${b},${0.55 * intens + 0.1})`); gr.addColorStop(1, "rgba(0,0,0,0)");
-        ctx2d.fillStyle = gr; ctx2d.fillRect(0, 0, w, h);
-      }
-      xy.style.background = `radial-gradient(circle at ${inst.p.x * 100}% ${(1 - inst.p.y) * 100}%, rgba(${r},${g},${b},${0.35 + intens * 0.6}), rgba(${r * 0.15},${g * 0.15},${b * 0.15},.9) 75%)`;
-      if (destello > 0.01) { xy.style.boxShadow = `inset 0 0 0 999px rgba(255,255,255,${destello * 0.6})`; } else xy.style.boxShadow = "";
-      if (destello > 0.01) { ctx2d.fillStyle = `rgba(255,255,255,${destello * 0.8})`; ctx2d.fillRect(0, 0, w, h); destello *= Math.exp(-dt * 4); }
-    };
+    Luces.activar({
+      intens: () => (inst.encendido ? 0.25 + inst.p.y * 0.75 : 0.18),
+      vel: () => 0.1 + inst.p.x * 0.9,
+      alClic: () => inst.destello(),
+      alPintar: (r, g, b, intens, destello) => {
+        xy.style.background = `radial-gradient(circle at ${inst.p.x * 100}% ${(1 - inst.p.y) * 100}%, rgba(${r},${g},${b},${0.35 + intens * 0.6}), rgba(${r * 0.15},${g * 0.15},${b * 0.15},.9) 75%)`;
+        xy.style.boxShadow = destello > 0.01 ? `inset 0 0 0 999px rgba(255,255,255,${destello * 0.6})` : "";
+      },
+    });
     alAcorde = info => inst.afinar(info.nombre);
     alDetener = () => {};
-    return { sonidoDefecto: b => { inst.buffer = b; carg.marcar("Propio (partitura)"); } };
+    return { sonidoDefecto: (b, _c, base) => { inst.buffer = b; if (base) inst.base = base; carg.marcar("Propio (partitura)"); } };
   }
 
   function aRGB(c) {
@@ -487,6 +526,15 @@
       if (e && e !== ultimoEvento) { ultimoEvento = e; banner.textContent = e.texto; banner.classList.add("ver"); bannerHasta = nowp + 3500; }
     }
     if (nowp > bannerHasta) banner.classList.remove("ver");
+    // ¿Toco o no? + barra de carga de la sección
+    const tocaAhora = toca(s, perfil), cambio = proximoCambio(tc, perfil);
+    const et = $("toca");
+    et.className = "estado-toca " + (tocaAhora ? "si" : "no");
+    et.firstChild.textContent = tocaAhora ? "▶ TOCAS" : "⏸ SILENCIO";
+    et.lastChild.textContent = cambio ? (cambio.entra ? `Entras en ${fmt(cambio.seccion.ini - tc)}` : `Paras en ${fmt(cambio.seccion.ini - tc)}`) : (tocaAhora ? "hasta el final" : "");
+    $("barraSeccion").style.width = (((tc - s.ini) / (s.fin - s.ini)) * 100) + "%";
+    $("restaSeccion").textContent = `${s.nombre} · quedan ${fmt(s.fin - tc)}`;
+    Luces.cuadro(t, dt);
     alCuadro(t, dt);
     requestAnimationFrame(cuadro);
   }
@@ -502,8 +550,13 @@
     // Sonidos por defecto desde la partitura
     const def = (P.sonidos || {})[perfil.id] || (P.sonidos || {})[perfil.grupo];
     try {
-      if (typeof def === "string") api.sonidoDefecto(await Motor.cargarURL(def));
-      else if (def && typeof def === "object") for (const pad in def) api.sonidoDefecto(await Motor.cargarURL(def[pad]), pad);
+      // Formatos: "ruta.wav" · { archivo, base } · { clave: "ruta.wav" | { archivo, base }, … } (pads o acordes)
+      const uno = async (v, clave) => {
+        const o = typeof v === "string" ? { archivo: v } : v;
+        api.sonidoDefecto(await Motor.cargarURL(o.archivo), clave, o.base);
+      };
+      if (typeof def === "string" || (def && def.archivo)) await uno(def);
+      else if (def && typeof def === "object") for (const k in def) { try { await uno(def[k], k); } catch (e) { console.warn("Sonido no disponible:", k, e.message); } }
     } catch (e) { console.warn("No se pudo cargar el sonido de la partitura:", e.message); }
   };
 })();
