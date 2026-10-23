@@ -261,6 +261,53 @@ window.PARTITURA = {
     // midi/genesis_completo.mid tiene todas las pistas juntas (para abrirlo en un DAW o MuseScore).
   },
 
+  // Guía del recuadro X/Y de los ambientes: dónde poner el mouse para que suene como debe.
+  // [tiempo, X (0 = limpio … 1 = distorsión), Y (0 = silencio … 1 = intenso)].
+  // Entre un punto y el siguiente la guía se mueve en línea recta; dos puntos muy juntos = cambio brusco.
+  // Las notas que suenan las pone la pista MIDI del perfil (midi.porPerfil).
+  // Se busca la clave más específica: ambiente-1 … ambiente-4, luego ambiente-principal / ambiente-extra.
+  guiaXY: {
+    "ambiente-principal": [
+      ["0:00",   0.05, 0.40],   // entra limpio
+      ["0:18.4", 0.45, 0.55],   // sube la distorsión de a poco
+      ["0:18.9", 0.30, 0.00],   // silencio: guitarra + teclados bajos
+      ["0:31.3", 0.30, 0.00],
+      ["0:31.8", 0.35, 0.45],   // vuelve con batería y teclados
+      ["0:39.2", 0.45, 0.60],   // todos
+      ["1:08.2", 0.45, 0.55],   // desarrollo: sigue la línea permanente
+      ["1:08.7", 0.50, 0.65],
+      ["1:15.6", 0.60, 0.80],   // sube la intensidad (Y), hacia el violeta
+      ["1:16.1", 0.20, 0.00],   // limpio: silencio, baja el XY
+      ["1:32.2", 0.20, 0.00],
+      ["1:32.7", 0.65, 0.80],   // muro: hacia el rojo
+      ["1:45.7", 0.85, 0.95],   // clímax: rojo al máximo
+      ["2:00.4", 0.70, 0.80],   // outro con los medios
+      ["2:15.2", 0.55, 0.65],   // empieza a desvanecerse…
+      ["2:30.0", 0.25, 0.00],   // …hasta apagarse
+    ],
+    "ambiente-extra": [
+      ["0:00",   0.10, 0.20],   // ruido y textura muy suaves
+      ["0:18.4", 0.25, 0.30],
+      ["0:18.9", 0.25, 0.00],   // silencio
+      ["0:31.3", 0.25, 0.00],
+      ["0:31.8", 0.35, 0.40],
+      ["0:39.2", 0.40, 0.50],
+      ["1:00.9", 0.45, 0.55],
+      ["1:01.4", 0.30, 0.00],   // silencio (solo luces)
+      ["1:08.2", 0.30, 0.00],
+      ["1:08.7", 0.50, 0.65],   // hacia el violeta
+      ["1:15.6", 0.55, 0.70],
+      ["1:16.1", 0.20, 0.00],   // silencio
+      ["1:32.2", 0.20, 0.00],
+      ["1:32.7", 0.65, 0.75],   // muro
+      ["1:45.7", 0.85, 0.90],   // clímax
+      ["2:00.4", 0.60, 0.70],
+      ["2:15.2", 0.45, 0.85],   // ambiente MARCADO, limpio y claro
+      ["2:29.5", 0.45, 0.80],
+      ["2:30.0", 0.20, 0.00],   // silencio
+    ],
+  },
+
   // Sonidos por defecto (si un archivo no existe se usan los sintetizados).
   // sonidos/extraidos/ viene de la grabación oficial y NO se publica (ver sonidos/LEEME.md).
   sonidos: {

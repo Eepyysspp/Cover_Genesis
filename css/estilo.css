@@ -147,3 +147,18 @@ details.cargar-box summary{cursor:pointer;font-weight:700}
 .punto-color{width:12px;height:12px;border-radius:50%;display:inline-block}
 .midi-val{color:var(--text);font-variant-numeric:tabular-nums}
 .badge.vivo{border-color:var(--accent);color:var(--text)}
+
+/* ---------- Guía X/Y del ambiente ---------- */
+.xy .guia-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.xy .guia-camino{fill:none;stroke:rgba(255,255,255,.55);stroke-width:2;stroke-dasharray:4 5;vector-effect:non-scaling-stroke}
+.xy .guia-anillo{position:absolute;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;pointer-events:none;
+  border:3px solid #ffd166;box-shadow:0 0 16px rgba(255,209,102,.7),inset 0 0 10px rgba(255,209,102,.4);transition:border-color .2s,box-shadow .2s}
+.xy .guia-anillo::after{content:"";position:absolute;inset:-9px;border-radius:50%;border:2px solid rgba(255,209,102,.35);animation:guia-pulso 1.85s ease-out infinite}
+.xy .guia-anillo span{position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:4px;font-size:11px;white-space:nowrap;color:#ffd166}
+.xy .guia-anillo.ok{border-color:#22c55e;box-shadow:0 0 22px rgba(34,197,94,.9),inset 0 0 12px rgba(34,197,94,.5)}
+.xy .guia-anillo.silencio{border-style:dashed;opacity:.75}
+@keyframes guia-pulso{from{transform:scale(.8);opacity:1}to{transform:scale(1.5);opacity:0}}
+.guia-info{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between}
+.guia-txt{display:flex;flex-direction:column;gap:2px;font-size:14px}
+.guia-txt b{color:#ffd166} .guia-txt b.ok{color:#22c55e}
+@media (prefers-reduced-motion:reduce){.xy .guia-anillo::after{animation:none}}

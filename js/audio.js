@@ -402,7 +402,7 @@
       } else if (this.preset === "pulso") {
         const paso = 60 / window.G.P.bpm / 2; let k = 0;
         this.timer = setInterval(() => {
-          const notas = notasAcorde(this.acorde || "C", 4); if (!notas.length) return;
+          const notas = this.notasMidi ? this.notasPulso() : notasAcorde(this.acorde || "C", 4); if (!notas.length) return;
           const m = notas[k++ % notas.length] + (k % 8 >= 4 ? 12 : 0);
           const tt = M.t + 0.02; const o = M.fuente("sine", mtof(m)); const g = ctx.createGain();
           g.gain.setValueAtTime(0.0001, tt); g.gain.exponentialRampToValueAtTime(0.6, tt + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, tt + 0.6);
@@ -419,9 +419,36 @@
       this.fuentes = []; this.oscs = []; this.loop = null;
       if (this.timer) { clearInterval(this.timer); this.timer = null; }
     }
-    raizMidi() { const a = parseAcorde(this.acorde || "C"); return 48 + (a ? a.raiz : 0); }
+    raizMidi() {
+      if (this.notasMidi) return 48 + (this.notasMidi[0] % 12);
+      const a = parseAcorde(this.acorde || "C"); return 48 + (a ? a.raiz : 0);
+    }
+    // Notas de la pista MIDI (las del arreglo): reemplazan al acorde de la partitura mientras existan
+    afinarNotas(ms, tau = 0.6) {
+      const nuevas = ms && ms.length ? [...new Set(ms)].sort((a, b) => a - b) : null;
+      if (String(nuevas) === String(this.notasMidi)) return;
+      this.notasMidi = nuevas;
+      this.afinar(this.acorde, tau);
+    }
+    notasPulso() {
+      return [...new Set(this.notasMidi.map(m => { while (m < 60) m += 12; while (m >= 72) m -= 12; return m; }))].sort((a, b) => a - b);
+    }
+    aplicarNotas(tau) {
+      const t = Motor.t, ms = this.notasMidi;
+      if (this.loop) { this.loop.playbackRate.setTargetAtTime(Math.pow(2, (this.raizMidi() - this.base) / 12), t, tau); return; }
+      if (this.preset === "drone") {
+        // 3 sierras con las notas (las más agudas si hay 4 o más) + seno grave en la más baja
+        const sierras = ms.length >= 4 ? ms.slice(-3) : ms;
+        const grave = ms[0] < 40 ? ms[0] : ms[0] - 12;
+        this.oscs.forEach((o, i) => o.frequency.setTargetAtTime(mtof(o._iv === -12 ? grave : sierras[i % sierras.length]), t, tau));
+      } else if (this.preset === "brillo") {
+        const altas = ms.map(m => { while (m < 72) m += 12; return m; });
+        this.oscs.forEach(o => o.frequency.setTargetAtTime(mtof(altas[o._i % altas.length] + (o._i >= altas.length ? 12 : 0)), t, tau));
+      }
+    }
     afinar(acorde, tau = 0.8) {
       this.acorde = acorde || this.acorde;
+      if (this.notasMidi) { if (this.encendido) this.aplicarNotas(tau); return; }
       if (!this.encendido || !this.acorde) return;
       const t = Motor.t;
       if (this.loop) { this.loop.playbackRate.setTargetAtTime(Math.pow(2, (this.raizMidi() - this.base) / 12), t, tau); return; }

@@ -35,6 +35,7 @@ Es el único archivo que hay que tocar para adaptar la obra:
 - `eventos`: avisos que aparecen en pantalla en un tiempo dado
 - `sonidos`: archivos de la carpeta `sonidos/` que reemplazan los sintetizados por defecto
 - `midi`: las pistas MIDI (`pistas`) y cuál toma cada perfil al entrar (`porPerfil`)
+- `guiaXY`: dónde debe ir el punto X/Y de los ambientes en cada momento
 
 Claves para `tocan`, `instrucciones` y `eventos`: `todos`, `guitarra`, `bateria`, `teclados`, `teclados-altos`, `teclados-bajos`, `teclado-1`…`teclado-4`, `ambiente`, `ambiente-principal`, `ambiente-extra`, `ambiente-1`…`ambiente-4`.
 Cada músico ve las instrucciones de "todos", las de su grupo y las propias.
@@ -62,6 +63,12 @@ Cada perfil tiene abajo un panel **🎼 Pistas MIDI** para tocar una pista con *
 - **Cruce**: usa el ritmo de otra pista con las notas de la tuya. Por ejemplo, el bajo con el ritmo de la batería. Una pista de batería tocada en un teclado toca las notas del acorde actual.
 - **Transponer**, **Densidad** (deja caer notas al azar), **Eco**, **Desfase** (como el de teclado 2 en 1:54), **Humanizar** y **Volumen MIDI**.
 
+**Ambientes**: el panel X/Y está fusionado con las pistas MIDI.
+- El sonido del ambiente (drone, loop, brillo o pulso) toma las **notas de su pista MIDI** en vez de solo la raíz del acorde. El botón 🎼 *Notas del MIDI* lo desactiva.
+- Un **anillo guía** en el recuadro marca dónde poner el mouse en cada momento (X = distorsión, Y = intensidad). La línea punteada muestra hacia dónde va en los próximos segundos, y el anillo se pone verde cuando estás en el punto. Bajo el recuadro aparecen consejos (→ más distorsión, ↓ más suave, silencio…).
+- 🤖 *Seguir la guía sola* (`G`) mueve el punto solo y enciende o apaga en los silencios. Si mueves el mouse o las flechas, vuelves a tomar el control.
+- La guía se edita en `guiaXY` de la partitura: una lista de `[tiempo, X, Y]` por perfil o grupo.
+
 **Extras**: cargar un `.mid` propio (cada pista del archivo aparece en la lista) y enviar las notas a un **puerto MIDI externo** (Pure Data, un DAW o un sintetizador; en Windows se puede usar loopMIDI). La batería sale por el canal 10.
 
 Si agregas o cambias un `.mid`, decláralo en `midi.pistas` de la partitura y corre `python midi/empaquetar.py`. Así funciona también abriendo la página sin servidor.
@@ -73,7 +80,7 @@ Si agregas o cambias un `.mid`, decláralo en `midi.pistas` de la partitura y co
 | Guitarra | `Espacio` rasgueo ↓ · `B` rasgueo ↑ · `1`–`9` acordes · `L` sostener · `Esc` apagar · `V` luces |
 | Batería | `A S D F G H` pads · `Q` pulso · `W` sin platillos · `E` con platillos · `R` muro · `0` ninguno · `V` luces |
 | Teclados | `A W S E D F T G Y H U J K O L P Ñ` piano · `Z`/`X` octava · `1`–`9` mantener acordes |
-| Ambientes | `Espacio` encender/apagar · flechas mueven X/Y · `F` destello · `V` pantalla completa |
+| Ambientes | `Espacio` encender/apagar · flechas mueven X/Y · `G` seguir la guía sola · `F` destello · `V` pantalla completa |
 | Pistas MIDI (todos) | `M` reproducir/detener · `N` pulsar · `C` bucle · `I` reverso |
 
 ## Publicar en GitHub Pages

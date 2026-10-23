@@ -122,6 +122,7 @@
 
   /* ============================== INSTRUMENTO ============================== */
   let inst = null;
+  let repMIDI = null;        // reproductor de pistas MIDI (se crea al activar)
   let alAcorde = () => {};   // lo define cada panel
   let alDetener = () => {};
   let alCuadro = () => {};   // animación por cuadro (ambientes)
@@ -411,16 +412,26 @@
     inst = new Ambiente(perfil.preset);
     panel.appendChild(el(`<h3>${esc(perfil.nombre)}</h3>`));
     panel.appendChild(el(`<p class="muted small"><kbd>Espacio</kbd> enciende/apaga. Arrastra en el recuadro: <b>X</b> = distorsión y brillo, <b>Y</b> = volumen e intensidad del color.
-      <kbd>F</kbd> destello, <kbd>V</kbd> pantalla completa (para proyectar). Los colores siguen la progresión de la obra.</p>`));
+      El <b>anillo</b> marca dónde poner el mouse en cada momento y la línea punteada, hacia dónde va. Las notas salen de la pista MIDI del arreglo.
+      <kbd>G</kbd> la guía se sigue sola, <kbd>F</kbd> destello, <kbd>V</kbd> pantalla completa (para proyectar).</p>`));
     const fila = el(`<div class="fila"></div>`);
     const on = el(`<button class="btn primario gran-btn">Encender</button>`);
     const flash = el(`<button class="btn gran-btn">✦ Destello</button>`);
     const full = el(`<button class="btn gran-btn">⛶ Pantalla completa</button>`);
     fila.append(on, flash, full);
     const xy = el(`<div class="xy"><span class="et" style="left:8px;bottom:6px">limpio</span><span class="et" style="right:8px;bottom:6px">distorsión</span>
-      <span class="et" style="left:8px;top:6px">intenso ↑</span><div class="punto"></div></div>`);
+      <span class="et" style="left:8px;top:6px">intenso ↑</span>
+      <svg class="guia-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polyline class="guia-camino" points=""/></svg>
+      <div class="guia-anillo"><span></span></div><div class="punto"></div></div>`);
     const punto = xy.querySelector(".punto");
-    panel.append(fila, xy, sliders([slider("Volumen", inst.p, "vol", () => inst.aplicar()), slider("Reverb", inst.p, "reverb", () => inst.aplicar())]));
+    const anillo = xy.querySelector(".guia-anillo"), anilloTxt = anillo.querySelector("span"), camino = xy.querySelector(".guia-camino");
+    const guiaFila = el(`<div class="guia-info"><div class="guia-txt"></div><div class="fila" style="gap:6px"></div></div>`);
+    const guiaTxt = guiaFila.querySelector(".guia-txt"), guiaBtns = guiaFila.querySelector(".fila");
+    const bGuia = el(`<button class="btn peq" title="Muestra u oculta el anillo guía">🎯 Guía</button>`);
+    const bAuto = el(`<button class="btn peq" title="El punto sigue la guía solo (y enciende/apaga). Si mueves el mouse, vuelves a tomar el control.">🤖 Seguir la guía sola <kbd>G</kbd></button>`);
+    const bNotas = el(`<button class="btn peq" title="El sonido del ambiente toma las notas de la pista MIDI (si no, usa el acorde de la partitura)">🎼 Notas del MIDI</button>`);
+    guiaBtns.append(bGuia, bAuto, bNotas);
+    panel.append(fila, xy, guiaFila, sliders([slider("Volumen", inst.p, "vol", () => inst.aplicar()), slider("Reverb", inst.p, "reverb", () => inst.aplicar())]));
 
     // Editor de colores
     const edit = el(`<details class="cargar-box"><summary>🎨 Personalizar colores</summary>
@@ -454,7 +465,7 @@
     dibujarEditor();
     panel.appendChild(edit);
 
-    const carg = cargador("Textura en loop (sigue la raíz del acorde)", { base: 48,
+    const carg = cargador("Textura en loop (sigue la nota grave de la pista MIDI o la raíz del acorde)", { base: 48,
       alCargar: (b, base, soloBase) => { const e = inst.encendido; inst.apagar(); if (!soloBase) inst.buffer = b; inst.base = base; if (e) inst.encender(); },
       alQuitar: () => { const e = inst.encendido; inst.apagar(); inst.buffer = null; if (e) inst.encender(); } });
     panel.appendChild(cajaSonidos([carg]));
@@ -470,7 +481,7 @@
       punto.style.left = inst.p.x * 100 + "%"; punto.style.top = (1 - inst.p.y) * 100 + "%";
     }
     ponerXY(inst.p.x, inst.p.y);
-    const moverXY = e => { const r = xy.getBoundingClientRect(); ponerXY((e.clientX - r.left) / r.width, 1 - (e.clientY - r.top) / r.height); };
+    const moverXY = e => { ponerAuto(false); const r = xy.getBoundingClientRect(); ponerXY((e.clientX - r.left) / r.width, 1 - (e.clientY - r.top) / r.height); };
     xy.addEventListener("pointerdown", e => { e.preventDefault(); xy.setPointerCapture(e.pointerId); moverXY(e); });
     xy.addEventListener("pointermove", e => { if (e.buttons) moverXY(e); });
 
@@ -479,11 +490,82 @@
       if (e.code === "Space") { e.preventDefault(); toggle(); }
       else if (e.key.toLowerCase() === "f") hacerDestello();
       else if (e.key.toLowerCase() === "v") pantalla(!document.body.classList.contains("pantalla-completa"));
-      else if (e.key === "ArrowUp") ponerXY(inst.p.x, inst.p.y + 0.05);
-      else if (e.key === "ArrowDown") ponerXY(inst.p.x, inst.p.y - 0.05);
-      else if (e.key === "ArrowRight") ponerXY(inst.p.x + 0.05, inst.p.y);
-      else if (e.key === "ArrowLeft") ponerXY(inst.p.x - 0.05, inst.p.y);
+      else if (e.key.toLowerCase() === "g") ponerAuto(!auto);
+      else if (/^Arrow/.test(e.key)) {
+        e.preventDefault(); ponerAuto(false);
+        if (e.key === "ArrowUp") ponerXY(inst.p.x, inst.p.y + 0.05);
+        else if (e.key === "ArrowDown") ponerXY(inst.p.x, inst.p.y - 0.05);
+        else if (e.key === "ArrowRight") ponerXY(inst.p.x + 0.05, inst.p.y);
+        else if (e.key === "ArrowLeft") ponerXY(inst.p.x - 0.05, inst.p.y);
+      }
     });
+
+    /* ----- Guía X/Y + notas del MIDI ----- */
+    const fuenteGuia = ["id", "sub", "grupo"].map(k => perfil[k]).find(k => k && P.guiaXY && P.guiaXY[k]);
+    const puntosGuia = (fuenteGuia ? P.guiaXY[fuenteGuia] : []).map(([t, x, y]) => ({ t: G.aSeg(t), x, y })).sort((a, b) => a.t - b.t);
+    function guiaEn(t) {
+      const ps = puntosGuia; if (!ps.length) return null;
+      if (t <= ps[0].t) return ps[0];
+      for (let i = 1; i < ps.length; i++) if (t < ps[i].t) {
+        const a = ps[i - 1], b = ps[i], k = (t - a.t) / (b.t - a.t);
+        return { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k };
+      }
+      return ps[ps.length - 1];
+    }
+    let verGuia = G.leer("guia:ver", true), auto = false, usarMidi = G.leer("guia:midi:" + perfil.id, true);
+    const pintarBotones = () => { bGuia.classList.toggle("on", verGuia); bAuto.classList.toggle("on", auto); bNotas.classList.toggle("on", usarMidi);
+      anillo.classList.toggle("oculto", !verGuia || !puntosGuia.length); camino.style.display = verGuia ? "" : "none"; };
+    function ponerAuto(v) { if (auto === v) return; auto = v && puntosGuia.length > 0; pintarBotones(); }
+    bGuia.onclick = () => { verGuia = !verGuia; G.guardar("guia:ver", verGuia); pintarBotones(); };
+    bAuto.onclick = () => ponerAuto(!auto);
+    bNotas.onclick = () => { usarMidi = !usarMidi; G.guardar("guia:midi:" + perfil.id, usarMidi); if (!usarMidi) inst.afinarNotas(null); pintarBotones(); };
+    if (!puntosGuia.length) { bGuia.disabled = bAuto.disabled = true; }
+    pintarBotones();
+
+    // Si el ambiente sigue la pista "con la obra", las notas se toman en cada cuadro (alCuadro);
+    // al pulsar, o con el sonido apagado, cada nota MIDI suena/afina en su momento.
+    const siguePista = () => usarMidi && inst.encendido && repMIDI && repMIDI.cfg.modo === "seguir";
+    function tocarMidi(ms, v, t, d) {
+      if (siguePista()) return;
+      if (usarMidi && inst.encendido) enTiempo(t, () => { inst.afinarNotas(ms, 0.06); Luces.destellar(0.35 * v); inst.destello(); });
+      else { ms.forEach(m => inst.nota(m, v, t, d)); destelloEn(t, 0.2 * v); }
+    }
+    const BEMOLES = ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B"];
+    const nombreBemol = m => BEMOLES[m % 12] + (Math.floor(m / 12) - 1);
+    alCuadro = (t, dt) => {
+      const tc = Math.min(Math.max(t, 0), DURACION);
+      // Notas del arreglo → sonido del ambiente
+      if (siguePista() && repMIDI.capas.length) inst.afinarNotas(repMIDI.notasAhora());
+      const capa = repMIDI && repMIDI.capas[0];
+      const notas = usarMidi && inst.notasMidi ? inst.notasMidi.map(nombreBemol).join(" ") : (inst.acorde || "");
+      // Guía
+      const g = guiaEn(tc);
+      if (!g) { guiaTxt.innerHTML = `<span class="muted">Sin guía para este perfil.</span>`; return; }
+      anillo.style.left = g.x * 100 + "%"; anillo.style.top = (1 - g.y) * 100 + "%";
+      const pts = []; for (let k = 0; k <= 16; k++) { const f = guiaEn(Math.min(tc + k * 0.5, DURACION)); pts.push((f.x * 100).toFixed(1) + "," + ((1 - f.y) * 100).toFixed(1)); }
+      camino.setAttribute("points", pts.join(" "));
+      const dx = g.x - inst.p.x, dy = g.y - inst.p.y, dist = Math.hypot(dx, dy);
+      const silencio = g.y < 0.03, ok = silencio ? (!inst.encendido || inst.p.y < 0.08) : dist < 0.1 && inst.encendido;
+      anillo.classList.toggle("ok", ok); anillo.classList.toggle("silencio", silencio);
+      anilloTxt.textContent = silencio ? "silencio" : "";
+      let consejo;
+      if (silencio) consejo = inst.encendido && inst.p.y >= 0.08 ? "Silencio: baja Y o apaga (Espacio)" : "Silencio ✓";
+      else if (!inst.encendido) consejo = "Enciende (Espacio) y ve al anillo";
+      else if (dist < 0.1) consejo = "En el punto ✓";
+      else consejo = [Math.abs(dx) > 0.06 ? (dx > 0 ? "→ más distorsión" : "← más limpio") : "", Math.abs(dy) > 0.06 ? (dy > 0 ? "↑ más intenso" : "↓ más suave") : ""].filter(Boolean).join(" · ");
+      // Próximo cambio fuerte de la guía
+      const fut = guiaEn(Math.min(tc + 4, DURACION)), cambio = Math.hypot(fut.x - g.x, fut.y - g.y) > 0.15;
+      guiaTxt.innerHTML = `<b class="${ok ? "ok" : ""}">${esc(consejo)}</b><span class="muted small">Guía X ${Math.round(g.x * 100)} % · Y ${Math.round(g.y * 100)} %` +
+        `${cambio ? ` · en 4 s → X ${Math.round(fut.x * 100)} % · Y ${Math.round(fut.y * 100)} %` : ""}` +
+        `${notas ? ` · suena: ${esc(notas)}${usarMidi && capa ? " (" + esc(capa.pista.nombre) + ")" : ""}` : ""}</span>`;
+      // Seguir la guía sola
+      if (auto) {
+        const k = 1 - Math.exp(-dt * 4);
+        ponerXY(inst.p.x + dx * k, inst.p.y + dy * k);
+        if (!silencio && !inst.encendido) toggle();
+        if (silencio && inst.encendido && inst.p.y < 0.03) toggle();
+      }
+    };
 
     Luces.activar({
       intens: () => (inst.encendido ? 0.25 + inst.p.y * 0.75 : 0.18),
@@ -497,7 +579,9 @@
     alAcorde = info => inst.afinar(info.nombre);
     alDetener = () => {};
     return { sonidoDefecto: (b, _c, base) => { inst.buffer = b; if (base) inst.base = base; carg.marcar("Propio (partitura)"); },
-      midiDestino: () => ({ octava: () => 3, nota: (m, v, t, d) => { inst.nota(m, v, t, d); destelloEn(t, 0.2 * v); } }) };
+      midiDestino: () => ({ octava: () => 3,
+        nota: (m, v, t, d) => tocarMidi([m], v, t, d),
+        grupo: (lista, t) => tocarMidi(lista.map(n => n.m), Math.max(...lista.map(n => n.v)), t, Math.max(...lista.map(n => n.d))) }) };
   }
 
   /* ---------- MULTIPISTA (todas las pistas MIDI) ---------- */
@@ -598,7 +682,7 @@
     requestAnimationFrame(cuadro);
     // Pistas MIDI
     if (api.midiDestino && window.MIDI && P.midi) {
-      const rep = new MIDI.Reproductor({ reloj: () => ({ t: ahora(), corriendo: corriendo() }), motor: Motor });
+      const rep = repMIDI = new MIDI.Reproductor({ reloj: () => ({ t: ahora(), corriendo: corriendo() }), motor: Motor });
       MIDI.crearPanel({ contenedor: $("panelMidi"), rep, perfil, crearDestino: api.midiDestino, multipista: perfil.tipo === "multipista", escribiendo })
         .catch(e => { console.warn("Pistas MIDI:", e); $("panelMidi").textContent = "No se pudieron cargar las pistas MIDI: " + e.message; });
     }

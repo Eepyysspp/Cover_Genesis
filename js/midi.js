@@ -376,6 +376,21 @@
       try { o.send([0x90 | ch, nota, vel], cuando); o.send([0x80 | ch, nota, 0], cuando + Math.max(30, e.d * 1000)); } catch (err) {}
     }
 
+    // Notas que suenan ahora en la pista de una capa, con transponer/espejo/ajustar aplicados
+    // (lo usa el ambiente para afinar su drone con el arreglo)
+    notasAhora(capa = this.capas[0], r = this.tiempo()) {
+      if (!capa || capa.pista.bateria) return [];
+      const pos = this.posicion(r), cfg = this.cfg;
+      const ms = alrededor(capa.pista, Math.max(0, pos.x)).map(n => {
+        let m = n.m;
+        if (cfg.espejo) m = espejo(m, Math.round((capa.pista.min + capa.pista.max) / 2));
+        m += cfg.transp;
+        if (cfg.ajustar) m = ajustarA(m, acordeObra(r));
+        return Math.min(127, Math.max(0, m));
+      });
+      return [...new Set(ms)].sort((a, b) => a - b);
+    }
+
     /* ---------- Pulsar: tú pones el ritmo ---------- */
     pulsar(fuerza = 0.85) {
       if (!this.motor.ctx || !this.capas.length) return;
