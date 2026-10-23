@@ -26,6 +26,8 @@
       desc: "Opcional. Destellos agudos, y colores." },
     { id: "ambiente-4", grupo: "ambiente", sub: "ambiente-extra", opcional: true, tipo: "ambiente", preset: "pulso", nombre: "Ambiente extra · Pulso", icono: "💠",
       desc: "Opcional. Arpegio con eco, y colores." },
+    { id: "multipista", grupo: "midi", tipo: "multipista", opcional: true, nombre: "Pistas MIDI · Multipista", icono: "🎼",
+      desc: "Opcional. Todas las pistas MIDI del arreglo a la vez: silenciar, solo, bucles, reverso, cruce… Para ensayar o remezclar en vivo." },
   ];
   const ocultos = P.ocultar || [];
   const perfilesActivos = PERFILES.filter(p => !ocultos.includes(p.id));
@@ -77,7 +79,7 @@
   }
   // ¿Toca este perfil en la sección? (sección.tocan = lista de perfiles/grupos; sin lista = todos)
   function toca(sec, perfil) {
-    if (!sec.tocan) return true;
+    if (!sec.tocan || perfil.tipo === "multipista") return true;
     return claves(perfil).some(k => sec.tocan.includes(k));
   }
   // Próximo cambio (entrada o silencio) para el perfil a partir de t
@@ -88,7 +90,7 @@
   }
   function nombreGrupo(g) {
     return { teclados: "Teclados", "teclados-altos": "Teclados medios/altos", "teclados-bajos": "Teclados bajos/medios", ambiente: "Ambientes",
-      "ambiente-principal": "Ambiente principal", "ambiente-extra": "Ambientes extra", guitarra: "Guitarra", bateria: "Batería" }[g] || g;
+      "ambiente-principal": "Ambiente principal", "ambiente-extra": "Ambientes extra", guitarra: "Guitarra", bateria: "Batería", midi: "Pistas MIDI" }[g] || g;
   }
   function eventoAplica(e, perfil) {
     const ps = e.perfiles || ["todos"];

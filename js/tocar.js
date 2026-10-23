@@ -116,6 +116,10 @@
     return fila;
   }
 
+  // Acciones visuales sincronizadas con el audio agendado (notas MIDI)
+  const enTiempo = (t, fn) => setTimeout(fn, Math.max(0, (t - Motor.t) * 1000));
+  const destelloEn = (t, f) => enTiempo(t, () => Luces.destellar(f));
+
   /* ============================== INSTRUMENTO ============================== */
   let inst = null;
   let alAcorde = () => {};   // lo define cada panel
@@ -228,7 +232,15 @@
       else { inst.buffer = b; if (base) inst.base = base; }
       if (!inst.buffer) { inst.buffer = b; inst.base = base || 60; }
       carg.marcar("Propio (partitura)");
-    } };
+    },
+    midiDestino: () => ({
+      octava: () => 3,
+      nota: (m, v, t, d) => { inst.tocarNotas([m], { vel: v, t, dur: d }); destelloEn(t, 0.25 * v); },
+      grupo: (lista, t) => {
+        inst.tocarNotas(lista.map(n => n.m), { vel: Math.max(...lista.map(n => n.v)), t, dur: Math.max(...lista.map(n => n.d)) });
+        destelloEn(t, 0.5);
+      },
+    }) };
   }
 
   /* ---------- BATERÍA ---------- */
@@ -283,7 +295,8 @@
       const p = PADS.find(p => p.tecla === e.key.toLowerCase()); if (p) { inst.tocar(p.id); return; }
       const o = opciones.find(o => o[2].toLowerCase() === e.key.toLowerCase()); if (o) ponerPatron(o[0]);
     });
-    return { sonidoDefecto: (b, pad) => { inst.samples[pad] = b; const i = PADS.findIndex(p => p.id === pad); if (i >= 0) cargs[i].marcar("Propio (partitura)"); } };
+    return { sonidoDefecto: (b, pad) => { inst.samples[pad] = b; const i = PADS.findIndex(p => p.id === pad); if (i >= 0) cargs[i].marcar("Propio (partitura)"); },
+      midiDestino: () => ({ esBateria: true, nota: (m, v, t, d, golpe) => inst.tocar(golpe || MIDI.padDeNota(m), t, v) }) };
   }
 
   /* ---------- TECLADO ---------- */
@@ -382,7 +395,15 @@
       const a = G.parseAcorde(info.nombre); guia = a ? a.intervalos.map(i => (a.raiz + i) % 12) : []; marcarGuia();
     };
     alDetener = () => { [...activas].forEach(noteOff); };
-    return { sonidoDefecto: (b, _c, base) => { inst.buffer = b; if (base) inst.base = base; carg.marcar("Propio (partitura)"); } };
+    return { sonidoDefecto: (b, _c, base) => { inst.buffer = b; if (base) inst.base = base; carg.marcar("Propio (partitura)"); },
+      midiDestino: () => ({
+        octava: () => inst.p.octava,
+        nota: (m, v, t, d) => {
+          inst.nota(m, v, t, d);
+          enTiempo(t, () => marcar(m, true));
+          enTiempo(t + d, () => { if (!activas.has(m)) marcar(m, false); });
+        },
+      }) };
   }
 
   /* ---------- AMBIENTE (sonido + colores) ---------- */
@@ -475,7 +496,36 @@
     });
     alAcorde = info => inst.afinar(info.nombre);
     alDetener = () => {};
-    return { sonidoDefecto: (b, _c, base) => { inst.buffer = b; if (base) inst.base = base; carg.marcar("Propio (partitura)"); } };
+    return { sonidoDefecto: (b, _c, base) => { inst.buffer = b; if (base) inst.base = base; carg.marcar("Propio (partitura)"); },
+      midiDestino: () => ({ octava: () => 3, nota: (m, v, t, d) => { inst.nota(m, v, t, d); destelloEn(t, 0.2 * v); } }) };
+  }
+
+  /* ---------- MULTIPISTA (todas las pistas MIDI) ---------- */
+  function panelMultipista() {
+    panel.appendChild(el(`<h3>${esc(perfil.nombre)}</h3>`));
+    panel.appendChild(el(`<p class="muted small">Cada pista del arreglo suena con su propio sintetizador. Abajo puedes silenciarlas (M), dejarlas solas (S),
+      elegir cuáles responden a <kbd>N</kbd> PULSAR (✋) y aplicarles bucles, reverso, espejo o cruce a todas a la vez.
+      Sirve para ensayar con el arreglo completo o para remezclarlo en vivo.</p>`));
+    const teclados = [], baterias = [];
+    const glob = { dist: 0, reverb: 0.35, vol: 0.8 };
+    const aplicar = () => {
+      teclados.forEach(t => { t.p.dist = glob.dist; t.p.reverb = glob.reverb; t.p.vol = glob.vol * 0.7; t.aplicar(); });
+      baterias.forEach(b => { b.p.vol = glob.vol; b.aplicar(); });
+    };
+    panel.append(sliders([slider("Distorsión", glob, "dist", aplicar), slider("Reverb", glob, "reverb", aplicar), slider("Volumen", glob, "vol", aplicar)]), controlesLuces());
+    alAcorde = () => {}; alDetener = () => {};
+    return {
+      midiDestino: pista => {
+        if (pista.bateria) {
+          const b = new Bateria(); baterias.push(b);
+          b.alGolpe = id => { const f = { bombo: 0.4, caja: 0.6, crash: 1 }[id]; if (f) Luces.destellar(f); };
+          aplicar();
+          return { esBateria: true, nota: (m, v, t, d, golpe) => b.tocar(golpe || MIDI.padDeNota(m), t, v) };
+        }
+        const k = new Teclado(pista.preset || "epiano"); teclados.push(k); aplicar();
+        return { octava: () => k.p.octava, nota: (m, v, t, d) => k.nota(m, v, t, d) };
+      },
+    };
   }
 
   function aRGB(c) {
@@ -543,9 +593,15 @@
   $("btnActivar").onclick = async () => {
     Motor.init();
     $("overlay").classList.add("oculto");
-    const constructor = { guitarra: panelGuitarra, bateria: panelBateria, teclado: panelTeclado, ambiente: panelAmbiente }[perfil.tipo];
+    const constructor = { guitarra: panelGuitarra, bateria: panelBateria, teclado: panelTeclado, ambiente: panelAmbiente, multipista: panelMultipista }[perfil.tipo];
     const api = constructor();
     requestAnimationFrame(cuadro);
+    // Pistas MIDI
+    if (api.midiDestino && window.MIDI && P.midi) {
+      const rep = new MIDI.Reproductor({ reloj: () => ({ t: ahora(), corriendo: corriendo() }), motor: Motor });
+      MIDI.crearPanel({ contenedor: $("panelMidi"), rep, perfil, crearDestino: api.midiDestino, multipista: perfil.tipo === "multipista", escribiendo })
+        .catch(e => { console.warn("Pistas MIDI:", e); $("panelMidi").textContent = "No se pudieron cargar las pistas MIDI: " + e.message; });
+    }
     if (params.get("inicio")) inicio = horaAEpoch(params.get("inicio"));
     // Sonidos por defecto desde la partitura
     const def = (P.sonidos || {})[perfil.id] || (P.sonidos || {})[perfil.grupo];

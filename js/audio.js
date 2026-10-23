@@ -86,6 +86,12 @@
       g.gain.exponentialRampToValueAtTime(0.0001, t + rel);
       fuentes.forEach(f => { try { f.stop(t + rel + 0.05); } catch (e) {} });
     },
+    // Liberación agendada a futuro (para notas MIDI con duración conocida)
+    liberar(g, t, rel, fuentes) {
+      if (g.gain.cancelAndHoldAtTime) g.gain.cancelAndHoldAtTime(t); else g.gain.cancelScheduledValues(t);
+      g.gain.setTargetAtTime(0.0001, t, Math.max(0.01, rel / 4));
+      fuentes.forEach(f => { try { f.stop(t + rel * 1.6 + 0.05); } catch (e) {} });
+    },
   };
 
   /* ---------------------------------------------------------------- GUITARRA */
@@ -156,6 +162,28 @@
       const t = Motor.t;
       this.voces.forEach(v => Motor.soltar(v.g, t, rel, v.fuentes));
       this.voces = [];
+    }
+    // Notas sueltas (pistas MIDI): se rasguean si vienen juntas. dur = duración escrita
+    tocarNotas(notas, { vel = 0.8, t = Motor.t, dur = 1, arriba = false } = {}) {
+      const M = Motor;
+      let ns = [...new Set(notas)].sort((a, b) => a - b); if (arriba) ns.reverse();
+      const rel = Math.min(this.p.sostener ? 9 : 2.2, Math.max(0.12, dur + 0.15));
+      ns.forEach((m, i) => {
+        const tt = t + i * 0.018;
+        const g = M.ctx.createGain(); g.connect(this.pre);
+        let fuentes, nivel = 0.18 * vel;
+        if (this.buffer) { fuentes = [M.tocarBuffer(this.buffer, g, { midi: m, base: this.base, t: tt }).fuente]; nivel = 0.5 * vel / Math.sqrt(ns.length); }
+        else {
+          const o1 = M.fuente("sawtooth", mtof(m)), o2 = M.fuente("sawtooth", mtof(m) * 1.004), o3 = M.fuente("square", mtof(m) * 0.5);
+          const g3 = M.ctx.createGain(); g3.gain.value = 0.3;
+          o1.connect(g); o2.connect(g); o3.connect(g3).connect(g);
+          fuentes = [o1, o2, o3]; fuentes.forEach(o => o.start(tt));
+        }
+        g.gain.setValueAtTime(0.0001, tt);
+        g.gain.exponentialRampToValueAtTime(Math.max(0.001, nivel), tt + 0.008);
+        g.gain.exponentialRampToValueAtTime(0.0001, tt + rel);
+        fuentes.forEach(f => f.stop(tt + rel + 0.1));
+      });
     }
   }
 
@@ -235,13 +263,30 @@
       this.out.envio.gain.setTargetAtTime(this.p.reverb, t, 0.05);
     }
     on(m, vel = 0.8) {
-      const M = Motor, ctx = M.ctx, t = M.t;
       if (this.activas.has(m)) this.off(m);
       if (this.preset === "lead" && !this.buffer) return this.leadOn(m, vel);
+      this.activas.set(m, this.crearVoz(m, vel, Motor.t));
+    }
+    // Nota con duración conocida que empieza en t (pistas MIDI). No toca las notas que tocas a mano.
+    nota(m, vel = 0.8, t = Motor.t, dur = 0.5) {
+      const v = this.crearVoz(m, vel, t);
+      Motor.liberar(v.g, t + Math.max(0.04, dur), v.rel, v.fuentes);
+    }
+    // Crea una voz que empieza en t y la devuelve sin registrarla: { g, fuentes, rel }
+    crearVoz(m, vel, t) {
+      const M = Motor, ctx = M.ctx;
       const g = ctx.createGain(); g.connect(this.filtro);
       let fuentes = [], ataque = 0.01, nivel = 0.25 * vel, rel = 0.4;
       if (this.buffer) {
         fuentes = [M.tocarBuffer(this.buffer, g, { midi: m, base: this.base, t }).fuente]; nivel = vel; rel = 0.5;
+        M.envolvente(g, t, ataque, nivel);
+        return { g, fuentes, rel };
+      } else if (this.preset === "lead") {   // versión polifónica del lead (para MIDI)
+        const o = M.fuente("sawtooth", mtof(m)), o2 = M.fuente("triangle", mtof(m) * 2);
+        const vib = M.fuente("sine", 5.5), gv = ctx.createGain(); gv.gain.value = 4;
+        vib.connect(gv); gv.connect(o.frequency); gv.connect(o2.frequency);
+        const g2 = ctx.createGain(); g2.gain.value = 0.3; o.connect(g); o2.connect(g2).connect(g);
+        fuentes = [o, o2, vib]; ataque = 0.03; nivel = 0.16 * vel; rel = 0.35;
       } else if (this.preset === "pad") {
         [-0.12, 0, 0.12].forEach(d => { const o = M.fuente("sawtooth", mtof(m + d)); o.connect(g); fuentes.push(o); });
         const o = M.fuente("sine", mtof(m - 12)); o.connect(g); fuentes.push(o);
@@ -254,15 +299,17 @@
         g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(nivel, t + ataque);
         g.gain.exponentialRampToValueAtTime(nivel * 0.25, t + 2.5);
         fuentes.forEach(f => f.start(t));
-        this.activas.set(m, { g, fuentes, rel }); return;
+        return { g, fuentes, rel };
       } else if (this.preset === "bajo") {
         const o1 = M.fuente("sawtooth", mtof(m)); const o2 = M.fuente("sine", mtof(m - 12));
         const g2 = ctx.createGain(); g2.gain.value = 0.9; o1.connect(g); o2.connect(g2).connect(g); fuentes = [o1, o2];
         ataque = 0.005; nivel = 0.3 * vel; rel = 0.25;
+      } else {
+        const o = M.fuente("triangle", mtof(m)); o.connect(g); fuentes = [o];
       }
       M.envolvente(g, t, ataque, nivel);
-      fuentes.forEach(f => { if (f.start && !this.buffer) f.start(t); });
-      this.activas.set(m, { g, fuentes, rel });
+      fuentes.forEach(f => f.start(t));
+      return { g, fuentes, rel };
     }
     off(m) {
       if (this.preset === "lead" && !this.buffer) return this.leadOff(m);
@@ -385,6 +432,28 @@
         const notas = notasAcorde(this.acorde, 6);
         this.oscs.forEach(o => o.frequency.setTargetAtTime(mtof(notas[o._i % notas.length] + (o._i >= notas.length ? 12 : 0)), t, tau));
       }
+    }
+    // Nota de una pista MIDI: voz suave que pasa por su propio filtro/distorsión (X) y nivel (Y).
+    // Suena aunque el ambiente esté apagado, para poder tocar la pista sola.
+    nota(m, vel = 0.7, t = Motor.t, dur = 1) {
+      const M = Motor, ctx = M.ctx, { x, y } = this.p;
+      if (!this.midiIn) {
+        this.midiIn = ctx.createGain(); this.midiFiltro = ctx.createBiquadFilter(); this.midiFiltro.type = "lowpass";
+        this.midiDist = M.bloqueDistorsion(25);
+        this.midiIn.connect(this.midiFiltro).connect(this.midiDist.ent); this.midiDist.sal.connect(this.out.entrada);
+        if (this.eco) this.midiDist.sal.connect(this.eco);
+      }
+      this.midiFiltro.frequency.setTargetAtTime(500 + x * x * 9000, M.t, 0.1);
+      this.midiDist.mezcla(x * x);
+      this.midiIn.gain.setTargetAtTime(0.25 + y * 0.9, M.t, 0.1);
+      const f = mtof(m), g = ctx.createGain(); g.connect(this.midiIn);
+      const tipo = this.preset === "brillo" ? "sine" : this.preset === "viento" ? "sawtooth" : "triangle";
+      const o = M.fuente(tipo, f), o2 = M.fuente("sine", f * 2.003), g2 = ctx.createGain(); g2.gain.value = 0.25;
+      o.connect(g); o2.connect(g2).connect(g);
+      const ataque = Math.min(0.5, Math.max(0.01, dur * 0.25));
+      M.envolvente(g, t, ataque, 0.16 * vel);
+      [o, o2].forEach(s => s.start(t));
+      M.liberar(g, t + Math.max(ataque + 0.02, dur), 1.4, [o, o2]);
     }
     destello() {
       const M = Motor, ctx = M.ctx, t = M.t;

@@ -239,6 +239,28 @@ window.PARTITURA = {
     { t: "2:25", perfiles: ["teclados-bajos"], texto: "En 5 s: resolución" },
   ],
 
+  // Pistas MIDI del arreglo (carpeta midi/). Están a 130 BPM y empiezan en 0:00, así que calzan con el reloj.
+  // Cada perfil parte con la pista de "porPerfil"; en la página se puede cambiar por cualquier otra.
+  // preset: el sonido que usa la pista en el perfil Multipista (pad, epiano, bajo, lead).
+  // Si agregas o cambias un .mid, corre  python midi/empaquetar.py  para que funcione sin servidor.
+  midi: {
+    pistas: [
+      { id: "melodia",  nombre: "Melodía",        archivo: "midi/genesis_melodia.mid",  preset: "lead" },
+      { id: "medio",    nombre: "Medio",          archivo: "midi/genesis_medio.mid",    preset: "epiano" },
+      { id: "pad",      nombre: "Pad (acordes)",  archivo: "midi/genesis_pad.mid",      preset: "pad" },
+      { id: "bajo",     nombre: "Bajo",           archivo: "midi/genesis_bajo.mid",     preset: "bajo" },
+      { id: "pedal",    nombre: "Pedal F",        archivo: "midi/genesis_pedal_F.mid",  preset: "lead" },
+      { id: "ambiente", nombre: "Ambiente",       archivo: "midi/genesis_ambiente.mid", preset: "pad" },
+      { id: "bateria",  nombre: "Batería",        archivo: "midi/genesis_bateria.mid" },
+    ],
+    porPerfil: {
+      guitarra: "pad", bateria: "bateria",
+      "teclado-1": "medio", "teclado-2": "melodia", "teclado-3": "bajo", "teclado-4": "pad",
+      "ambiente-1": "ambiente", "ambiente-2": "ambiente", "ambiente-3": "pedal", "ambiente-4": "medio",
+    },
+    // midi/genesis_completo.mid tiene todas las pistas juntas (para abrirlo en un DAW o MuseScore).
+  },
+
   // Sonidos por defecto (si un archivo no existe se usan los sintetizados).
   // sonidos/extraidos/ viene de la grabación oficial y NO se publica (ver sonidos/LEEME.md).
   sonidos: {

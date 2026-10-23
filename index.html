@@ -96,7 +96,8 @@
     G.guardar("hora", hora.value);
     const q = hora.value ? "&inicio=" + encodeURIComponent(hora.value) : "";
     const grupos = [["guitarra", "Guitarra"], ["bateria", "Batería"], ["teclados-altos", "Teclados medios/altos"], ["teclados-bajos", "Teclados bajos/medios"],
-      ["ambiente-principal", "Ambiente · teclados bajos permanentes y colores"], ["ambiente-extra", "Opcionales · si hay integrantes extra (sonido o luces)"]];
+      ["ambiente-principal", "Ambiente · teclados bajos permanentes y colores"], ["ambiente-extra", "Opcionales · si hay integrantes extra (sonido o luces)"],
+      ["midi", "Pistas MIDI · opcional, para ensayar o remezclar el arreglo"]];
     cont.innerHTML = grupos.map(([g, t]) => {
       const ps = perfilesActivos.filter(p => (p.sub || p.grupo) === g);
       if (!ps.length) return "";
