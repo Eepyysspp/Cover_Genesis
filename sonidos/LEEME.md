@@ -1,5 +1,9 @@
 # Sonidos
 
+## `fl/`: sonidos propios hechos en FL Studio (se publican)
+
+Son los sonidos por defecto de la página. Imitan el timbre de la grabación con presets de FLEX, pero no contienen audio de la canción, así que sí se suben a GitHub. Detalle en `fl/LEEME.md`.
+
 ## `extraidos/`: sonidos aislados de la grabación oficial
 
 Se separaron con procesamiento de señal (separación armónico/percusiva, filtros y detección de golpes) a partir de "genesis (Official Audio)".

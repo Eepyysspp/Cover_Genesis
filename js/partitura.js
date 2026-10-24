@@ -309,25 +309,30 @@ window.PARTITURA = {
   },
 
   // Sonidos por defecto (si un archivo no existe se usan los sintetizados).
-  // sonidos/extraidos/ viene de la grabación oficial y NO se publica (ver sonidos/LEEME.md).
+  // sonidos/fl/ son sonidos propios hechos en FL Studio (FLEX) para imitar la grabación: SÍ se publican (ver sonidos/fl/LEEME.md).
+  // Para ensayar con los fragmentos de la grabación oficial (sonidos/extraidos/, NO se publican),
+  // cambia "sonidos/fl/…" por las rutas de sonidos/LEEME.md.
   sonidos: {
     guitarra: {
-      "Bbm7":   { archivo: "sonidos/extraidos/guitarra_acorde_Bbm.wav", base: 46 },
-      "Gbmaj7": { archivo: "sonidos/extraidos/guitarra_acorde_Gb.wav",  base: 42 },
-      "Db":     { archivo: "sonidos/extraidos/guitarra_acorde_Db.wav",  base: 49 },
+      "Bbm7":   { archivo: "sonidos/fl/guitarra_Bbm7.wav",   base: 46 },
+      "Gbmaj7": { archivo: "sonidos/fl/guitarra_Gbmaj7.wav", base: 42 },
+      "Db":     { archivo: "sonidos/fl/guitarra_Db.wav",     base: 49 },
     },
     bateria: {
-      bombo:   "sonidos/extraidos/bateria_bombo.wav",
-      caja:    "sonidos/extraidos/bateria_caja.wav",
-      hihat:   "sonidos/extraidos/bateria_hihat.wav",
-      abierto: "sonidos/extraidos/bateria_hihat_abierto.wav",
-      tom:     "sonidos/extraidos/bateria_pulso_intro.wav",
-      crash:   "sonidos/extraidos/bateria_platillo.wav",
+      bombo:   "sonidos/fl/bateria_bombo.wav",
+      caja:    "sonidos/fl/bateria_caja.wav",
+      hihat:   "sonidos/fl/bateria_hihat.wav",
+      abierto: "sonidos/fl/bateria_abierto.wav",
+      tom:     "sonidos/fl/bateria_tom.wav",
+      crash:   "sonidos/fl/bateria_crash.wav",
     },
-    "teclado-3":  { archivo: "sonidos/extraidos/bajo_nota.wav", base: 46 }, // grabado en Si♭1; suena a su altura real en octava 2
-    "ambiente-1": { archivo: "sonidos/extraidos/ambiente_drone_loop.wav",  base: 49 }, // teclados bajos permanentes (Re♭)
-    "ambiente-2": { archivo: "sonidos/extraidos/ambiente_ruido_loop.wav",  base: 58 },
-    "ambiente-3": { archivo: "sonidos/extraidos/ambiente_brillo_loop.wav", base: 54 },
-    "ambiente-4": { archivo: "sonidos/extraidos/ambiente_final_loop.wav",  base: 49 },
+    "teclado-1":  { archivo: "sonidos/fl/teclado_medio_Db4.wav", base: 61 }, // grabado en Re♭4, suena a su altura real
+    "teclado-2":  { archivo: "sonidos/fl/teclado_agudo_F5.wav",  base: 77 }, // grabado en Fa5, suena a su altura real
+    "teclado-3":  { archivo: "sonidos/fl/bajo_Bb1.wav",          base: 46 }, // grabado en Si♭1; suena a su altura real en octava 2
+    "teclado-4":  { archivo: "sonidos/fl/teclado_bajo2_Bb1.wav", base: 46 }, // grabado en Si♭1; igual que el teclado 3
+    "ambiente-1": { archivo: "sonidos/fl/ambiente_drone_Db.wav",  base: 49 }, // teclados bajos permanentes (Re♭)
+    "ambiente-2": { archivo: "sonidos/fl/ambiente_ruido_Bb.wav",  base: 58 },
+    "ambiente-3": { archivo: "sonidos/fl/ambiente_brillo_Gb.wav", base: 54 },
+    "ambiente-4": { archivo: "sonidos/fl/ambiente_pulso_Db.wav",  base: 49 },
   },
 };
