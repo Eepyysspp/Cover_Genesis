@@ -375,8 +375,8 @@
       });
       porDestino.forEach(lista => {
         const dst = lista[0].capa.destino;
-        if (dst.grupo && lista.length > 1) dst.grupo(lista.map(e => ({ m: e.m, v: e.v, d: e.d, golpe: e.golpe })), lista[0].tc);
-        else lista.forEach(e => dst.nota(e.m, e.v, e.tc, e.d, e.golpe));
+        if (dst.grupo && lista.length > 1) dst.grupo(lista.map(e => ({ m: e.m, v: e.v, d: e.d, golpe: e.golpe })), lista[0].tc, lista[0].r);
+        else lista.forEach(e => dst.nota(e.m, e.v, e.tc, e.d, e.golpe, e.r));
       });
     }
     enviarExterna(e) {
@@ -700,16 +700,48 @@
   /* ============================== PRACTICAR CON LA ORQUESTA ============================== */
   /* Los demás perfiles suenan con su pista MIDI (midi.porPerfil), sincronizados con el reloj.
      "Según la partitura": cada instrumento solo suena en las secciones donde le toca (tocan). */
+  // Sonidos por defecto de cada perfil (partitura → sonidos), los mismos que carga su página.
+  // Cada archivo se descarga una sola vez aunque lo usen varios perfiles.
+  const bufferes = new Map();
+  const bajar = url => { if (!bufferes.has(url)) bufferes.set(url, window.Audio2.Motor.cargarURL(url)); return bufferes.get(url); };
+  async function sonidosDe(pf) {
+    const def = (P.sonidos || {})[pf.id] || (P.sonidos || {})[pf.grupo];
+    if (!def) return null;
+    const leer = async v => { const o = typeof v === "string" ? { archivo: v } : v; return { buffer: await bajar(o.archivo), base: o.real != null ? o.real : (o.base || 60) }; };
+    if (typeof def === "string" || def.archivo) return { uno: await leer(def) };
+    const varios = {};
+    for (const k in def) { try { varios[k] = await leer(def[k]); } catch (e) { console.warn("Sonido no disponible:", k, e.message); } }
+    return { varios };
+  }
   function destinoDe(pf, pista) {
-    const A = window.Audio2;
-    if (pista.bateria) { const b = new A.Bateria(); return { esBateria: true, nota: (m, v, t, d, golpe) => b.tocar(golpe || padDeNota(m), t, v) }; }
+    const A = window.Audio2, M = A.Motor;
+    const cargar = alListo => sonidosDe(pf).then(s => { if (s) alListo(s); }).catch(e => console.warn("Orquesta: sin sonido propio para", pf.id, e.message));
+    if (pista.bateria) {
+      const b = new A.Bateria();
+      cargar(s => { if (s.varios) Object.keys(s.varios).forEach(k => b.samples[k] = s.varios[k].buffer); });
+      return { esBateria: true, nota: (m, v, t, d, golpe) => b.tocar(golpe || padDeNota(m), t, v) };
+    }
     if (pf.tipo === "guitarra") {
       const g = new A.Guitarra(); g.p.fuzz = 0.3; g.aplicar();
+      cargar(s => { if (s.varios) Object.keys(s.varios).forEach(k => g.porAcorde[k] = s.varios[k]); else { g.buffer = s.uno.buffer; g.base = s.uno.base; } });
+      // Acorde grabado de la partitura (el que suena en ese momento de la obra); si no hay, la guitarra sintetizada
+      const acordeGrabado = (l, t, r) => {
+        const s = r != null && g.porAcorde[acordeObra(r)];
+        if (!s) return false;
+        const vel = Math.max(...l.map(n => n.v)), dur = Math.max(...l.map(n => n.d));
+        const gan = M.ctx.createGain(); gan.connect(g.pre);
+        const b = M.tocarBuffer(s.buffer, gan, { midi: s.base, base: s.base, t });
+        M.envolvente(gan, t, 0.01, 0.5 * vel);
+        M.liberar(gan, t + Math.max(0.1, Math.min(dur, s.buffer.duration)), 0.3, [b.fuente]);
+        return true;
+      };
       return { octava: () => 3, nota: (m, v, t, d) => g.tocarNotas([m], { vel: v, t, dur: d }),
-        grupo: (l, t) => g.tocarNotas(l.map(n => n.m), { vel: Math.max(...l.map(n => n.v)), t, dur: Math.max(...l.map(n => n.d)) }) };
+        grupo: (l, t, r) => acordeGrabado(l, t, r) || g.tocarNotas(l.map(n => n.m), { vel: Math.max(...l.map(n => n.v)), t, dur: Math.max(...l.map(n => n.d)) }) };
     }
     const k = new A.Teclado(pf.tipo === "ambiente" ? "pad" : pf.preset || pista.preset || "epiano");
     if (pf.tipo === "ambiente") { k.p.reverb = 0.7; k.p.filtro = 0.35; k.aplicar(); }
+    // Los ambientes son loops: se repiten mientras dure la nota
+    cargar(s => { const u = s.uno || Object.values(s.varios)[0]; if (!u) return; k.buffer = u.buffer; k.base = u.base; k.bufferLoop = pf.tipo === "ambiente"; });
     return { octava: () => k.p.octava, nota: (m, v, t, d) => k.nota(m, v, t, d) };
   }
   async function crearAcompanamiento({ contenedor, perfil, reloj, motor }) {

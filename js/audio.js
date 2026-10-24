@@ -278,7 +278,7 @@
       const g = ctx.createGain(); g.connect(this.filtro);
       let fuentes = [], ataque = 0.01, nivel = 0.25 * vel, rel = 0.4;
       if (this.buffer) {
-        fuentes = [M.tocarBuffer(this.buffer, g, { midi: m, base: this.base, t }).fuente]; nivel = vel; rel = 0.5;
+        fuentes = [M.tocarBuffer(this.buffer, g, { midi: m, base: this.base, t, loop: !!this.bufferLoop }).fuente]; nivel = vel; rel = 0.5;
         M.envolvente(g, t, ataque, nivel);
         return { g, fuentes, rel };
       } else if (this.preset === "lead") {   // versión polifónica del lead (para MIDI)

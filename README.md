@@ -46,6 +46,7 @@ Cada músico ve las instrucciones de "todos", las de su grupo y las propias.
 ## Practicar con la orquesta
 
 Cada perfil tiene un panel **🎧 Practicar con la orquesta**. Al activarlo, los demás instrumentos suenan con sus pistas MIDI (la de `midi.porPerfil` de cada uno), sincronizados con el reloj. Tú tocas tu parte encima.
+Cada instrumento usa por defecto el mismo sonido que su página (`sonidos` de la partitura, hoy los de `sonidos/fl/`). La guitarra toca el acorde grabado que corresponde a ese momento de la obra, y los ambientes repiten su loop mientras dura la nota. Si un archivo no carga, ese instrumento usa su sonido sintetizado.
 
 - **Según la partitura**: cada instrumento entra y calla como dice `tocan` en cada sección. Cada fila muestra en vivo **▶ toca / ⏸ calla**. **Todo el arreglo** hace sonar todas las pistas siempre.
 - Cada instrumento se puede activar o desactivar y tiene su propio volumen. Hay atajos: **Todos**, **Base: batería + bajos** y **Ninguno**, más un volumen general.

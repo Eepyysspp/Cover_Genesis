@@ -328,8 +328,10 @@ window.PARTITURA = {
     },
     "teclado-1":  { archivo: "sonidos/fl/teclado_medio_Db4.wav", base: 61 }, // grabado en Re♭4, suena a su altura real
     "teclado-2":  { archivo: "sonidos/fl/teclado_agudo_F5.wav",  base: 77 }, // grabado en Fa5, suena a su altura real
-    "teclado-3":  { archivo: "sonidos/fl/bajo_Bb1.wav",          base: 46 }, // grabado en Si♭1; suena a su altura real en octava 2
-    "teclado-4":  { archivo: "sonidos/fl/teclado_bajo2_Bb1.wav", base: 46 }, // grabado en Si♭1; igual que el teclado 3
+    // real: la nota MIDI en que se grabó. "Practicar con la orquesta" la usa para que las pistas MIDI suenen a su altura;
+    // base: 46 es para tocar a mano en octava 2.
+    "teclado-3":  { archivo: "sonidos/fl/bajo_Bb1.wav",          base: 46, real: 34 }, // grabado en Si♭1; suena a su altura real en octava 2
+    "teclado-4":  { archivo: "sonidos/fl/teclado_bajo2_Bb1.wav", base: 46, real: 34 }, // grabado en Si♭1; igual que el teclado 3
     "ambiente-1": { archivo: "sonidos/fl/ambiente_drone_Db.wav",  base: 49 }, // teclados bajos permanentes (Re♭)
     "ambiente-2": { archivo: "sonidos/fl/ambiente_ruido_Bb.wav",  base: 58 },
     "ambiente-3": { archivo: "sonidos/fl/ambiente_brillo_Gb.wav", base: 54 },
