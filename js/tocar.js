@@ -317,7 +317,7 @@
       sliders([slider("Filtro", inst.p, "filtro", () => inst.aplicar()), slider("Distorsión", inst.p, "dist", () => inst.aplicar()),
                slider("Volumen", inst.p, "vol", () => inst.aplicar()), slider("Reverb", inst.p, "reverb", () => inst.aplicar())]));
     const carg = cargador("Sonido del teclado (una nota)", { base: 60,
-      alCargar: (b, base, soloBase) => { inst.todoOff(); if (!soloBase) inst.buffer = b; inst.base = base; }, alQuitar: () => { inst.todoOff(); inst.buffer = null; } });
+      alCargar: (b, base, soloBase) => { inst.todoOff(); if (!soloBase) { inst.buffer = b; inst.real = null; } inst.base = base; }, alQuitar: () => { inst.todoOff(); inst.buffer = null; inst.real = null; } });
     panel.appendChild(cajaSonidos([carg]));
 
     const NEGRAS = [1, 3, 6, 8, 10];
@@ -396,11 +396,14 @@
       const a = G.parseAcorde(info.nombre); guia = a ? a.intervalos.map(i => (a.raiz + i) % 12) : []; marcarGuia();
     };
     alDetener = () => { [...activas].forEach(noteOff); };
-    return { sonidoDefecto: (b, _c, base) => { inst.buffer = b; if (base) inst.base = base; carg.marcar("Propio (partitura)"); },
+    return { sonidoDefecto: (b, _c, base, real) => { inst.buffer = b; if (base) inst.base = base; inst.real = real != null ? real : null; carg.marcar("Propio (partitura)"); },
       midiDestino: () => ({
         octava: () => inst.p.octava,
         nota: (m, v, t, d) => {
-          inst.nota(m, v, t, d);
+          // Las pistas MIDI vienen a su altura real. Si el sonido de la partitura tiene "real" (p. ej. el bajo,
+          // grabado en Si♭1 con base 46 para tocarlo a mano en octava 2), se corrige para que no suene una octava abajo.
+          const ajuste = inst.buffer && inst.real != null ? inst.base - inst.real : 0;
+          inst.nota(m + ajuste, v, t, d);
           enTiempo(t, () => marcar(m, true));
           enTiempo(t + d, () => { if (!activas.has(m)) marcar(m, false); });
         },
@@ -696,7 +699,7 @@
       // Formatos: "ruta.wav" · { archivo, base } · { clave: "ruta.wav" | { archivo, base }, … } (pads o acordes)
       const uno = async (v, clave) => {
         const o = typeof v === "string" ? { archivo: v } : v;
-        api.sonidoDefecto(await Motor.cargarURL(o.archivo), clave, o.base);
+        api.sonidoDefecto(await Motor.cargarURL(o.archivo), clave, o.base, o.real);
       };
       if (typeof def === "string" || (def && def.archivo)) await uno(def);
       else if (def && typeof def === "object") for (const k in def) { try { await uno(def[k], k); } catch (e) { console.warn("Sonido no disponible:", k, e.message); } }
