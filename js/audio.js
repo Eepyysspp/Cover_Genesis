@@ -64,6 +64,28 @@
       seco.gain.value = 1; moj.gain.value = 0;
       return { ent, sal, mezcla(v, t = Motor.t) { seco.gain.setTargetAtTime(1 - v * 0.85, t, 0.05); moj.gain.setTargetAtTime(v * 0.35, t, 0.05); } };
     },
+    /* Saturación para acordes (teclado de acordes): curva suave y más ganancia de entrada en vez de un recorte duro.
+       Un recorte duro sobre 4 notas juntas las mezcla en un zumbido (intermodulación) y además baja el volumen;
+       esta va calentando y engordando el acorde, y compensa el volumen para que subir la saturación no lo apague. */
+    bloqueSaturacionAcordes() {
+      const ctx = this.ctx, ent = ctx.createGain(), sal = ctx.createGain();
+      const seco = ctx.createGain(), moj = ctx.createGain(), pre = ctx.createGain(), ws = ctx.createWaveShaper();
+      const n = 2048, c = new Float32Array(n);
+      for (let i = 0; i < n; i++) { const x = (i * 2) / n - 1; c[i] = Math.tanh(1.6 * x) / Math.tanh(1.6); }
+      ws.curve = c; ws.oversample = "4x";
+      const pa = ctx.createBiquadFilter(); pa.type = "highpass"; pa.frequency.value = 90;   // el grave no entra a saturar (no embarra)
+      // Lo que la saturación inventa debajo del acorde (tonos de diferencia entre sus notas) es el "barro": se corta
+      // después de saturar con un filtro empinado. El grave verdadero sigue llegando por el camino seco.
+      const pb1 = ctx.createBiquadFilter(), pb2 = ctx.createBiquadFilter();
+      [pb1, pb2].forEach(f => { f.type = "highpass"; f.frequency.value = 190; f.Q.value = 0.7; });
+      ent.connect(seco).connect(sal); ent.connect(pa).connect(pre).connect(ws).connect(pb1).connect(pb2).connect(moj).connect(sal);
+      seco.gain.value = 1; moj.gain.value = 0; pre.gain.value = 1;
+      return { ent, sal, mezcla(v, t = Motor.t) {
+        seco.gain.setTargetAtTime(1 - v * 0.5, t, 0.05);
+        pre.gain.setTargetAtTime(1 + v * 2.6, t, 0.05);
+        moj.gain.setTargetAtTime(v * 0.85 / (1 + v * 0.5), t, 0.05);
+      } };
+    },
     async decodificar(arrayBuffer) { this.init(); return await this.ctx.decodeAudioData(arrayBuffer); },
     async cargarArchivo(file) { return this.decodificar(await file.arrayBuffer()); },
     async cargarURL(url) { const r = await fetch(url); if (!r.ok) throw new Error(url + " → " + r.status); return this.decodificar(await r.arrayBuffer()); },
@@ -417,13 +439,16 @@
 
   /* ---------------------------------------------------------------- TECLADO */
   class Teclado {
-    constructor(preset) {
+    // opciones.saturacion: "acordes" (suave, para tocar acordes: el teclado bajo/medio 2) o "dura" (líneas de una nota).
+    // Por defecto, el preset "pad" usa la de acordes.
+    constructor(preset, opciones = {}) {
       this.preset = preset;
+      this.paraAcordes = (opciones.saturacion || (preset === "pad" ? "acordes" : "dura")) === "acordes";
       const def = { pad: [0.5, 0.45, 0.5], epiano: [0.7, 0.55, 0.35], bajo: [0.35, 0.6, 0.1], lead: [0.6, 0.45, 0.35] }[preset] || [0.5, 0.5, 0.3];
       this.p = { filtro: def[0], vol: def[1], reverb: def[2], dist: 0, octava: preset === "bajo" ? 2 : preset === "lead" ? 4 : 3 };
       this.out = Motor.salida(this.p.vol, this.p.reverb);
       this.filtro = Motor.ctx.createBiquadFilter(); this.filtro.type = "lowpass"; this.filtro.Q.value = preset === "bajo" ? 4 : 1;
-      this.dist = Motor.bloqueDistorsion(30);
+      this.dist = this.paraAcordes ? Motor.bloqueSaturacionAcordes() : Motor.bloqueDistorsion(30);
       // Filtro después de la distorsión (como el parlante de un amplificador): la saturación queda cálida, no chillona
       this.post = Motor.ctx.createBiquadFilter(); this.post.type = "lowpass"; this.post.Q.value = 0.6;
       this.filtro.connect(this.dist.ent); this.dist.sal.connect(this.post); this.post.connect(this.out.entrada);

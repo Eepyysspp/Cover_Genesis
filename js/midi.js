@@ -788,7 +788,8 @@
       return { efectos: efectosG, octava: () => 3, nota: (m, v, t, d) => g.tocarNotas([m], { vel: v, t, dur: d }),
         grupo: (l, t, r) => acordeGrabado(l, t, r) || g.tocarNotas(l.map(n => n.m), { vel: Math.max(...l.map(n => n.v)), t, dur: Math.max(...l.map(n => n.d)) }) };
     }
-    const k = new A.Teclado(pf.tipo === "ambiente" ? "pad" : pf.preset || pista.preset || "epiano");
+    // Los ambientes usan el sonido "pad" pero tocan notas largas sueltas: conservan la distorsión dura de siempre
+    const k = pf.tipo === "ambiente" ? new A.Teclado("pad", { saturacion: "dura" }) : new A.Teclado(pf.preset || pista.preset || "epiano");
     if (pf.tipo === "ambiente") { k.p.reverb = 0.7; k.p.filtro = 0.35; k.aplicar(); }
     // Los ambientes son loops: se repiten mientras dure la nota
     cargar(s => { const u = s.uno || Object.values(s.varios)[0]; if (!u) return; k.buffer = u.buffer; k.base = u.base; k.bufferLoop = pf.tipo === "ambiente"; });
