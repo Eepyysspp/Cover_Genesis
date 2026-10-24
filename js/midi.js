@@ -704,7 +704,22 @@
   // Cada archivo se descarga una sola vez aunque lo usen varios perfiles.
   const bufferes = new Map();
   const bajar = url => { if (!bufferes.has(url)) bufferes.set(url, window.Audio2.Motor.cargarURL(url)); return bufferes.get(url); };
-  async function sonidosDe(pf) {
+  // Sonidos extra del catálogo de la partitura (p. ej. Square Woof) que puede elegir un teclado
+  const catalogoPara = pf => (pf.tipo === "teclado" ? (P.catalogo || []) : []);
+  // La grabación del catálogo más cercana al registro del perfil. real = altura verdadera (pistas MIDI);
+  // base = altura al tocar a mano (los teclados bajos suenan una octava abajo de la tecla, como su sonido de la partitura).
+  function muestraCatalogo(pf, id) {
+    const c = (P.catalogo || []).find(x => x.id === id); if (!c || !c.muestras || !c.muestras.length) return null;
+    const bajo = pf.sub === "teclados-bajos", objetivo = bajo ? 36 : 62;
+    const m = c.muestras.slice().sort((a, b) => Math.abs(a.real - objetivo) - Math.abs(b.real - objetivo))[0];
+    return { archivo: m.archivo, real: m.real, base: m.real + (bajo ? 12 : 0), nombre: c.nombre };
+  }
+  async function sonidosDe(pf, eleccion) {
+    if (eleccion && eleccion !== "partitura") {
+      if (eleccion === "sintetizado") return null;
+      const m = muestraCatalogo(pf, eleccion); if (!m) return null;
+      return { uno: { buffer: await bajar(m.archivo), base: m.real } };
+    }
     const def = (P.sonidos || {})[pf.id] || (P.sonidos || {})[pf.grupo];
     if (!def) return null;
     const leer = async v => { const o = typeof v === "string" ? { archivo: v } : v; return { buffer: await bajar(o.archivo), base: o.real != null ? o.real : (o.base || 60) }; };
@@ -713,9 +728,9 @@
     for (const k in def) { try { varios[k] = await leer(def[k]); } catch (e) { console.warn("Sonido no disponible:", k, e.message); } }
     return { varios };
   }
-  function destinoDe(pf, pista) {
+  function destinoDe(pf, pista, eleccion) {
     const A = window.Audio2, M = A.Motor;
-    const cargar = alListo => sonidosDe(pf).then(s => { if (s) alListo(s); }).catch(e => console.warn("Orquesta: sin sonido propio para", pf.id, e.message));
+    const cargar = alListo => sonidosDe(pf, eleccion).then(s => { if (s) alListo(s); }).catch(e => console.warn("Orquesta: sin sonido propio para", pf.id, e.message));
     if (pista.bateria) {
       const b = new A.Bateria();
       cargar(s => { if (s.varios) Object.keys(s.varios).forEach(k => b.samples[k] = s.varios[k].buffer); });
@@ -723,7 +738,11 @@
     }
     if (pf.tipo === "guitarra") {
       const g = new A.Guitarra(); g.p.fuzz = 0.3; g.aplicar();
-      cargar(s => { if (s.varios) Object.keys(s.varios).forEach(k => g.porAcorde[k] = s.varios[k]); else { g.buffer = s.uno.buffer; g.base = s.uno.base; } });
+      // "nota" = una nota grabada (melodía); el resto son acordes grabados por nombre
+      cargar(s => {
+        if (!s.varios) { g.buffer = s.uno.buffer; g.base = s.uno.base; return; }
+        Object.keys(s.varios).forEach(k => { if (k === "nota") { g.buffer = s.varios[k].buffer; g.base = s.varios[k].base; } else g.porAcorde[k] = s.varios[k]; });
+      });
       // Acorde grabado de la partitura (el que suena en ese momento de la obra); si no hay, la guitarra sintetizada
       const acordeGrabado = (l, t, r) => {
         const s = r != null && g.porAcorde[acordeObra(r)];
@@ -756,7 +775,7 @@
       if (!pista) return null;
       const propio = pf.id === perfil.id;
       const g = guardado && guardado[pf.id];
-      return { pf, pista, propio, capa: { id: "o-" + pf.id, pista, destino: null, vol: g ? g.vol : 1, mute: g ? !g.on : (propio || !!pf.opcional), canal: 0 } };
+      return { pf, pista, propio, son: (g && g.son) || "partitura", capa: { id: "o-" + pf.id, pista, destino: null, vol: g ? g.vol : 1, mute: g ? !g.on : (propio || !!pf.opcional), canal: 0 } };
     }).filter(Boolean);
     let segunPartitura = G.leer("orq:partitura", true);
     const enObra = r => Math.min(Math.max(r, 0), DURACION - 0.01);
@@ -767,7 +786,7 @@
     });
     rep.capas = filas.map(f => f.capa);
     let encendida = false, creados = false;
-    const guardar = () => { const o = {}; filas.forEach(f => o[f.pf.id] = { on: !f.capa.mute, vol: f.capa.vol }); G.guardar("orq:" + perfil.id, o); };
+    const guardar = () => { const o = {}; filas.forEach(f => o[f.pf.id] = { on: !f.capa.mute, vol: f.capa.vol, son: f.son }); G.guardar("orq:" + perfil.id, o); };
 
     contenedor.classList.remove("oculto");
     contenedor.innerHTML = "";
@@ -800,6 +819,16 @@
       const [chk, vol] = fila.querySelectorAll("input");
       chk.onchange = () => { f.capa.mute = !chk.checked; pintar(); guardar(); };
       vol.oninput = () => { f.capa.vol = +vol.value; guardar(); };
+      // Sonido de cada teclado: el de la partitura, uno del catálogo (p. ej. Square Woof) o el sintetizado
+      const extra = catalogoPara(f.pf);
+      if (extra.length) {
+        const sel = el(`<select class="orq-sonido" title="Sonido de ${esc(f.pf.nombre)}" aria-label="Sonido de ${esc(f.pf.nombre)}"></select>`);
+        [["partitura", "Sonido: partitura"], ...extra.map(c => [c.id, c.nombre]), ["sintetizado", "Sintetizado"]].forEach(([v, n]) => sel.add(new Option(n, v, false, v === f.son)));
+        if (sel.value !== f.son) { f.son = "partitura"; sel.value = "partitura"; }
+        sel.addEventListener("click", e => e.stopPropagation());
+        sel.onchange = () => { f.son = sel.value; guardar(); if (creados) f.capa.destino = destinoDe(f.pf, f.pista, f.son); };
+        fila.insertBefore(sel, vol);
+      }
       f.el = fila; f.chk = chk; f.estado = fila.querySelector(".orq-estado");
       lista.appendChild(fila);
     });
@@ -813,7 +842,7 @@
     }
     btn.onclick = () => {
       encendida = !encendida;
-      if (encendida && !creados) { filas.forEach(f => f.capa.destino = destinoDe(f.pf, f.pista)); creados = true; }
+      if (encendida && !creados) { filas.forEach(f => f.capa.destino = destinoDe(f.pf, f.pista, f.son)); creados = true; }
       if (!encendida) rep.detener();
       pintar();
     };
@@ -840,5 +869,6 @@
     return { rep };
   }
 
-  window.MIDI = { crearAcompanamiento, leerMIDI, preparar, pistasDeLaObra, pistasDeArchivo, Reproductor, crearPanel, padDeNota, espejo, ajustarA };
+  window.MIDI = { crearAcompanamiento, leerMIDI, preparar, pistasDeLaObra, pistasDeArchivo, Reproductor, crearPanel, padDeNota, espejo, ajustarA,
+    sonando, alrededor, catalogoPara, muestraCatalogo };
 })();

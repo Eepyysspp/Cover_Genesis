@@ -6,8 +6,9 @@
 
    · Estructura formal: la de la propuesta (Intro / Desarrollo / Outro).
    · Tempo y acordes: medidos en la grabación oficial. 130 BPM, 4/4,
-     Re♭ mayor / Si♭ menor, progresión B♭m7 ↔ G♭maj7. Los tiempos de la
-     propuesta están ajustados al inicio de compás más cercano (± 1 s).
+     Re♭ mayor / Si♭ menor, progresión B♭m7 ↔ G♭maj7.
+   · Entradas y silencios: siguen a las pistas MIDI de midi/ (cada sección
+     empieza en un compás exacto del MIDI).
 
    Tiempos: "m:ss" o "m:ss.s".  Acordes: Bbm7, Gbmaj7, Db, F#m, C5, Cadd9…
    tocan: quién toca en la sección. Claves posibles:
@@ -16,9 +17,6 @@
      ambiente-extra · ambiente-1..4
    Las mismas claves sirven para "instrucciones" y "eventos".
    ========================================================================== */
-
-// Patrón de dos compases por acorde que empieza en la 2.ª mitad de un bloque de G♭
-const DOS_COMPASES = ["Gbmaj7", "Bbm7", "Bbm7", "Gbmaj7", "Gbmaj7", "Bbm7", "Bbm7", "Gbmaj7"];
 
 window.PARTITURA = {
   titulo: "Cover de Genesis",
@@ -40,203 +38,233 @@ window.PARTITURA = {
     "Dirección: mensajes y temporizadores en pantalla. Las personas a cargo del ambiente y las luces llevan los aumentos " +
     "de intensidad (de azules a rojos). Puede haber un director que dicte entradas y silencios.",
 
+  // Las secciones siguen a las pistas MIDI (midi/): cada una empieza justo en un compás del MIDI
+  // (compás n = (n − 1) × 1,846 s) y "tocan" dice quién tiene notas en su pista en ese tramo.
+  // Si cambias una pista MIDI, revisa aquí quién toca.
   secciones: [
     // ============================== INTRO ==============================
     {
       nombre: "Intro · Distorsión ambiente",
-      inicio: "0:00",
-      acordes: ["Db"], compasesPorAcorde: 4,
+      inicio: "0:00",                      // compases 1–2
+      acordes: ["Gbmaj7"], compasesPorAcorde: 2,
       colores: ["#0b1026"],
-      tocan: ["ambiente"],
+      tocan: ["ambiente-1", "ambiente-2"],
       instrucciones: {
         todos: "Solo ambiente. Esta parte es alargable: el ambiente puede empezar antes y el director inicia el reloj cuando quiera seguir.",
-        "ambiente-principal": "Teclados bajos permanentes: Re♭ grave. Sube la distorsión (X) de a poco.",
-        "ambiente-extra": "Ruido y textura muy suaves.",
+        "ambiente-principal": "Colchón de G♭ sobre Si♭ grave. Sube la distorsión (X) de a poco.",
+        "ambiente-2": "Ruido y textura muy suaves.",
       },
     },
     {
       nombre: "Intro · Ritmo batería",
-      inicio: "0:03.7",
+      inicio: "0:03.69",                   // compases 3–10
       acordes: ["Db"], compasesPorAcorde: 4,
       colores: ["#101a4a"],
-      tocan: ["ambiente", "bateria"],
+      tocan: ["bateria", "ambiente-1", "ambiente-2"],
       instrucciones: {
-        bateria: "Patrón PULSO (tecla Q): un golpe grave en cada tiempo.",
-        ambiente: "Mantener. Colores azules oscuros.",
+        bateria: "SIN PLATILLOS (W): bombo y caja, sin hi-hat.",
+        ambiente: "Drone en Re♭. Colores azules oscuros.",
       },
     },
     {
-      nombre: "Intro · Guitarra",
-      inicio: "0:18.9",
+      nombre: "Intro · Guitarra y teclados",
+      inicio: "0:18.46",                   // compases 11–18
       acordes: ["Bbm7", "Gbmaj7"],
       colores: ["#1d2b64", "#23307a"],
-      tocan: ["guitarra", "teclados-bajos"],
+      tocan: ["guitarra", "bateria", "teclado-1", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-4"],
       instrucciones: {
-        todos: "Guitarra con teclados bajos. Un acorde por compás: Bbm7 ↔ Gbmaj7.",
-        guitarra: "Un rasgueo largo por compás. Deja sonar.",
-        "teclados-bajos": "Raíz del acorde, una nota por compás (Si♭ / Sol♭).",
-      },
-    },
-    {
-      nombre: "Intro · Distorsión",
-      inicio: "0:31.8",
-      acordes: ["Gbmaj7", "Bbm7"],
-      colores: ["#2a2f8f", "#3a2f9a"],
-      tocan: ["bateria", "teclados", "ambiente"],
-      instrucciones: {
-        todos: "Batería + teclados medios y bajos + ambiente. Desde aquí los teclados van distorsionados.",
-        teclados: "Sube la DISTORSIÓN (≈ 60 %) y déjala así.",
-        "teclados-altos": "Registro medio: acordes del compás.",
-        bateria: "Patrón SIN PLATILLOS (W).",
-        guitarra: "Silencio. Entras en 0:39.",
-      },
-    },
-    {
-      nombre: "Intro · Todos",
-      inicio: "0:39.2",
-      acordes: ["Gbmaj7", "Bbm7"],
-      colores: ["#4b2ca0", "#3a1c71"],
-      tocan: ["bateria", "teclados", "ambiente", "guitarra"],
-      instrucciones: {
-        todos: "Entra la guitarra: todos tocan.",
-        guitarra: "Rasgueos en cada compás, fuzz medio.",
+        todos: "Entran guitarra y teclados. Un acorde por compás: B♭m7 ↔ G♭maj7. Todo limpio todavía.",
+        guitarra: "Melodía: A♭–D♭–C… (ver tu pista MIDI). La frase dura 4 compases.",
+        "teclado-1": "Arpegio medio en negras: F–B♭–F–A♭ sobre B♭m7, D♭ largo sobre G♭.",
+        "teclado-2": "Silencio. Entras en 0:40 con el Fa agudo.",
+        "teclado-3": "Raíz del acorde, una nota por compás (Si♭ / Sol♭).",
+        "teclado-4": "Colchón: los acordes completos, una vez por compás.",
         bateria: "SIN PLATILLOS (W).",
+        "ambiente-4": "Pulso suave sobre la línea media.",
+      },
+    },
+    {
+      nombre: "Intro · Platillos y distorsión",
+      inicio: "0:33.23",                   // compases 19–22
+      acordes: ["Bbm7", "Gbmaj7"],
+      colores: ["#2a2f8f", "#3a2f9a"],
+      tocan: ["guitarra", "bateria", "teclado-1", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-4"],
+      instrucciones: {
+        todos: "Entran los platillos y la distorsión en los teclados medios.",
+        teclados: "Sube la DISTORSIÓN (≈ 60 %) y déjala así.",
+        "teclado-3": "Bajo todavía limpio.",
+        guitarra: "Arriba alternas Do y Mi♭ (ver tu pista MIDI). Al final de esta parte callas.",
+        "teclado-2": "Silencio. Entras en 0:40 con el Fa agudo.",
+        bateria: "CON PLATILLOS (E).",
+      },
+    },
+    {
+      nombre: "Intro · Pedal F",
+      inicio: "0:40.62",                   // compases 23–34
+      acordes: ["Bbm7", "Gbmaj7"],
+      colores: ["#4b2ca0", "#3a1c71"],
+      tocan: ["bateria", "teclado-1", "teclado-2", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-3", "ambiente-4"],
+      instrucciones: {
+        todos: "Sale la melodía y entra el pedal agudo en Fa.",
+        "ambiente-3": "PEDAL F: Fa agudo sostenido sobre los dos acordes.",
+        "teclado-2": "PEDAL F: Fa agudo sostenido sobre los dos acordes, junto con ambiente 3.",
+        guitarra: "Silencio. Vuelves en 1:17 con el solo.",
+        bateria: "CON PLATILLOS (E).",
       },
     },
     // ============================== DESARROLLO ==============================
     {
       nombre: "Desarrollo · Sin platillos",
-      inicio: "1:01.4",
-      acordes: ["Gbmaj7", "Bbm7"],
+      inicio: "1:02.77",                   // compases 35–38
+      acordes: ["Bbm7", "Gbmaj7"],
       colores: ["#5b247a", "#4a206e"],
-      tocan: ["bateria", "guitarra", "ambiente-principal"],
+      tocan: ["bateria", "teclado-1", "teclado-2", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-3", "ambiente-4"],
       instrucciones: {
-        todos: "Batería sin platillos + guitarra + ambiente (teclados bajos permanentes).",
+        todos: "Desarrollo: la batería quita los platillos. El arpegio medio se queda en notas largas.",
         bateria: "SIN PLATILLOS (W).",
-        teclados: "Silencio.",
-        "ambiente-extra": "Silencio (solo luces, si las llevas).",
+        "teclado-1": "Notas largas: Fa sobre B♭m7, Sol♭ sobre G♭.",
+        "teclado-2": "Sigue el Fa agudo.",
+        guitarra: "Silencio.",
       },
     },
     {
       nombre: "Desarrollo · Platillos",
-      inicio: "1:08.7",
-      acordes: ["Gbmaj7", "Bbm7"],
+      inicio: "1:10.15",                   // compases 39–42
+      acordes: ["Bbm7", "Gbmaj7"],
       colores: ["#7a1f7c", "#6b2a8a"],
-      tocan: ["bateria", "guitarra", "ambiente", "teclados-bajos"],
+      tocan: ["bateria", "teclado-1", "teclado-2", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-3", "ambiente-4"],
       instrucciones: {
         bateria: "CON PLATILLOS (E).",
-        "teclados-bajos": "Vuelven, distorsionados.",
         ambiente: "Sube la intensidad (Y). Colores hacia el violeta.",
+        "teclado-2": "Sigue el Fa agudo; lo sueltas en 1:17.",
+        guitarra: "Silencio. Entras en 1:17 con el solo.",
       },
     },
     {
       nombre: "Desarrollo · Limpio",
-      inicio: "1:16.1",
-      acordes: ["Gbmaj7", "Bbm7"],
+      inicio: "1:17.54",                   // compases 43–47
+      acordes: ["Bbm7", "Gbmaj7"],
       colores: ["#3b3f8f", "#2c4a9a"],
-      tocan: ["guitarra", "bateria", "teclados-bajos"],
+      tocan: ["guitarra", "bateria", "teclado-1", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-4"],
       instrucciones: {
-        todos: "Solo guitarra + batería sin platos + teclados bajos, SIN distorsión.",
-        "teclados-bajos": "Distorsión a 0.",
+        todos: "Todo SIN distorsión. Vuelve la melodía (solo).",
+        teclados: "Distorsión a 0.",
+        guitarra: "SOLO: la melodía otra vez, A♭–D♭–C…",
+        "teclado-2": "Silencio (sale el pedal).",
         bateria: "SIN PLATILLOS (W).",
-        "teclado-2": "Prepárate: subida aguda a 1:27.",
-        ambiente: "Silencio. Baja el XY.",
+        "ambiente-3": "Silencio (sale el pedal).",
       },
     },
     {
-      nombre: "Desarrollo · Subida aguda",
-      inicio: "1:27.2",
+      nombre: "Desarrollo · Bisagra en Sol♭",
+      inicio: "1:26.77",                   // compases 48–50
       acordes: ["Gbmaj7"], compasesPorAcorde: 4,
       colores: ["#6a3fb0"],
-      tocan: ["guitarra", "bateria", "teclados-bajos", "teclado-2"],
+      tocan: ["guitarra", "bateria", "teclado-1", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-4"],
       instrucciones: {
-        "teclado-2": "Subida: escala ascendente de Sol♭ hacia el agudo (octava + con X).",
-        todos: "Preparar la entrada del muro en 1:32.",
+        todos: "G♭ se alarga TRES compases. Prepara el muro de 1:32.",
+        guitarra: "Sostén el Do agudo.",
       },
     },
     {
       nombre: "Desarrollo · Muro",
-      inicio: "1:32.7",
+      inicio: "1:32.31",                   // compases 51–58
       acordes: ["Bbm7", "Gbmaj7"], compasesPorAcorde: 2,
       colores: ["#b0245e", "#c0392b"],
-      tocan: ["bateria", "guitarra", "teclados", "ambiente"],
+      tocan: ["guitarra", "bateria", "teclado-1", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-4"],
       instrucciones: {
-        todos: "Ahora los acordes duran DOS compases. Teclados medios y bajos distorsionados.",
-        bateria: "CON PLATILLOS (E).",
+        todos: "Ahora los acordes duran DOS compases. La melodía sigue igual.",
         teclados: "Distorsión ≈ 60 %. Acordes de dos compases.",
+        bateria: "CON PLATILLOS (E).",
         ambiente: "Ambiente y luces hacia el rojo.",
       },
     },
     {
       nombre: "Desarrollo · Teclados altos",
-      inicio: "1:45.7",
-      acordes: DOS_COMPASES,
-      colores: ["#ff4e50", "#ff7a3c", "#ff7a3c", "#ff4e50", "#ff4e50", "#ff7a3c", "#ff7a3c", "#ff4e50"],
-      tocan: ["bateria", "guitarra", "teclados", "ambiente"],
+      inicio: "1:47.08",                   // compases 59–66
+      acordes: ["Bbm7", "Gbmaj7"], compasesPorAcorde: 2,
+      colores: ["#ff4e50", "#ff7a3c"],
+      tocan: ["guitarra", "bateria", "teclado-1", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-4"],
       instrucciones: {
-        todos: "Clímax: teclados altos, medios y bajos.",
-        "teclados-altos": "Registro ALTO (octava +, tecla X).",
-        "teclado-2": "En 1:54 haz un pequeño desfase: atrásate un poco respecto a teclado 1.",
-        bateria: "MURO (R).",
-        guitarra: "Fuzz alto, modo SOSTENER.",
+        todos: "Clímax.",
+        guitarra: "Variante de la melodía con Fa agudo. En 1:54 haz un pequeño desfase: atrásate un poco. Fuzz alto.",
+        bateria: "CON PLATILLOS (E), o MURO (R) si quieres más.",
         ambiente: "Rojo al máximo. Destellos con la batería.",
       },
     },
     // ============================== OUTRO ==============================
     {
       nombre: "Outro · Medios",
-      inicio: "2:00.4",
-      acordes: DOS_COMPASES,
-      colores: ["#c0392b", "#9b2c6f", "#9b2c6f", "#c0392b", "#c0392b", "#9b2c6f", "#9b2c6f", "#c0392b"],
-      tocan: ["guitarra", "teclados", "ambiente"],
+      inicio: "2:01.85",                   // compases 67–74
+      acordes: ["Bbm7", "Gbmaj7"], compasesPorAcorde: 2,
+      colores: ["#c0392b", "#9b2c6f"],
+      tocan: ["guitarra", "bateria", "teclado-1", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-4"],
       instrucciones: {
-        todos: "Sale la batería. Guitarra + teclados medios + teclados bajos + ambiente.",
-        "teclados-altos": "Vuelve a registro medio (octava −, tecla Z).",
-        bateria: "Silencio desde aquí.",
+        todos: "Outro: siguen todos; la melodía con Fa hace sus dos últimas frases.",
+        bateria: "CON PLATILLOS (E).",
       },
     },
     {
       nombre: "Outro · Dos líneas",
-      inicio: "2:15.2",
-      acordes: DOS_COMPASES,
-      colores: ["#5b247a", "#3a1c71", "#3a1c71", "#5b247a", "#5b247a", "#3a1c71", "#3a1c71", "#5b247a"],
-      tocan: ["teclados-bajos", "ambiente"],
+      inicio: "2:16.62",                   // compases 75–82
+      acordes: ["Bbm7", "Gbmaj7"], compasesPorAcorde: 2,
+      colores: ["#5b247a", "#3a1c71"],
+      tocan: ["bateria", "teclado-1", "teclado-2", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-3", "ambiente-4"],
       instrucciones: {
-        todos: "Teclados bajos: 2.ª línea melódica. Ambiente marcado.",
-        "teclados-bajos": "2.ª LÍNEA MELÓDICA sobre los acordes.",
-        "ambiente-principal": "1.ª línea (permanente): se va desvaneciendo poco a poco hasta 2:30.",
-        "ambiente-extra": "Ambiente MARCADO: colores y destellos claros.",
-        guitarra: "Silencio.",
-        "teclados-altos": "Silencio.",
+        todos: "Sale la melodía, vuelve el pedal en Fa. Las líneas bajas empiezan a bajar de volumen.",
+        "teclado-2": "PEDAL F otra vez, hasta 2:48.",
+        guitarra: "Silencio. Vuelves solo para el final (2:48).",
+        "ambiente-3": "PEDAL F otra vez.",
+        "ambiente-principal": "Empieza a desvanecerse poco a poco.",
+        teclados: "Baja el volumen de a poco.",
       },
     },
     {
-      nombre: "Outro · Resolución",
-      inicio: "2:30.0",
-      acordes: ["Gbmaj7", "Bbm7", "Bbm7", "Db", "Db", "Bbm7", "Bbm7", "Bbm7", "Bbm7", "Bbm7", "Db", "Db", "Db", "Db"],
-      colores: ["#23307a", "#1d2b64", "#1d2b64", "#16204a", "#16204a", "#1d2b64", "#1d2b64", "#16204a", "#16204a", "#16204a", "#0b1026", "#0b1026", "#05070f", "#000000"],
-      tocan: ["teclados-bajos"],
+      nombre: "Outro · Sin batería",
+      inicio: "2:31.38",                   // compases 83–91
+      acordes: ["Bbm7"], compasesPorAcorde: 1,
+      colores: ["#23307a"],
+      tocan: ["teclado-1", "teclado-2", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-3", "ambiente-4"],
       instrucciones: {
-        todos: "Solo teclados bajos: 2.ª línea, más limpia, y resuelve en Re♭.",
-        "teclados-bajos": "Distorsión baja (≈ 20 %). Termina en Db y deja morir.",
-        ambiente: "Silencio. Las luces se apagan hacia 2:55.",
+        todos: "Sale la batería. Queda B♭m7 (el bajo baja a La♭ un momento).",
+        "teclado-3": "Distorsión baja (≈ 20 %): más limpio.",
+        bateria: "Silencio desde aquí.",
+      },
+    },
+    {
+      nombre: "Outro · Resolución en Re♭",
+      inicio: "2:48.00",                   // compases 92–95
+      acordes: ["Db"], compasesPorAcorde: 4,
+      colores: ["#0b1026"],
+      tocan: ["guitarra", "teclado-1", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-4"],
+      instrucciones: {
+        todos: "Resuelve en Re♭ y deja morir.",
+        guitarra: "Últimas notas: Re♭–Mi♭–Re♭.",
+        "teclado-2": "Silencio.",
+        "ambiente-3": "Silencio. Las luces se apagan hacia 2:55.",
       },
     },
   ],
 
   eventos: [
-    { t: "0:03.7", perfiles: ["bateria"], texto: "Ritmo: patrón PULSO (Q)" },
-    { t: "0:14", perfiles: ["todos"], texto: "En 5 s: guitarra + teclados bajos" },
-    { t: "0:26.8", perfiles: ["todos"], texto: "En 5 s: batería + teclados con distorsión" },
-    { t: "0:34.2", perfiles: ["guitarra"], texto: "En 5 s: entras" },
-    { t: "0:56.4", perfiles: ["todos"], texto: "En 5 s: Desarrollo" },
-    { t: "1:11.1", perfiles: ["teclados-bajos"], texto: "En 5 s: quita la distorsión" },
-    { t: "1:27.2", perfiles: ["teclado-2"], texto: "¡Subida aguda!" },
-    { t: "1:40.7", perfiles: ["teclados-altos"], texto: "En 5 s: registro ALTO" },
-    { t: "1:54", perfiles: ["teclado-2"], texto: "Desfase" },
-    { t: "1:55.4", perfiles: ["bateria"], texto: "En 5 s: la batería sale" },
-    { t: "2:15.2", perfiles: ["ambiente-principal"], texto: "Empieza a desvanecer" },
-    { t: "2:25", perfiles: ["teclados-bajos"], texto: "En 5 s: resolución" },
+    { t: "0:03.69", perfiles: ["bateria"], texto: "Ritmo: SIN PLATILLOS (W)" },
+    { t: "0:13.46", perfiles: ["todos"], texto: "En 5 s: entran guitarra y teclados" },
+    { t: "0:28.23", perfiles: ["todos"], texto: "En 5 s: platillos y distorsión" },
+    { t: "0:35.62", perfiles: ["guitarra"], texto: "En 5 s: silencio" },
+    { t: "0:35.62", perfiles: ["teclado-2", "ambiente-3"], texto: "En 5 s: entras (pedal F)" },
+    { t: "0:57.77", perfiles: ["todos"], texto: "En 5 s: Desarrollo" },
+    { t: "1:12.54", perfiles: ["teclados"], texto: "En 5 s: quita la distorsión" },
+    { t: "1:12.54", perfiles: ["guitarra"], texto: "En 5 s: vuelve la melodía (solo)" },
+    { t: "1:12.54", perfiles: ["teclado-2"], texto: "En 5 s: silencio" },
+    { t: "1:21.77", perfiles: ["todos"], texto: "En 5 s: G♭ largo (3 compases)" },
+    { t: "1:27.31", perfiles: ["todos"], texto: "En 5 s: MURO, acordes de 2 compases" },
+    { t: "1:42.08", perfiles: ["guitarra"], texto: "En 5 s: variante con Fa" },
+    { t: "1:54.46", perfiles: ["guitarra"], texto: "Desfase" },
+    { t: "2:11.62", perfiles: ["guitarra"], texto: "En 5 s: silencio" },
+    { t: "2:11.62", perfiles: ["teclado-2", "ambiente-3"], texto: "En 5 s: vuelve el pedal F" },
+    { t: "2:16.62", perfiles: ["ambiente-principal"], texto: "Empieza a desvanecer" },
+    { t: "2:26.38", perfiles: ["bateria"], texto: "En 5 s: la batería sale" },
+    { t: "2:43.00", perfiles: ["todos"], texto: "En 5 s: resolución en Re♭" },
   ],
 
   // Pistas MIDI del arreglo (carpeta midi/). Están a 130 BPM y empiezan en 0:00, así que calzan con el reloj.
@@ -254,8 +282,8 @@ window.PARTITURA = {
       { id: "bateria",  nombre: "Batería",        archivo: "midi/genesis_bateria.mid" },
     ],
     porPerfil: {
-      guitarra: "pad", bateria: "bateria",
-      "teclado-1": "medio", "teclado-2": "melodia", "teclado-3": "bajo", "teclado-4": "pad",
+      guitarra: "melodia", bateria: "bateria",
+      "teclado-1": "medio", "teclado-2": "pedal", "teclado-3": "bajo", "teclado-4": "pad",
       "ambiente-1": "ambiente", "ambiente-2": "ambiente", "ambiente-3": "pedal", "ambiente-4": "medio",
     },
     // midi/genesis_completo.mid tiene todas las pistas juntas (para abrirlo en un DAW o MuseScore).
@@ -268,43 +296,35 @@ window.PARTITURA = {
   // Se busca la clave más específica: ambiente-1 … ambiente-4, luego ambiente-principal / ambiente-extra.
   guiaXY: {
     "ambiente-principal": [
-      ["0:00",   0.05, 0.40],   // entra limpio
-      ["0:18.4", 0.45, 0.55],   // sube la distorsión de a poco
-      ["0:18.9", 0.30, 0.00],   // silencio: guitarra + teclados bajos
-      ["0:31.3", 0.30, 0.00],
-      ["0:31.8", 0.35, 0.45],   // vuelve con batería y teclados
-      ["0:39.2", 0.45, 0.60],   // todos
-      ["1:08.2", 0.45, 0.55],   // desarrollo: sigue la línea permanente
-      ["1:08.7", 0.50, 0.65],
-      ["1:15.6", 0.60, 0.80],   // sube la intensidad (Y), hacia el violeta
-      ["1:16.1", 0.20, 0.00],   // limpio: silencio, baja el XY
-      ["1:32.2", 0.20, 0.00],
-      ["1:32.7", 0.65, 0.80],   // muro: hacia el rojo
-      ["1:45.7", 0.85, 0.95],   // clímax: rojo al máximo
-      ["2:00.4", 0.70, 0.80],   // outro con los medios
-      ["2:15.2", 0.55, 0.65],   // empieza a desvanecerse…
-      ["2:30.0", 0.25, 0.00],   // …hasta apagarse
+      ["0:00",    0.05, 0.40],   // entra limpio
+      ["0:18.46", 0.30, 0.50],   // entran guitarra y teclados
+      ["0:33.23", 0.45, 0.60],   // platillos y distorsión
+      ["1:02.77", 0.45, 0.55],   // desarrollo: sigue la línea permanente
+      ["1:10.15", 0.55, 0.70],   // sube la intensidad, hacia el violeta
+      ["1:17.04", 0.60, 0.75],
+      ["1:17.54", 0.15, 0.45],   // limpio: sin distorsión
+      ["1:31.81", 0.20, 0.50],
+      ["1:32.31", 0.65, 0.80],   // muro: hacia el rojo
+      ["1:47.08", 0.85, 0.95],   // clímax: rojo al máximo
+      ["2:01.85", 0.70, 0.80],   // outro
+      ["2:16.62", 0.55, 0.65],   // empieza a desvanecerse…
+      ["2:48.00", 0.25, 0.30],   // …resolución en Re♭
+      ["2:55",    0.10, 0.00],   // se apaga
     ],
     "ambiente-extra": [
-      ["0:00",   0.10, 0.20],   // ruido y textura muy suaves
-      ["0:18.4", 0.25, 0.30],
-      ["0:18.9", 0.25, 0.00],   // silencio
-      ["0:31.3", 0.25, 0.00],
-      ["0:31.8", 0.35, 0.40],
-      ["0:39.2", 0.40, 0.50],
-      ["1:00.9", 0.45, 0.55],
-      ["1:01.4", 0.30, 0.00],   // silencio (solo luces)
-      ["1:08.2", 0.30, 0.00],
-      ["1:08.7", 0.50, 0.65],   // hacia el violeta
-      ["1:15.6", 0.55, 0.70],
-      ["1:16.1", 0.20, 0.00],   // silencio
-      ["1:32.2", 0.20, 0.00],
-      ["1:32.7", 0.65, 0.75],   // muro
-      ["1:45.7", 0.85, 0.90],   // clímax
-      ["2:00.4", 0.60, 0.70],
-      ["2:15.2", 0.45, 0.85],   // ambiente MARCADO, limpio y claro
-      ["2:29.5", 0.45, 0.80],
-      ["2:30.0", 0.20, 0.00],   // silencio
+      ["0:00",    0.10, 0.20],   // ruido y textura muy suaves
+      ["0:18.46", 0.25, 0.35],
+      ["0:33.23", 0.40, 0.50],
+      ["1:10.15", 0.50, 0.65],   // hacia el violeta
+      ["1:17.04", 0.55, 0.70],
+      ["1:17.54", 0.15, 0.35],   // limpio
+      ["1:31.81", 0.20, 0.40],
+      ["1:32.31", 0.65, 0.75],   // muro
+      ["1:47.08", 0.85, 0.90],   // clímax
+      ["2:01.85", 0.60, 0.70],
+      ["2:16.62", 0.45, 0.85],   // ambiente MARCADO, limpio y claro
+      ["2:48.00", 0.25, 0.40],
+      ["2:55",    0.10, 0.00],   // se apaga
     ],
   },
 
@@ -314,6 +334,7 @@ window.PARTITURA = {
   // cambia "sonidos/fl/…" por las rutas de sonidos/LEEME.md.
   sonidos: {
     guitarra: {
+      nota:     { archivo: "sonidos/fl/guitarra_nota_Db5.wav", base: 73 }, // una nota: melodía y pistas MIDI
       "Bbm7":   { archivo: "sonidos/fl/guitarra_Bbm7.wav",   base: 46 },
       "Gbmaj7": { archivo: "sonidos/fl/guitarra_Gbmaj7.wav", base: 42 },
       "Db":     { archivo: "sonidos/fl/guitarra_Db.wav",     base: 49 },
@@ -337,4 +358,13 @@ window.PARTITURA = {
     "ambiente-3": { archivo: "sonidos/fl/ambiente_brillo_Gb.wav", base: 54 },
     "ambiente-4": { archivo: "sonidos/fl/ambiente_pulso_Db.wav",  base: 49 },
   },
+
+  // Sonidos extra que cada teclado puede elegir en su página (selector "Sonido") y en "Practicar con la orquesta".
+  // muestras: una o más grabaciones; se usa la más cercana al registro del perfil. real = nota MIDI que suena de verdad.
+  catalogo: [
+    { id: "square-woof", nombre: "Square Woof (FL)", muestras: [
+      { archivo: "sonidos/fl/square_woof_Db2.wav", real: 37 },   // FLEX · Square Woof (Arksun Cityscape), suena en Re♭2
+      { archivo: "sonidos/fl/square_woof_Db3.wav", real: 49 },   // suena en Re♭3
+    ] },
+  ],
 };

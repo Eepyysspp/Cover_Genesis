@@ -120,6 +120,35 @@
   const enTiempo = (t, fn) => setTimeout(fn, Math.max(0, (t - Motor.t) * 1000));
   const destelloEn = (t, f) => enTiempo(t, () => Luces.destellar(f));
 
+  /* ============================== GUÍA DESDE LA PISTA MIDI ============================== */
+  // La pista del perfil (midi.porPerfil), o la que esté elegida en su panel 🎼 Pistas MIDI.
+  const BEMOLES = ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B"];
+  const nombreB = m => BEMOLES[((m % 12) + 12) % 12] + (Math.floor(m / 12) - 1);
+  let pistaPropia = null;
+  const idPista = P.midi && P.midi.porPerfil && P.midi.porPerfil[perfil.id];
+  if (window.MIDI && idPista) MIDI.pistasDeLaObra().then(ps => { pistaPropia = ps.find(x => x.id === idPista) || null; }).catch(() => {});
+  const pistaGuia = () => (repMIDI && repMIDI.capas && repMIDI.capas[0] && repMIDI.capas[0].pista) || pistaPropia;
+  // Notas que la pista toca en t y las del próximo ataque
+  function notasGuia(t) {
+    const p = pistaGuia(); if (!p || p.bateria) return null;
+    const unicas = l => [...new Set(l.map(n => n.m))].sort((a, b) => a - b);
+    const ahora = unicas(MIDI.sonando(p, t + 0.01));   // 10 ms de margen: una nota que parte justo ahora ya cuenta
+    const sig = p.grupos.find(g => g.t > t + 0.01);
+    return { pista: p, ahora, sig: sig ? unicas(sig.notas) : [], enSig: sig ? sig.t - t : null };
+  }
+  // Notas de la pista mientras suena un acorde de la sección (la primera vez que aparece)
+  function voicingMidi(sec, nombre) {
+    const p = pistaGuia(); if (!p || p.bateria || !sec) return null;
+    const dur = G.SEG_POR_COMPAS * sec.cpa;
+    for (let k = 0; sec.ini + k * dur < sec.fin - 0.01; k++) {
+      if (sec.acordes[k % sec.acordes.length] !== nombre) continue;
+      const x = sec.ini + k * dur, ms = new Set(MIDI.sonando(p, x + 0.02).map(n => n.m));
+      p.notas.forEach(n => { if (n.t >= x - 0.01 && n.t < x + dur - 0.01) ms.add(n.m); });
+      if (ms.size) return [...ms].sort((a, b) => a - b);
+    }
+    return null;
+  }
+
   /* ============================== INSTRUMENTO ============================== */
   let inst = null;
   let repMIDI = null;        // reproductor de pistas MIDI (se crea al activar)
@@ -187,6 +216,7 @@
       el: cont, render,
       marcar(i) { [...cont.children].forEach((b, k) => b.classList.toggle("actual", k === i)); },
       acorde(i) { return sec && sec.acordes[i]; },
+      seccion() { return sec; },
       boton(i) { return cont.children[i]; },
     };
   }
@@ -215,6 +245,14 @@
     const rasgOrig = inst.rasguear.bind(inst);
     inst.rasguear = (...a) => { rasgOrig(...a); Luces.destellar(0.6); };
     panel.appendChild(controlesLuces());
+    // Guía: lo que toca tu pista MIDI (la melodía)
+    const guiaG = el(`<div class="guia-midi"></div>`); panel.insertBefore(guiaG, panel.children[2] || null);
+    alCuadro = t => {
+      const g = notasGuia(Math.min(Math.max(t, 0), DURACION - 0.01)); if (!g) return;
+      const html = `🎼 <b>${esc(g.pista.nombre)}</b> · ahora: <b>${g.ahora.length ? g.ahora.map(nombreB).join(" ") : "—"}</b>` +
+        (g.sig.length ? ` · luego: ${g.sig.map(nombreB).join(" ")} <span class="muted">en ${g.enSig.toFixed(1)} s</span>` : "");
+      if (guiaG.innerHTML !== html) guiaG.innerHTML = html;
+    };
     const carg = cargador("Sonido de guitarra (un acorde o nota; se transpone a la raíz)", { base: 60,
       alCargar: (b, base, soloBase) => { if (!soloBase) { inst.buffer = b; inst.porAcorde = {}; } inst.base = base; }, alQuitar: () => { inst.buffer = null; inst.porAcorde = {}; } });
     panel.appendChild(cajaSonidos([carg]));
@@ -229,6 +267,7 @@
       else if (/^[1-9]$/.test(e.key)) { const a = ab.acorde(+e.key - 1); if (a) inst.rasguear(a); }
     });
     return { sonidoDefecto: (b, clave, base) => {
+      if (clave === "nota") { inst.buffer = b; inst.base = base || 60; carg.marcar("Propio (partitura)"); return; }  // una nota: melodía
       if (clave) inst.porAcorde[clave] = { buffer: b, base: base || 60 };
       else { inst.buffer = b; if (base) inst.base = base; }
       if (!inst.buffer) { inst.buffer = b; inst.base = base || 60; }
@@ -248,7 +287,8 @@
   function panelBateria() {
     inst = new Bateria();
     panel.appendChild(el(`<h3>Batería</h3>`));
-    panel.appendChild(el(`<p class="muted small">Toca los pads con el mouse, el dedo o las teclas. Los patrones siguen el tempo de la obra (${P.bpm} BPM).</p>`));
+    panel.appendChild(el(`<p class="muted small">Toca los pads con el mouse, el dedo o las teclas. Los patrones siguen el tempo de la obra (${P.bpm} BPM).
+      <b>Sin platillos</b> (W) y <b>Con platillos</b> (E) son el mismo ritmo que la pista MIDI, con el crash al comienzo de cada sección. Pulso y Muro son extras.</p>`));
     const pads = el(`<div class="pads"></div>`); const mapa = {};
     PADS.forEach(p => {
       const d = el(`<div class="pad" data-id="${p.id}">${esc(p.nombre)}<kbd>${p.tecla.toUpperCase()}</kbd></div>`);
@@ -259,7 +299,7 @@
     inst.alGolpe = id => { const d = mapa[id]; if (d) { d.classList.add("golpe"); setTimeout(() => d.classList.remove("golpe"), 90); } if (fuerza[id]) Luces.destellar(fuerza[id]); };
     let ultimoPaso = null;
     const pats = el(`<div class="fila"><span class="muted small">Patrón:</span></div>`);
-    const opciones = [["", "Ninguno", "0"], ["pulso", "Pulso (tom)", "Q"], ["sinplatillos", "Sin platillos", "W"], ["platillos", "Con platillos", "E"], ["muro", "Muro", "R"]];
+    const opciones = [["", "Ninguno", "0"], ["pulso", "Pulso (tom, extra)", "Q"], ["sinplatillos", "Sin platillos", "W"], ["platillos", "Con platillos", "E"], ["muro", "Muro (extra)", "R"]];
     const botonesPat = opciones.map(([id, n, k]) => {
       const b = el(`<button class="btn peq">${n} <kbd>${k}</kbd></button>`);
       b.onclick = () => ponerPatron(id); pats.appendChild(b); return b;
@@ -274,6 +314,10 @@
     // Secuenciador: agenda semicorcheas alineadas al reloj de la obra
     const pasoSeg = 60 / P.bpm / 4;
     let libreInicio = performance.now();
+    // Crash de la pista MIDI (nota 49): suena con los patrones del MIDI cuando el reloj de la obra está en marcha
+    const crashPasos = new Set();
+    if (window.MIDI && P.midi && P.midi.porPerfil && P.midi.porPerfil.bateria)
+      MIDI.pistasDeLaObra().then(ps => { const b = ps.find(x => x.id === P.midi.porPerfil.bateria); if (b) b.notas.forEach(n => { if (n.m === 49) crashPasos.add(Math.round(n.t / pasoSeg)); }); }).catch(() => {});
     setInterval(() => {
       if (!inst.p.patron || !Motor.ctx) return;
       const pat = PATRONES[inst.p.patron];
@@ -281,12 +325,15 @@
       if (corriendo() && (t < 0 || t > DURACION)) return;
       const ventana = 0.12, tCtx = Motor.t;
       let k = Math.ceil(t / pasoSeg - 1e-6);
-      if (ultimoPaso != null && k <= ultimoPaso) k = ultimoPaso + 1;
-      if (ultimoPaso != null && k - ultimoPaso > 8) k = Math.ceil(t / pasoSeg); // tras un salto
+      // Partida o salto (adelante o atrás): se retoma desde el paso actual, sin saltarse uno que parte justo ahora (p. ej. inicio de sección)
+      const salto = ultimoPaso == null || Math.abs(k - ultimoPaso) > 8;
+      if (salto) { if (t - (k - 1) * pasoSeg < 0.06) k -= 1; }
+      else if (k <= ultimoPaso) k = ultimoPaso + 1;
       for (; k * pasoSeg < t + ventana; k++) {
         const paso = ((k % 16) + 16) % 16;
         const cuando = tCtx + (k * pasoSeg - t);
         for (const pad in pat) if (pat[pad][paso] === "x") inst.tocar(pad, Math.max(cuando, tCtx), paso % 4 === 0 ? 1 : 0.75);
+        if (corriendo() && crashPasos.has(k) && (inst.p.patron === "platillos" || inst.p.patron === "sinplatillos")) inst.tocar("crash", Math.max(cuando, tCtx), 1);
         ultimoPaso = k;
       }
     }, 25);
@@ -317,8 +364,39 @@
       sliders([slider("Filtro", inst.p, "filtro", () => inst.aplicar()), slider("Distorsión", inst.p, "dist", () => inst.aplicar()),
                slider("Volumen", inst.p, "vol", () => inst.aplicar()), slider("Reverb", inst.p, "reverb", () => inst.aplicar())]));
     const carg = cargador("Sonido del teclado (una nota)", { base: 60,
-      alCargar: (b, base, soloBase) => { inst.todoOff(); if (!soloBase) { inst.buffer = b; inst.real = null; } inst.base = base; }, alQuitar: () => { inst.todoOff(); inst.buffer = null; inst.real = null; } });
+      alCargar: (b, base, soloBase) => { inst.todoOff(); if (!soloBase) { inst.buffer = b; inst.real = null; selSonido.value = "propio"; } inst.base = base; },
+      alQuitar: () => { inst.todoOff(); inst.buffer = null; inst.real = null; selSonido.value = "sintetizado"; } });
+
+    // Sonido: el de la partitura (FL), uno del catálogo (p. ej. Square Woof) o el sintetizado. Se recuerda en este navegador.
+    const filaSon = el(`<div class="fila"><span class="muted small">Sonido:</span><select class="sel-sonido" aria-label="Sonido del teclado"></select><span class="muted small" data-r="est"></span></div>`);
+    const selSonido = filaSon.querySelector("select"), estSon = filaSon.querySelector("[data-r=est]");
+    [["partitura", "Partitura (FL)"], ...(P.catalogo || []).map(c => [c.id, c.nombre]), ["sintetizado", "Sintetizado"], ["propio", "Archivo propio"]]
+      .forEach(([v, n]) => selSonido.add(new Option(n, v)));
+    selSonido.querySelector("option[value=propio]").disabled = true;
+    let sonidoPartitura = null, eleccion = G.leer("sonido:" + perfil.id, "partitura");
+    if (![...selSonido.options].some(o => o.value === eleccion && !o.disabled)) eleccion = "partitura";
+    selSonido.value = eleccion;
+    async function aplicarSonido() {
+      inst.todoOff();
+      if (eleccion === "sintetizado") { inst.buffer = null; inst.real = null; estSon.textContent = ""; }
+      else if (eleccion === "partitura") {
+        if (sonidoPartitura) { inst.buffer = sonidoPartitura.b; inst.base = sonidoPartitura.base || 60; inst.real = sonidoPartitura.real; estSon.textContent = ""; }
+        else { inst.buffer = null; inst.real = null; estSon.textContent = "(sin archivo: sintetizado)"; }
+      } else {
+        const m = MIDI.muestraCatalogo(perfil, eleccion); if (!m) return;
+        estSon.textContent = "Cargando…";
+        try { const b = await Motor.cargarURL(m.archivo); if (selSonido.value !== eleccion) return; inst.buffer = b; inst.base = m.base; inst.real = m.real; estSon.textContent = ""; }
+        catch (e) { estSon.textContent = "No se pudo cargar"; }
+      }
+      marcarGuia();
+    }
+    selSonido.onchange = () => { eleccion = selSonido.value; G.guardar("sonido:" + perfil.id, eleccion); aplicarSonido(); };
+    panel.appendChild(filaSon);
     panel.appendChild(cajaSonidos([carg]));
+    // Guía: las notas de tu pista MIDI (en rosado en el piano) y las que vienen
+    const guiaT = el(`<div class="guia-midi"></div>`); panel.insertBefore(guiaT, piano.nextSibling);
+    // Las pistas MIDI vienen a su altura real; en el piano se muestran como las tocas tú (los bajos, una octava arriba)
+    const ajusteTecla = () => inst.buffer ? (inst.real != null ? inst.base - inst.real : 0) : (perfil.preset === "bajo" ? 12 : 0);
 
     const NEGRAS = [1, 3, 6, 8, 10];
     let teclasPiano = [];
@@ -343,8 +421,12 @@
     function noteOn(m) { if (activas.has(m)) return; activas.add(m); inst.on(m); marcar(m, true); }
     function noteOff(m) { if (!activas.has(m)) return; activas.delete(m); inst.off(m); marcar(m, false); }
     function marcar(m, on) { const k = piano.querySelector(`[data-m="${m}"]`); if (k) k.classList.toggle("act", on); }
-    let guia = [];
-    function marcarGuia() { teclasPiano.forEach(k => k.classList.toggle("guia", guia.includes(+k.dataset.m % 12))); }
+    let guia = [];   // notas MIDI (en el espacio del piano) que hay que tocar ahora
+    function marcarGuia() {
+      const lo = 12 * (inst.p.octava + 1), hi = lo + 24;
+      const exactas = new Set(guia.filter(m => m >= lo && m <= hi)), fuera = new Set(guia.filter(m => m < lo || m > hi).map(m => m % 12));
+      teclasPiano.forEach(k => { const m = +k.dataset.m; k.classList.toggle("guia", exactas.has(m) || fuera.has(m % 12)); });
+    }
     // Mouse / táctil sobre el piano
     const punteros = new Map();
     piano.addEventListener("pointerdown", e => { e.preventDefault(); piano.setPointerCapture(e.pointerId); mover(e); });
@@ -357,6 +439,8 @@
       if (m === prev) return; if (prev != null) noteOff(prev); if (m != null) noteOn(m); punteros.set(e.pointerId, m);
     }
     function voicing(a) {
+      const mv = voicingMidi(ab.seccion(), a);   // las notas de tu pista MIDI en ese acorde
+      if (mv) { const aj = ajusteTecla(), ns = mv.map(m => m + aj); return perfil.preset === "bajo" ? ns.slice(0, 1) : ns; }
       const notas = notasAcorde(a, inst.p.octava);
       if (perfil.preset === "bajo" || perfil.preset === "lead") return notas.slice(0, 1);
       return notas;
@@ -393,10 +477,25 @@
     }).catch(() => {});
     alAcorde = info => {
       ab.render(info.seccion); ab.marcar(info.idx);
-      const a = G.parseAcorde(info.nombre); guia = a ? a.intervalos.map(i => (a.raiz + i) % 12) : []; marcarGuia();
+      if (!pistaGuia()) { guia = notasAcorde(info.nombre, inst.p.octava); marcarGuia(); }   // sin pista: el acorde de la partitura
+    };
+    alCuadro = t => {
+      const g = notasGuia(Math.min(Math.max(t, 0), DURACION - 0.01)); if (!g) return;
+      const aj = ajusteTecla(), ahoraT = g.ahora.map(m => m + aj), sigT = g.sig.map(m => m + aj);
+      if (String(ahoraT) !== String(guia)) { guia = ahoraT; marcarGuia(); }
+      const lo = 12 * (inst.p.octava + 1), hi = lo + 24, fuera = ahoraT.concat(sigT).some(m => m < lo || m > hi);
+      const html = `🎼 <b>${esc(g.pista.nombre)}</b> · ahora: <b>${ahoraT.length ? ahoraT.map(nombreB).join(" ") : "—"}</b>` +
+        (sigT.length ? ` · luego: ${sigT.map(nombreB).join(" ")} <span class="muted">en ${g.enSig.toFixed(1)} s</span>` : "") +
+        (fuera ? ` <span class="muted">· cambia de octava con <kbd>Z</kbd>/<kbd>X</kbd></span>` : "");
+      if (guiaT.innerHTML !== html) guiaT.innerHTML = html;
     };
     alDetener = () => { [...activas].forEach(noteOff); };
-    return { sonidoDefecto: (b, _c, base, real) => { inst.buffer = b; if (base) inst.base = base; inst.real = real != null ? real : null; carg.marcar("Propio (partitura)"); },
+    aplicarSonido();
+    return { sonidoDefecto: (b, _c, base, real) => {
+        sonidoPartitura = { b, base, real: real != null ? real : null };
+        if (eleccion === "partitura") aplicarSonido();
+        carg.marcar("Propio (partitura)");
+      },
       midiDestino: () => ({
         octava: () => inst.p.octava,
         nota: (m, v, t, d) => {
@@ -473,8 +572,13 @@
       alQuitar: () => { const e = inst.encendido; inst.apagar(); inst.buffer = null; if (e) inst.encender(); } });
     panel.appendChild(cajaSonidos([carg]));
 
-    const toggle = () => { if (inst.encendido) inst.apagar(); else inst.encender(); on.textContent = inst.encendido ? "Apagar" : "Encender"; on.classList.toggle("on", inst.encendido); };
-    on.onclick = toggle;
+    const toggle = () => {
+      if (inst.encendido) { inst.apagar(); inst.callarMidi(); } else inst.encender();
+      on.textContent = inst.encendido ? "Apagar" : "Encender"; on.classList.toggle("on", inst.encendido);
+    };
+    // Encender/apagar a mano (botón o Espacio) deja de seguir la guía sola; si no, la guía lo volvía a encender
+    const toggleManual = () => { ponerAuto(false); toggle(); };
+    on.onclick = toggleManual;
     const hacerDestello = () => { Luces.destellar(); inst.destello(); };
     flash.onclick = hacerDestello;
     full.onclick = () => Luces.pantalla(true);
@@ -490,7 +594,7 @@
 
     document.addEventListener("keydown", e => {
       if (escribiendo(e) || e.repeat) return;
-      if (e.code === "Space") { e.preventDefault(); toggle(); }
+      if (e.code === "Space") { e.preventDefault(); toggleManual(); }
       else if (e.key.toLowerCase() === "f") hacerDestello();
       else if (e.key.toLowerCase() === "v") pantalla(!document.body.classList.contains("pantalla-completa"));
       else if (e.key.toLowerCase() === "g") ponerAuto(!auto);
@@ -530,11 +634,12 @@
     const siguePista = () => usarMidi && inst.encendido && repMIDI && repMIDI.cfg.modo === "seguir";
     function tocarMidi(ms, v, t, d) {
       if (siguePista()) return;
+      // Apagado y siguiendo la obra: el ambiente calla (solo suena al pulsar la pista a mano)
+      if (!inst.encendido && repMIDI && repMIDI.cfg.modo === "seguir") return;
       if (usarMidi && inst.encendido) enTiempo(t, () => { inst.afinarNotas(ms, 0.06); Luces.destellar(0.35 * v); inst.destello(); });
       else { ms.forEach(m => inst.nota(m, v, t, d)); destelloEn(t, 0.2 * v); }
     }
-    const BEMOLES = ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B"];
-    const nombreBemol = m => BEMOLES[m % 12] + (Math.floor(m / 12) - 1);
+    const nombreBemol = nombreB;
     alCuadro = (t, dt) => {
       const tc = Math.min(Math.max(t, 0), DURACION);
       // Notas del arreglo → sonido del ambiente

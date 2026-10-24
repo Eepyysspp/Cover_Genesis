@@ -19,6 +19,8 @@ Después cada sonido se recortó, se normalizó (pico en −1 dB; los loops de a
 | `ambiente_brillo_Gb.wav` | Ambiente extra · Brillo (loop) | Halo Pad | Sol♭3 + Sol♭4 + Re♭5 · 54 |
 | `ambiente_pulso_Db.wav` | Ambiente extra · Pulso (loop de 8 tiempos) | Synpluck Cave | Re♭3 en corcheas · 49 |
 | `bateria_bombo/caja/hihat/abierto/tom/crash.wav` | Batería (pads) | Drum Power Kit | notas GM 36, 38, 42, 46, 45, 49 |
+| `guitarra_nota_Db5.wav` | Guitarra: la melodía y las pistas MIDI (una nota) | Distortion Guitar | Re♭5 · 73 |
+| `square_woof_Db2.wav` / `square_woof_Db3.wav` | Opción **Square Woof (FL)** del selector Sonido (teclados y orquesta) | Square Woof (Arksun Cityscape) | suenan en Re♭2 y Re♭3 (`real` 37 y 49) |
 
 Los sonidos salen **sin distorsión**: la distorsión la ponen los controles de la página, así cada músico la ajusta en vivo como pide la partitura.
 Si se quiere el bajo ya distorsionado, están las versiones de Pure Data en `sonidos/sintetizados/`.
@@ -29,5 +31,7 @@ Si se quiere el bajo ya distorsionado, están las versiones de Pure Data en `son
 2. Cambia el preset del canal que quieras (en FLEX, el buscador de presets).
 3. Exporta el patrón con *File › Export › Wave file* (modo *Pattern*).
 4. Cada sonido ocupa 4 compases (7,38 s a 130 BPM), en el orden de la tabla de arriba. Corta el tuyo y reemplaza el archivo con el mismo nombre.
+
+El preset Square Woof suena una octava más grave que la nota que se toca; por eso `real` es una octava bajo la nota del MIDI de grabación (`fuente/square_woof_render.mid`).
 
 Mantén cada archivo bajo 5 MB.

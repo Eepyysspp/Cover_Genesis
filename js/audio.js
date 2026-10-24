@@ -197,10 +197,12 @@
     { id: "crash", nombre: "Crash", tecla: "h" },
   ];
   // 16 pasos por compás (semicorcheas en 4/4)
+  // "sinplatillos" y "platillos" son el mismo ritmo que la pista MIDI de batería (midi/genesis_bateria.mid).
+  // El crash de la pista (inicio de sección) lo agrega la página de batería en su momento. "pulso" y "muro" son extras.
   const PATRONES = {
-    pulso:        { tom: "x...x...x...x..." },                                         // "Ritmo batería" de la intro
-    sinplatillos: { bombo: "x.....x.x.......", caja: "....x.......x..." },
-    platillos:    { bombo: "x.....x.x.......", caja: "....x.......x...", hihat: "x.x.x.x.x.x.x.x.", crash: "x..............." },
+    pulso:        { tom: "x...x...x...x..." },
+    sinplatillos: { bombo: "x.......x.......", caja: "....x.......x..." },
+    platillos:    { bombo: "x...x...x...x...", caja: "....x.......x...", hihat: "x...x...x...x..." },
     muro:         { bombo: "x.x.x.x.x.x.x.x.", caja: "....x.......x...", hihat: "xxxxxxxxxxxxxxxx", crash: "x.......x......." },
   };
   class Bateria {
@@ -482,6 +484,8 @@
       [o, o2].forEach(s => s.start(t));
       M.liberar(g, t + Math.max(ataque + 0.02, dur), 1.4, [o, o2]);
     }
+    // Corta las notas MIDI que vienen sonando (al apagar el ambiente). La próxima nota vuelve a subir el nivel.
+    callarMidi() { if (this.midiIn) this.midiIn.gain.setTargetAtTime(0, Motor.t, 0.08); }
     destello() {
       const M = Motor, ctx = M.ctx, t = M.t;
       const n = M.fuenteRuido(); const bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 3000; bp.Q.value = 0.8;

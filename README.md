@@ -7,10 +7,10 @@ Cada integrante abre la página, elige su perfil y toca desde el navegador. No h
 
 | Perfil | Rol |
 |---|---|
-| 🎸 Guitarra | Guitarra real o sintetizada. Con guitarra real, la página sirve para el reloj, las entradas y las luces. |
-| 🥁 Batería | Pads y patrones: **pulso** (intro), **sin platillos**, **con platillos** y **muro**. Puede manejar las luces. |
-| 🎹 Teclados medios/altos 1 y 2 | Líneas medias. Suben a registro alto en 1:45. El 2 hace la subida de 1:27 y el desfase de 1:54. |
-| 🎹 Teclados bajos/medios 1 y 2 | Línea grave. Al final hacen la 2.ª línea melódica y resuelven. |
+| 🎸 Guitarra | La melodía (pista MIDI Melodía): entra en 0:18, solo en 1:17, cierre en 2:48. Real o sintetizada; con guitarra real, la página sirve para el reloj, las entradas y las luces. |
+| 🥁 Batería | Pads y patrones. **Sin platillos** (W) y **con platillos** (E) son el ritmo de la pista MIDI, con su crash al inicio de sección; **pulso** y **muro** son extras. Puede manejar las luces. |
+| 🎹 Teclados medios/altos 1 y 2 | El 1 toca el arpegio medio (pista Medio). El 2 toca el pedal agudo en Fa (pista Pedal F): 0:40–1:17 y 2:16–2:48. |
+| 🎹 Teclados bajos/medios 1 y 2 | El 1 toca la raíz de cada acorde (pista Bajo). El 2 toca los acordes completos (pista Pad). |
 | 🌊 Ambiente · teclados bajos permanentes | La 1.ª línea grave que se sostiene. X = distorsión, Y = volumen. Controla los colores (de azul a rojo). |
 | 🌫️✨💠 Ambientes extra (opcionales) | Si hay integrantes extra: ruido, brillo y pulso, con colores. Se ocultan con `ocultar` en la partitura. |
 | 🎼 Pistas MIDI · Multipista (opcional) | Todas las pistas MIDI del arreglo a la vez, cada una con su sonido: silenciar, solo, bucles, reverso, cruce. Para ensayar o remezclar en vivo. |
@@ -47,6 +47,10 @@ Cada músico ve las instrucciones de "todos", las de su grupo y las propias.
 
 Cada perfil tiene un panel **🎧 Practicar con la orquesta**. Al activarlo, los demás instrumentos suenan con sus pistas MIDI (la de `midi.porPerfil` de cada uno), sincronizados con el reloj. Tú tocas tu parte encima.
 Cada instrumento usa por defecto el mismo sonido que su página (`sonidos` de la partitura, hoy los de `sonidos/fl/`). La guitarra toca el acorde grabado que corresponde a ese momento de la obra, y los ambientes repiten su loop mientras dura la nota. Si un archivo no carga, ese instrumento usa su sonido sintetizado.
+
+**Guía de cada perfil.** Las entradas y silencios (`tocan`), la guía en rosado del piano, los botones de acordes y la línea "🎼 ahora / luego" salen de la pista MIDI de cada perfil (`midi.porPerfil`). Si cambias una pista o el reparto, vuelve a revisar `tocan` en la partitura.
+
+**Sonidos a elegir.** Cada teclado tiene un selector **Sonido**: el de la partitura (FL), los del `catalogo` de la partitura (hoy **Square Woof** de FLEX) o el sintetizado. En "Practicar con la orquesta" cada teclado tiene el mismo selector en su fila. La elección se guarda en el navegador.
 
 - **Según la partitura**: cada instrumento entra y calla como dice `tocan` en cada sección. Cada fila muestra en vivo **▶ toca / ⏸ calla**. **Todo el arreglo** hace sonar todas las pistas siempre.
 - Cada instrumento se puede activar o desactivar y tiene su propio volumen. Hay atajos: **Todos**, **Base: batería + bajos** y **Ninguno**, más un volumen general.

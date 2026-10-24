@@ -179,3 +179,9 @@ details.cargar-box summary{cursor:pointer;font-weight:700}
 .orq-fila.apagada{opacity:.5}
 .orq-fila.opcional{border-style:dashed}
 .orq-fila.sonando{border-color:#22c55e;background:rgba(34,197,94,.08)}
+
+/* Guía desde la pista MIDI (teclados y guitarra) y selectores de sonido */
+.guia-midi{margin:8px 0;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,.06);font-size:13px;line-height:1.5}
+.guia-midi b{color:#ffd6e3}
+.sel-sonido,.orq-sonido{background:rgba(255,255,255,.08);color:inherit;border:1px solid rgba(255,255,255,.18);border-radius:6px;padding:3px 6px;font:inherit;font-size:12px}
+.sel-sonido option,.orq-sonido option{color:#111}
