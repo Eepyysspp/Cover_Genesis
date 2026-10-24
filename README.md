@@ -43,6 +43,16 @@ Cada músico ve las instrucciones de "todos", las de su grupo y las propias.
 > La estructura (Intro / Desarrollo / Outro, 13 partes) y la dotación salen de la propuesta. El tempo (130 BPM) y los acordes (B♭m7 ↔ G♭maj7, resolución en D♭) se midieron en la grabación, y los tiempos de la propuesta se ajustaron al inicio de compás más cercano.
 > La intro es **alargable**: el ambiente puede empezar antes y el director inicia el reloj cuando quiera seguir.
 
+## Practicar con la orquesta
+
+Cada perfil tiene un panel **🎧 Practicar con la orquesta**. Al activarlo, los demás instrumentos suenan con sus pistas MIDI (la de `midi.porPerfil` de cada uno), sincronizados con el reloj. Tú tocas tu parte encima.
+
+- **Según la partitura**: cada instrumento entra y calla como dice `tocan` en cada sección. Cada fila muestra en vivo **▶ toca / ⏸ calla**. **Todo el arreglo** hace sonar todas las pistas siempre.
+- Cada instrumento se puede activar o desactivar y tiene su propio volumen. Hay atajos: **Todos**, **Base: batería + bajos** y **Ninguno**, más un volumen general.
+- Tu propia parte aparece apagada; puedes encenderla para escucharla de referencia. Los ambientes extra (opcionales) parten apagados.
+- Parte y para con el reloj de la obra. Para practicar un tramo, elige la sección en «Ir a sección…» y presiona **▶ Iniciar ahora**. Las notas largas que ya venían sonando (como el drone del ambiente) entran aunque partas a la mitad.
+- Lo que elijas queda guardado en el navegador para tu perfil.
+
 ## Pistas MIDI
 
 Las pistas del arreglo están en `midi/` (melodía, medio, pad, bajo, pedal F, ambiente y batería). Están a 130 BPM y empiezan en 0:00, así que calzan con el reloj de la obra.

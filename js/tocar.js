@@ -685,6 +685,9 @@
       const rep = repMIDI = new MIDI.Reproductor({ reloj: () => ({ t: ahora(), corriendo: corriendo() }), motor: Motor });
       MIDI.crearPanel({ contenedor: $("panelMidi"), rep, perfil, crearDestino: api.midiDestino, multipista: perfil.tipo === "multipista", escribiendo })
         .catch(e => { console.warn("Pistas MIDI:", e); $("panelMidi").textContent = "No se pudieron cargar las pistas MIDI: " + e.message; });
+      if (perfil.tipo !== "multipista")
+        MIDI.crearAcompanamiento({ contenedor: $("panelOrquesta"), perfil, reloj: () => ({ t: ahora(), corriendo: corriendo() }), motor: Motor })
+          .catch(e => console.warn("Orquesta:", e));
     }
     if (params.get("inicio")) inicio = horaAEpoch(params.get("inicio"));
     // Sonidos por defecto desde la partitura

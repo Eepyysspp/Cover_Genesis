@@ -215,7 +215,17 @@
       this.libre = c.corriendo ? null : { r0: Math.max(0, c.t), p0: performance.now() };
       this.eraCorriendo = c.corriendo;
       this.activo = true; this.sincronizar(this.tiempo()); this.alCambiar();
+      this.perseguirTodo(this.tiempo());
     }
+    // Hace sonar las notas largas que ya venían sonando en r (al partir a mitad de una nota sostenida)
+    perseguir(capa, r, antesDe = r) {
+      if (this.cfg.reverso || !this.motor.ctx || capa.pista.bateria) return;
+      const pos = this.posicion(r), limite = pos.x - (r - antesDe) * this.cfg.vel - 0.005;
+      const ev = sonando(capa.pista, pos.x).filter(n => n.t < limite && n.t + n.d - pos.x > 0.1)
+        .map(n => ({ capa, r, m: n.m, v: n.v * 0.9, d: (n.t + n.d - pos.x) / this.cfg.vel, bat: false, golpe: null }));
+      if (ev.length) this.emitir(ev, r, true);
+    }
+    perseguirTodo(r) { this.capas.forEach(c => this.perseguir(c, r)); }
     detener() { this.activo = false; this.libre = null; this.rPrev = null; this.alCambiar(); }
     alternar() { this.activo ? this.detener() : this.iniciar(); }
     ponerVel(v) {
@@ -240,7 +250,7 @@
       if (!this.eraCorriendo && c.corriendo) { this.libre = null; this.sincronizar(c.t); } // la obra partió
       this.eraCorriendo = c.corriendo;
       const r = this.tiempo();
-      if (this.rPrev == null || r < this.rPrev - ADELANTO - 0.1 || r > this.rPrev + 0.4) this.sincronizar(r); // salto en la línea de tiempo
+      if (this.rPrev == null || r < this.rPrev - ADELANTO - 0.1 || r > this.rPrev + 0.4) { this.sincronizar(r); this.perseguirTodo(r); } // salto en la línea de tiempo
       if (!c.corriendo && this.libre) {
         const fin = Math.max(...this.capas.map(k => k.pista.fin));
         if (this.posicion(r).u > fin + 1 && !this.cfg.bucle) { this.detener(); return; }
@@ -313,6 +323,8 @@
         if (cfg.densidad < 1 && Math.random() > cfg.densidad) return;
         const capa = g[0].capa;
         if (capa.mute || (haySolo && !capa.solo)) return;
+        if (capa.activa && !capa.activa(g[0].r)) return;   // p. ej. solo cuando ese instrumento toca según la partitura
+        if (capa.limite) { const lim = Math.max(0.05, capa.limite(g[0].r)); g.forEach(e => { e.d = Math.min(e.d, lim); }); }
         const melodico = !capa.destino.esBateria;
         let notas = g.map(e => Object.assign({}, e));
         // Altura
@@ -685,5 +697,116 @@
     return { rep, pistas: () => pistas };
   }
 
-  window.MIDI = { leerMIDI, preparar, pistasDeLaObra, pistasDeArchivo, Reproductor, crearPanel, padDeNota, espejo, ajustarA };
+  /* ============================== PRACTICAR CON LA ORQUESTA ============================== */
+  /* Los demás perfiles suenan con su pista MIDI (midi.porPerfil), sincronizados con el reloj.
+     "Según la partitura": cada instrumento solo suena en las secciones donde le toca (tocan). */
+  function destinoDe(pf, pista) {
+    const A = window.Audio2;
+    if (pista.bateria) { const b = new A.Bateria(); return { esBateria: true, nota: (m, v, t, d, golpe) => b.tocar(golpe || padDeNota(m), t, v) }; }
+    if (pf.tipo === "guitarra") {
+      const g = new A.Guitarra(); g.p.fuzz = 0.3; g.aplicar();
+      return { octava: () => 3, nota: (m, v, t, d) => g.tocarNotas([m], { vel: v, t, dur: d }),
+        grupo: (l, t) => g.tocarNotas(l.map(n => n.m), { vel: Math.max(...l.map(n => n.v)), t, dur: Math.max(...l.map(n => n.d)) }) };
+    }
+    const k = new A.Teclado(pf.tipo === "ambiente" ? "pad" : pf.preset || pista.preset || "epiano");
+    if (pf.tipo === "ambiente") { k.p.reverb = 0.7; k.p.filtro = 0.35; k.aplicar(); }
+    return { octava: () => k.p.octava, nota: (m, v, t, d) => k.nota(m, v, t, d) };
+  }
+  async function crearAcompanamiento({ contenedor, perfil, reloj, motor }) {
+    const pistas = await pistasDeLaObra();
+    const porPerfil = (P.midi && P.midi.porPerfil) || {};
+    const rep = new Reproductor({ reloj, motor });
+    rep.cfg.volumen = G.leer("orq:vol", 0.8);
+    const guardado = G.leer("orq:" + perfil.id, null);   // { id: { on, vol } }
+    // Una fila por intérprete de la orquesta (tú incluido, apagado: sirve de referencia)
+    const filas = G.perfilesActivos.filter(pf => pf.tipo !== "multipista" && porPerfil[pf.id]).map(pf => {
+      const pista = pistas.find(x => x.id === porPerfil[pf.id]);
+      if (!pista) return null;
+      const propio = pf.id === perfil.id;
+      const g = guardado && guardado[pf.id];
+      return { pf, pista, propio, capa: { id: "o-" + pf.id, pista, destino: null, vol: g ? g.vol : 1, mute: g ? !g.on : (propio || !!pf.opcional), canal: 0 } };
+    }).filter(Boolean);
+    let segunPartitura = G.leer("orq:partitura", true);
+    const enObra = r => Math.min(Math.max(r, 0), DURACION - 0.01);
+    filas.forEach(f => {
+      f.capa.activa = r => !segunPartitura || G.toca(G.seccionEn(enObra(r)), f.pf);
+      // Las notas se cortan cuando a ese instrumento le toca callar
+      f.capa.limite = r => { if (!segunPartitura) return Infinity; const c = G.proximoCambio(enObra(r), f.pf); return c ? c.seccion.ini - r : Infinity; };
+    });
+    rep.capas = filas.map(f => f.capa);
+    let encendida = false, creados = false;
+    const guardar = () => { const o = {}; filas.forEach(f => o[f.pf.id] = { on: !f.capa.mute, vol: f.capa.vol }); G.guardar("orq:" + perfil.id, o); };
+
+    contenedor.classList.remove("oculto");
+    contenedor.innerHTML = "";
+    const cab = el(`<div class="fila" style="justify-content:space-between;align-items:flex-start">
+      <div><h3 style="margin:0">🎧 Practicar con la orquesta</h3>
+      <div class="muted small">El resto de los instrumentos suena con sus pistas MIDI, al ritmo del reloj de la obra. Tú tocas tu parte encima.</div></div></div>`);
+    const btn = el(`<button class="btn primario">🎧 Activar la orquesta</button>`);
+    cab.appendChild(btn); contenedor.appendChild(cab);
+    const aviso = el(`<div class="muted small orq-aviso"></div>`); contenedor.appendChild(aviso);
+
+    const opciones = el(`<div class="fila midi-fila"></div>`);
+    const segM = el(`<div class="segmentado"></div>`);
+    const bPart = el(`<button class="btn peq" title="Cada instrumento entra y calla como dice la partitura">Según la partitura</button>`);
+    const bTodo = el(`<button class="btn peq" title="Todas las pistas suenan siempre que tengan notas">Todo el arreglo</button>`);
+    segM.append(bPart, bTodo);
+    const rapidos = [["Todos", f => !f.propio], ["Base: batería + bajos", f => !f.propio && (f.pf.tipo === "bateria" || f.pf.sub === "teclados-bajos" || f.pf.sub === "ambiente-principal")], ["Ninguno", () => false]]
+      .map(([n, fn]) => { const b = el(`<button class="btn peq">${esc(n)}</button>`); b.onclick = () => { filas.forEach(f => f.capa.mute = !fn(f)); pintar(); guardar(); }; return b; });
+    const volL = el(`<label class="orq-vol muted small">Volumen orquesta <input type="range" min="0" max="1.5" step="0.01" value="${rep.cfg.volumen}"></label>`);
+    volL.querySelector("input").oninput = e => { rep.cfg.volumen = +e.target.value; G.guardar("orq:vol", rep.cfg.volumen); };
+    opciones.append(segM, ...rapidos, volL);
+    contenedor.appendChild(opciones);
+    bPart.onclick = () => { segunPartitura = true; G.guardar("orq:partitura", true); pintar(); };
+    bTodo.onclick = () => { segunPartitura = false; G.guardar("orq:partitura", false); pintar(); };
+
+    const lista = el(`<div class="orq-lista"></div>`);
+    filas.forEach(f => {
+      const fila = el(`<label class="orq-fila${f.pf.opcional ? " opcional" : ""}"><input type="checkbox"><span class="orq-icono">${f.pf.icono}</span>
+        <span class="orq-nombre"><strong>${esc(f.pf.nombre)}</strong><span class="muted small">${f.propio ? "tu parte · como referencia" : esc(f.pista.nombre)}</span></span>
+        <span class="orq-estado"></span><input type="range" min="0" max="1.5" step="0.01" value="${f.capa.vol}" aria-label="Volumen de ${esc(f.pf.nombre)}"></label>`);
+      const [chk, vol] = fila.querySelectorAll("input");
+      chk.onchange = () => { f.capa.mute = !chk.checked; pintar(); guardar(); };
+      vol.oninput = () => { f.capa.vol = +vol.value; guardar(); };
+      f.el = fila; f.chk = chk; f.estado = fila.querySelector(".orq-estado");
+      lista.appendChild(fila);
+    });
+    contenedor.appendChild(lista);
+
+    function pintar() {
+      btn.innerHTML = encendida ? "■ Apagar la orquesta" : "🎧 Activar la orquesta";
+      btn.classList.toggle("on", encendida);
+      bPart.classList.toggle("on", segunPartitura); bTodo.classList.toggle("on", !segunPartitura);
+      filas.forEach(f => { f.chk.checked = !f.capa.mute; f.el.classList.toggle("apagada", f.capa.mute); });
+    }
+    btn.onclick = () => {
+      encendida = !encendida;
+      if (encendida && !creados) { filas.forEach(f => f.capa.destino = destinoDe(f.pf, f.pista)); creados = true; }
+      if (!encendida) rep.detener();
+      pintar();
+    };
+    pintar();
+
+    // Arranca y para junto con el reloj de la obra; muestra quién toca en la sección actual
+    setInterval(() => {
+      const c = reloj();
+      if (encendida && c.corriendo && !rep.activo && c.t < DURACION) rep.iniciar();
+      const t = Math.min(Math.max(c.t, 0), DURACION - 0.01), sec = G.seccionEn(t);
+      filas.forEach(f => {
+        const toca = !segunPartitura || G.toca(sec, f.pf);
+        // Al entrar a una sección donde toca, suenan las notas largas que ya venían sonando
+        if (toca && f.tocaba === false && rep.activo && c.corriendo) rep.perseguir(f.capa, c.t, sec.ini);
+        f.tocaba = toca;
+        f.estado.textContent = f.capa.mute ? "—" : toca ? "▶ toca" : "⏸ calla";
+        f.estado.className = "orq-estado " + (f.capa.mute ? "" : toca ? "si" : "no");
+        f.el.classList.toggle("sonando", encendida && rep.activo && !f.capa.mute && toca);
+      });
+      aviso.textContent = !encendida ? "Actívala y luego parte con ▶ Iniciar ahora (o elige una sección en «Ir a sección…»)."
+        : c.corriendo ? (c.t < 0 ? "La orquesta entra cuando parta el reloj." : `Sonando con la orquesta · ${sec.nombre}`)
+        : "Lista. Presiona ▶ Iniciar ahora para tocar con la orquesta.";
+    }, 150);
+    return { rep };
+  }
+
+  window.MIDI = { crearAcompanamiento, leerMIDI, preparar, pistasDeLaObra, pistasDeArchivo, Reproductor, crearPanel, padDeNota, espejo, ajustarA };
 })();
