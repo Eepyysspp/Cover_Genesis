@@ -1,7 +1,7 @@
 /* Página de control de cada perfil: reloj, partitura, instrucciones y controles del instrumento. */
 (function () {
   const { P, PERFILES, SECCIONES, EVENTOS, DURACION, fmt, seccionEn, acordeEn, instrucciones, toca, proximoCambio, eventoAplica, notasAcorde, nombreNota } = G;
-  const { Motor, Guitarra, Bateria, Teclado, Ambiente, PADS, PATRONES, VEL_ACENTO } = window.Audio2;
+  const { Motor, Guitarra, Bateria, Base808, ATAQUES_808: A808, Teclado, Ambiente, PADS, PATRONES, VEL_ACENTO } = window.Audio2;
   const $ = id => document.getElementById(id);
   const params = new URLSearchParams(location.search);
   const perfil = PERFILES.find(p => p.id === params.get("p"));
@@ -354,7 +354,15 @@
   function panelBateria() {
     inst = new Bateria();
     panel.appendChild(el(`<h3>Batería</h3>`));
-    panel.appendChild(el(`<p class="muted small">Toca los pads con el mouse, el dedo o las teclas. Los patrones siguen el tempo de la obra (${P.bpm} BPM).
+    // Dos modos: kit de batería (pads y patrones) o la base 808 distorsionada (un X/Y como el ambiente)
+    const KITS = [["muestras", "Batería (FL)"], ["sintetizado", "Batería sintetizada"], ["808", "808 · base distorsionada"]];
+    const filaKit = el(`<div class="fila"><span class="muted small">Sonido:</span><select class="sel-sonido" aria-label="Sonido de la batería"></select></div>`);
+    const selKit = filaKit.querySelector("select");
+    KITS.forEach(([v, n]) => selKit.add(new Option(n, v)));
+    filaKit.appendChild(btnEfectos);
+    const cajaKit = el(`<div class="caja-kit"></div>`), cajaBase = el(`<div class="caja-base oculto"></div>`);
+    panel.append(filaKit, cajaKit, cajaBase);
+    cajaKit.appendChild(el(`<p class="muted small">Toca los pads con el mouse, el dedo o las teclas. Los patrones siguen el tempo de la obra (${P.bpm} BPM).
       <b>Sin platillos</b> (W) y <b>Con platillos</b> (E) son el mismo ritmo que la pista MIDI, con el crash al comienzo de cada sección. Pulso y Muro son extras.</p>`));
     const pads = el(`<div class="pads"></div>`); const mapa = {};
     PADS.forEach(p => {
@@ -373,30 +381,104 @@
     });
     function ponerPatron(id) { inst.p.patron = id || null; botonesPat.forEach((b, i) => b.classList.toggle("on", opciones[i][0] === id)); ultimoPaso = null; }
     ponerPatron("");
-    // Kit: las muestras de la partitura (FL), el 808 de golpes distorsionados (afinado al acorde) o el sintetizado simple
-    const KITS = [["muestras", "Batería (FL)"], ["808", "808 distorsionado"], ["sintetizado", "Sintetizado"]];
-    const filaKit = el(`<div class="fila"><span class="muted small">Sonido:</span><select class="sel-sonido" aria-label="Sonido de la batería"></select>
-      <span class="muted small" data-r="nota"></span></div>`);
-    const selKit = filaKit.querySelector("select"), notaKit = filaKit.querySelector("[data-r=nota]");
-    KITS.forEach(([v, n]) => selKit.add(new Option(n, v)));
+    cajaKit.append(pads, pats, sliders([slider("Volumen", inst.p, "vol", () => inst.aplicar()), slider("Reverb", inst.p, "reverb", () => inst.aplicar()),
+      slider("Saturación", inst.p, "drive", () => inst.aplicar())]));
+    alEfectos = efectosDe(inst, { vol: volRel, reverb: (e, b) => val(e, b, "reverb"), drive: (e, b) => val(e, b, "drive") });
+    const cargs = PADS.map(p => cargador(p.nombre, { alCargar: b => { inst.samples[p.id] = b; }, alQuitar: () => { delete inst.samples[p.id]; } }));
+    cajaKit.appendChild(cajaSonidos(cargs));
+
+    /* ----- 808 · base distorsionada: una nota grave larga que sigue el bajo de cada acorde ----- */
+    let base = null;
+    cajaBase.innerHTML = `<p class="muted small">Reinterpretación de la batería: en vez de golpes, un <b>808 largo y saturado</b> que hace de base de la pieza.
+      La nota sigue sola el bajo de cada acorde (B♭, G♭, D♭). <kbd>Espacio</kbd> enciende/apaga. En el recuadro: <b>X</b> = distorsión, <b>Y</b> = intensidad.
+      El <b>anillo</b> marca dónde ir en cada momento; <kbd>G</kbd> lo sigue solo.</p>
+      <div class="fila"><button class="btn primario gran-btn" data-r="on">Encender</button>
+        <label class="muted small">Ataque <select class="sel-sonido" data-r="ataque" aria-label="Ataque de la base"></select></label></div>
+      <div class="xy xy-base"><span class="et" style="left:8px;bottom:6px">limpio</span><span class="et" style="right:8px;bottom:6px">distorsión</span>
+        <span class="et" style="left:8px;top:6px">intenso ↑</span><span class="et nota-base" style="right:8px;top:6px"></span>
+        <svg class="guia-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polyline class="guia-camino" points=""/></svg>
+        <div class="guia-anillo"><span></span></div><div class="punto"></div></div>
+      <div class="guia-info"><div class="guia-txt"></div><div class="fila" style="gap:6px">
+        <button class="btn peq" data-r="guia" title="Muestra u oculta el anillo guía">🎯 Guía</button>
+        <button class="btn peq" data-r="auto" title="El punto sigue la guía solo (y enciende/apaga). Si mueves el mouse, vuelves a tomar el control.">🤖 Seguir la guía sola <kbd>G</kbd></button></div></div>`;
+    const $b = r => cajaBase.querySelector(`[data-r=${r}]`);
+    const bOn = $b("on"), selAt = $b("ataque"), bGuiaB = $b("guia"), bAutoB = $b("auto");
+    const xyB = cajaBase.querySelector(".xy"), puntoB = xyB.querySelector(".punto"), anilloB = xyB.querySelector(".guia-anillo"), caminoB = xyB.querySelector(".guia-camino");
+    const notaB = xyB.querySelector(".nota-base"), txtB = cajaBase.querySelector(".guia-txt");
+    const slB = el(`<div></div>`); cajaBase.appendChild(slB);
+    A808.forEach(([v, n]) => selAt.add(new Option(n, v)));
+    let verGuiaB = G.leer("guia:ver", true), autoB = false;
+    const tieneGuia = () => !!G.guiaXYEn(0, perfil);
+    function crearBase() {
+      if (base) return base;
+      base = new Base808();
+      base.p.ataque = G.leer("base808:ataque", "acorde"); selAt.value = base.p.ataque;
+      base.alGolpe = () => Luces.destellar(0.45 + base.p.y * 0.4);
+      slB.replaceWith(slB._s = sliders([slider("Volumen", base.p, "vol", () => base.aplicar()), slider("Reverb", base.p, "reverb", () => base.aplicar())]));
+      ponerXYB(base.p.x, base.p.y);
+      return base;
+    }
+    function ponerXYB(x, y) {
+      const b = crearBase();
+      b.p.x = Math.min(1, Math.max(0, x)); b.p.y = Math.min(1, Math.max(0, y)); b.aplicar();
+      puntoB.style.left = b.p.x * 100 + "%"; puntoB.style.top = (1 - b.p.y) * 100 + "%";
+    }
+    const pintarB = () => {
+      bOn.textContent = base && base.encendido ? "Apagar" : "Encender"; bOn.classList.toggle("on", !!(base && base.encendido));
+      bGuiaB.classList.toggle("on", verGuiaB); bAutoB.classList.toggle("on", autoB);
+      anilloB.classList.toggle("oculto", !verGuiaB || !tieneGuia()); caminoB.style.display = verGuiaB ? "" : "none";
+    };
+    const toggleB = () => { const b = crearBase(); if (b.encendido) b.apagar(); else b.encender(acordeEn(Math.min(Math.max(ahora(), 0), DURACION - 0.01)).nombre); pintarB(); };
+    const ponerAutoB = v => { autoB = v && tieneGuia(); pintarB(); };
+    bOn.onclick = () => { ponerAutoB(false); toggleB(); };
+    bGuiaB.onclick = () => { verGuiaB = !verGuiaB; G.guardar("guia:ver", verGuiaB); pintarB(); };
+    bAutoB.onclick = () => ponerAutoB(!autoB);
+    selAt.onchange = () => { crearBase().p.ataque = selAt.value; G.guardar("base808:ataque", selAt.value); };
+    const moverB = e => { ponerAutoB(false); const r = xyB.getBoundingClientRect(); ponerXYB((e.clientX - r.left) / r.width, 1 - (e.clientY - r.top) / r.height); };
+    xyB.addEventListener("pointerdown", e => { e.preventDefault(); xyB.setPointerCapture(e.pointerId); moverB(e); });
+    xyB.addEventListener("pointermove", e => { if (e.buttons) moverB(e); });
+    if (!tieneGuia()) bGuiaB.disabled = bAutoB.disabled = true;
+
+    // Cada cuadro: la base sigue el acorde (agenda el próximo cambio a tiempo) y la guía X/Y como en el ambiente
+    alCuadro = (t, dt) => {
+      if (kit !== "808" || !base) return;
+      base.seguir(t, corriendo() && t >= 0 && t < DURACION);
+      notaB.textContent = base.nota != null ? "suena " + nombreB(base.nota) : "";
+      const tc = Math.min(Math.max(t, 0), DURACION - 0.01), g = G.guiaXYEn(tc, perfil);
+      const r = Math.round(90 + base.p.x * 165), gr = Math.round(40 + (1 - base.p.x) * 60), bl = Math.round(120 * (1 - base.p.x) + 40);
+      xyB.style.background = `radial-gradient(circle at ${base.p.x * 100}% ${(1 - base.p.y) * 100}%, rgba(${r},${gr},${bl},${base.encendido ? 0.35 + base.p.y * 0.55 : 0.15}), rgba(10,8,18,.92) 75%)`;
+      if (!g) { txtB.innerHTML = `<span class="muted">Sin guía para la base.</span>`; return; }
+      anilloB.style.left = g.x * 100 + "%"; anilloB.style.top = (1 - g.y) * 100 + "%";
+      const pts = []; for (let k = 0; k <= 16; k++) { const f = G.guiaXYEn(Math.min(tc + k * 0.5, DURACION - 0.01), perfil); pts.push((f.x * 100).toFixed(1) + "," + ((1 - f.y) * 100).toFixed(1)); }
+      caminoB.setAttribute("points", pts.join(" "));
+      const dx = g.x - base.p.x, dy = g.y - base.p.y, dist = Math.hypot(dx, dy);
+      const silencio = g.y < 0.03, ok = silencio ? (!base.encendido || base.p.y < 0.08) : dist < 0.1 && base.encendido;
+      anilloB.classList.toggle("ok", ok); anilloB.classList.toggle("silencio", silencio);
+      anilloB.querySelector("span").textContent = silencio ? "silencio" : "";
+      const consejo = silencio ? (base.encendido && base.p.y >= 0.08 ? "Silencio: baja Y o apaga (Espacio)" : "Silencio ✓")
+        : !base.encendido ? "Enciende (Espacio) y ve al anillo" : dist < 0.1 ? "En el punto ✓"
+        : [Math.abs(dx) > 0.06 ? (dx > 0 ? "→ más distorsión" : "← más limpio") : "", Math.abs(dy) > 0.06 ? (dy > 0 ? "↑ más intenso" : "↓ más suave") : ""].filter(Boolean).join(" · ");
+      const html = `<b class="${ok ? "ok" : ""}">${esc(consejo)}</b><span class="muted small">Guía X ${Math.round(g.x * 100)} % · Y ${Math.round(g.y * 100)} %</span>`;
+      if (txtB.innerHTML !== html) txtB.innerHTML = html;
+      if (autoB) {
+        const k = 1 - Math.exp(-dt * 4);
+        ponerXYB(base.p.x + dx * k, base.p.y + dy * k);
+        if (!silencio && !base.encendido) toggleB();
+        if (silencio && base.encendido && base.p.y < 0.03) toggleB();
+      }
+    };
+
     let kit = G.leer("kit:" + perfil.id, "muestras"); if (!KITS.some(k => k[0] === kit)) kit = "muestras";
     const ponerKit = k => {
-      kit = k; selKit.value = k; inst.ponerKit(k);
-      notaKit.textContent = k === "808" ? "Reinterpretación: golpes de distorsión; bombo y toms se afinan solos al acorde. «Saturación» los empuja más." : "";
-      panel.classList.toggle("kit-808", k === "808");
-      const NOMBRES_808 = { bombo: "Bombo 808", caja: "Clap saturado", hihat: "Hat metálico", abierto: "Hat abierto", tom: "Tom 808", crash: "Crash de ruido" };
-      PADS.forEach(p => { const d = mapa[p.id]; if (d && d.firstChild) d.firstChild.textContent = k === "808" ? NOMBRES_808[p.id] : p.nombre; });
+      kit = k; selKit.value = k;
+      const es808 = k === "808";
+      cajaKit.classList.toggle("oculto", es808); cajaBase.classList.toggle("oculto", !es808);
+      if (es808) { ponerPatron(""); crearBase(); pintarB(); }
+      else { inst.ponerKit(k); if (base) { base.apagar(); autoB = false; pintarB(); } }
     };
     selKit.onchange = () => { ponerKit(selKit.value); G.guardar("kit:" + perfil.id, kit); };
     ponerKit(kit);
-    inst.obraEn = ta => Math.min(Math.max(0, ahora() + (ta - Motor.t)), DURACION - 0.01);
-    panel.append(pads, pats, filaKit, sliders([slider("Volumen", inst.p, "vol", () => inst.aplicar()), slider("Reverb", inst.p, "reverb", () => inst.aplicar()),
-      slider("Saturación", inst.p, "drive", () => inst.aplicar())]), controlesLuces());
-    filaKit.appendChild(btnEfectos);
-    alEfectos = efectosDe(inst, { vol: volRel, reverb: (e, b) => val(e, b, "reverb"), drive: (e, b) => val(e, b, "drive") });
-
-    const cargs = PADS.map(p => cargador(p.nombre, { alCargar: b => { inst.samples[p.id] = b; }, alQuitar: () => { delete inst.samples[p.id]; } }));
-    panel.appendChild(cajaSonidos(cargs));
+    panel.appendChild(controlesLuces());
 
     // Secuenciador: agenda semicorcheas alineadas al reloj de la obra
     const pasoSeg = 60 / P.bpm / 4;
@@ -444,11 +526,21 @@
     alDetener = () => { ultimoPaso = null; libreInicio = performance.now(); };
     document.addEventListener("keydown", e => {
       if (escribiendo(e) || e.repeat) return;
+      if (kit === "808") {
+        if (e.code === "Space") { e.preventDefault(); ponerAutoB(false); toggleB(); }
+        else if (e.key.toLowerCase() === "g") ponerAutoB(!autoB);
+        else if (/^Arrow/.test(e.key)) {
+          e.preventDefault(); ponerAutoB(false); const b = crearBase();
+          const d = { ArrowUp: [0, 0.05], ArrowDown: [0, -0.05], ArrowRight: [0.05, 0], ArrowLeft: [-0.05, 0] }[e.key];
+          ponerXYB(b.p.x + d[0], b.p.y + d[1]);
+        }
+        return;
+      }
       const p = PADS.find(p => p.tecla === e.key.toLowerCase()); if (p) { inst.tocar(p.id); return; }
       const o = opciones.find(o => o[2].toLowerCase() === e.key.toLowerCase()); if (o) ponerPatron(o[0]);
     });
     return { sonidoDefecto: (b, pad) => { inst.samples[pad] = b; const i = PADS.findIndex(p => p.id === pad); if (i >= 0) cargs[i].marcar("Propio (partitura)"); },
-      midiDestino: () => ({ esBateria: true, nota: (m, v, t, d, golpe, r) => inst.tocar(golpe || MIDI.padDeNota(m), t, v, r) }) };
+      midiDestino: () => ({ esBateria: true, nota: (m, v, t, d, golpe) => inst.tocar(golpe || MIDI.padDeNota(m), t, v) }) };
   }
 
   /* ---------- TECLADO ---------- */

@@ -62,19 +62,22 @@ Cada instrumento usa por defecto el mismo sonido que su página (`sonidos` de la
 - Parte y para con el reloj de la obra. Para practicar un tramo, elige la sección en «Ir a sección…» y presiona **▶ Iniciar ahora**. Las notas largas que ya venían sonando (como el drone del ambiente) entran aunque partas a la mitad.
 - Lo que elijas queda guardado en el navegador para tu perfil.
 
-## Batería 808 (reinterpretación)
+## Batería: 808 · base distorsionada (reinterpretación)
 
-En la página de batería, **Sonido** permite cambiar el kit: **Batería (FL)** (las muestras de la partitura), **808 distorsionado** o **Sintetizado**. En "Practicar con la orquesta", la fila de la batería tiene el mismo selector.
+En la página de batería, **Sonido** permite elegir **Batería (FL)**, **Batería sintetizada** o **808 · base distorsionada**. En "Practicar con la orquesta", la fila de la batería tiene el mismo selector.
 
-- **808 distorsionado**: cada golpe es un sonido simple que entra fuerte a un saturador, como un 808 pasado por distorsión.
-  - Bombo: seno grave con golpe de altura.
-  - Caja: clap de ruido.
-  - Hi-hats y crash: las seis cuadradas metálicas del 808.
-  - Toms: senos con golpe.
-- El **bombo y los toms se afinan solos** a la nota grave del acorde que suena en la obra (B♭, G♭, D♭…).
-  - Tom grave: esa nota. Tom medio: su quinta. Tom agudo: la octava.
-- **Saturación** (y los efectos automáticos de cada parte) empujan más la distorsión.
-- Los golpes se renderizan una vez al elegir el kit (menos de un segundo) y después se tocan como muestras, así que cuesta lo mismo que el kit de FL.
+La base no es un kit: es una **nota grave larga y saturada** (un 808 sostenido) que hace de base de la pieza. Se toca como el ambiente.
+
+- **X = distorsión, Y = intensidad.** <kbd>Espacio</kbd> enciende y apaga.
+- La nota **sigue sola el bajo de cada acorde** (B♭, G♭, D♭).
+- **Ataque**, para elegir cómo se articula:
+  - *Golpe en cada acorde*: un golpe de 808 al cambiar de acorde, y la nota se desliza a la nueva.
+  - *Golpe en cada compás*.
+  - *Continuo*: un drone que solo se desliza.
+- Los golpes caen justo a tiempo: se agendan en el reloj de audio antes del cambio.
+- El **anillo guía** y 🤖 *Seguir la guía sola* (<kbd>G</kbd>) siguen `guiaXY.bateria` de la partitura. Calla donde calla la batería, crece en la intro, queda casi limpia en el solo y llega al rojo en el muro y el clímax.
+- En la orquesta la base usa esa misma guía si 🎛️ *Efectos automáticos* está activo.
+- Además del grave tiene un camino paralelo saturado en los medios, así que se oye también en parlantes de laptop.
 
 ## Guitarra real: partitura y tablatura
 
@@ -121,7 +124,7 @@ Si agregas o cambias un `.mid`, decláralo en `midi.pistas` de la partitura y co
 | Perfil | Teclas |
 |---|---|
 | Guitarra | `Espacio` rasgueo ↓ · `B` rasgueo ↑ · `1`–`9` acordes · `L` sostener · `Esc` apagar · `V` luces |
-| Batería | `A S D F G H` pads · `Q` pulso · `W` sin platillos · `E` con platillos · `R` muro · `0` ninguno · `V` luces |
+| Batería | `A S D F G H` pads · `Q` pulso · `W` sin platillos · `E` con platillos · `R` muro · `0` ninguno · `V` luces. En 808 · base: `Espacio` encender/apagar · flechas X/Y · `G` seguir la guía sola |
 | Teclados | `A W S E D F T G Y H U J K O L P Ñ` piano · `Z`/`X` octava · `1`–`9` mantener acordes |
 | Ambientes | `Espacio` encender/apagar · flechas mueven X/Y · `G` seguir la guía sola · `F` destello · `V` pantalla completa |
 | Pistas MIDI (todos) | `M` reproducir/detener · `N` pulsar · `C` bucle · `I` reverso |

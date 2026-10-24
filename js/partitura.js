@@ -332,6 +332,26 @@ window.PARTITURA = {
   // Las notas que suenan las pone la pista MIDI del perfil (midi.porPerfil).
   // Se busca la clave más específica: ambiente-1 … ambiente-4, luego ambiente-principal / ambiente-extra.
   guiaXY: {
+    // Batería en modo "808 · base distorsionada": X = distorsión, Y = intensidad. Sigue las entradas de la batería
+    // (calla en 0:00–0:03 y desde 2:31) y crece como ella: intro de a poco, limpio en el solo, muro y clímax rojos.
+    bateria: [
+      ["0:00",    0.10, 0.00],   // silencio: solo ambiente
+      ["0:03.60", 0.10, 0.00],
+      ["0:03.69", 0.12, 0.30],   // entra con la batería, suave…
+      ["0:18.46", 0.25, 0.55],   // …y crece durante la intro
+      ["0:33.23", 0.45, 0.65],   // platillos y distorsión
+      ["1:02.77", 0.35, 0.55],   // desarrollo sin platillos
+      ["1:10.15", 0.50, 0.65],
+      ["1:17.04", 0.55, 0.68],
+      ["1:17.54", 0.05, 0.38],   // solo limpio: casi sin distorsión
+      ["1:26.77", 0.08, 0.42],   // bisagra: sube hacia el muro
+      ["1:32.31", 0.75, 0.85],   // muro
+      ["1:47.08", 0.92, 0.95],   // clímax
+      ["2:01.85", 0.70, 0.80],   // outro
+      ["2:16.62", 0.55, 0.70],   // se va apagando con la batería
+      ["2:31.28", 0.30, 0.30],
+      ["2:31.38", 0.30, 0.00],   // la batería sale: silencio hasta el final
+    ],
     "ambiente-principal": [
       ["0:00",    0.05, 0.40],   // entra limpio
       ["0:18.46", 0.30, 0.50],   // entran guitarra y teclados

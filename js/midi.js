@@ -707,7 +707,7 @@
   // Sonidos extra del catálogo de la partitura (p. ej. Square Woof) que puede elegir un teclado
   const catalogoPara = pf => (pf.tipo === "teclado" ? (P.catalogo || []) : []);
   // Opciones de sonido de cada fila de la orquesta: [valor, nombre]. Solo teclados y batería tienen para elegir.
-  const opcionesSonido = pf => pf.tipo === "bateria" ? [["partitura", "Sonido: partitura (FL)"], ["808", "808 distorsionado"], ["sintetizado", "Sintetizado"]]
+  const opcionesSonido = pf => pf.tipo === "bateria" ? [["partitura", "Sonido: partitura (FL)"], ["sintetizado", "Batería sintetizada"], ["808", "808 · base distorsionada"]]
     : catalogoPara(pf).length ? [["partitura", "Sonido: partitura"], ...catalogoPara(pf).map(c => [c.id, c.nombre]), ["sintetizado", "Sintetizado"]] : [];
   // La grabación del catálogo más cercana al registro del perfil. real = altura verdadera (pistas MIDI);
   // base = altura al tocar a mano (los teclados bajos suenan una octava abajo de la tecla, como su sonido de la partitura).
@@ -740,15 +740,28 @@
   function destinoDe(pf, pista, eleccion) {
     const A = window.Audio2, M = A.Motor;
     const cargar = alListo => sonidosDe(pf, eleccion).then(s => { if (s) alListo(s); }).catch(e => console.warn("Orquesta: sin sonido propio para", pf.id, e.message));
+    // Batería reinterpretada: la base 808 distorsionada (nota larga que sigue el bajo de cada acorde) en vez de golpes.
+    // No usa las notas de la pista: la orquesta la mueve en cada vuelta con continuo() y la guía X/Y de la batería.
+    if (pista.bateria && eleccion === "808") {
+      const b = new A.Base808(), base = { vol: b.p.vol };
+      return { esBateria: true, nota: () => {}, apagar: () => b.apagar(),
+        continuo(r, sonar, xy, vol = 1) {
+          const n = { x: xy ? xy.x : b.p.x, y: xy ? xy.y : b.p.y, vol: base.vol * vol };
+          if (cambia(b.p, n)) { Object.assign(b.p, n); b.aplicar(); }
+          if (sonar && (!xy || xy.y >= 0.03)) { if (!b.encendido) b.encender(acordeObra(r)); }
+          else if (b.encendido) b.apagar();
+          b.seguir(r, sonar);
+        } };
+    }
     if (pista.bateria) {
       const b = new A.Bateria();
-      // Sonido: "partitura" (muestras de FL), "808" (golpes de distorsión afinados al acorde) o "sintetizado"
-      if (eleccion === "808" || eleccion === "sintetizado") b.ponerKit(eleccion);
+      // Sonido: "partitura" (muestras de FL) o "sintetizado"
+      if (eleccion === "sintetizado") b.ponerKit(eleccion);
       else cargar(s => { if (s.varios) Object.keys(s.varios).forEach(k => b.samples[k] = s.varios[k].buffer); });
       const base = { vol: b.p.vol, reverb: b.p.reverb, drive: b.p.drive };
       const efectos = e => { const n = { vol: base.vol * (e.vol != null ? e.vol : 1), reverb: e.reverb != null ? e.reverb : base.reverb, drive: e.drive != null ? e.drive : base.drive };
         if (cambia(b.p, n)) { Object.assign(b.p, n); b.aplicar(); } };
-      return { esBateria: true, efectos, nota: (m, v, t, d, golpe, r) => b.tocar(golpe || padDeNota(m), t, v, r) };
+      return { esBateria: true, efectos, nota: (m, v, t, d, golpe) => b.tocar(golpe || padDeNota(m), t, v) };
     }
     if (pf.tipo === "guitarra") {
       const g = new A.Guitarra(); g.p.fuzz = 0.3; g.aplicar();
@@ -856,7 +869,7 @@
         ops.forEach(([v, n]) => sel.add(new Option(n, v, false, v === f.son)));
         if (sel.value !== f.son) { f.son = "partitura"; sel.value = "partitura"; }
         sel.addEventListener("click", e => e.stopPropagation());
-        sel.onchange = () => { f.son = sel.value; guardar(); if (creados) f.capa.destino = destinoDe(f.pf, f.pista, f.son); };
+        sel.onchange = () => { f.son = sel.value; guardar(); if (creados) { const d = f.capa.destino; if (d && d.apagar) d.apagar(); f.capa.destino = destinoDe(f.pf, f.pista, f.son); } };
         fila.insertBefore(sel, vol);
       }
       f.el = fila; f.chk = chk; f.estado = fila.querySelector(".orq-estado");
@@ -885,6 +898,10 @@
       const t = Math.min(Math.max(c.t, 0), DURACION - 0.01), sec = G.seccionEn(t);
       // Efectos de la parte para cada instrumento (los ambientes, con su guía X/Y)
       if (encendida && efectosAuto) filas.forEach(f => { const d = f.capa.destino; if (d && d.efectos) d.efectos(G.efectosEn(t, f.pf), f.pf.tipo === "ambiente" ? G.guiaXYEn(t, f.pf) : null); });
+      // Instrumentos continuos (la base 808): suenan mientras al instrumento le toca, con su guía X/Y si los efectos automáticos están activos
+      filas.forEach(f => { const d = f.capa.destino; if (!d || !d.continuo) return;
+        const sonar = encendida && rep.activo && c.corriendo && !f.capa.mute && c.t >= 0 && c.t < DURACION && (!segunPartitura || G.toca(sec, f.pf));
+        d.continuo(c.t, sonar, efectosAuto ? G.guiaXYEn(t, f.pf) : null, f.capa.vol * rep.cfg.volumen); });
       filas.forEach(f => {
         const toca = !segunPartitura || G.toca(sec, f.pf);
         // Al entrar a una sección donde toca, suenan las notas largas que ya venían sonando
