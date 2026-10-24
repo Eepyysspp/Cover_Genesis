@@ -185,3 +185,41 @@ details.cargar-box summary{cursor:pointer;font-weight:700}
 .guia-midi b{color:#ffd6e3}
 .sel-sonido,.orq-sonido{background:rgba(255,255,255,.08);color:inherit;border:1px solid rgba(255,255,255,.18);border-radius:6px;padding:3px 6px;font:inherit;font-size:12px}
 .sel-sonido option,.orq-sonido option{color:#111}
+
+/* ---------- Partitura de guitarra (alphaTab) ---------- */
+.hoja{margin-top:16px;background:#fbfaf7;color:#14121c;border-radius:var(--radius);padding:12px 8px;box-shadow:0 10px 40px rgba(0,0,0,.35);min-height:200px}
+.hoja .muted{color:#6b6880}
+.lista-gtr{margin:0;padding-left:18px;line-height:1.55}
+.lista-gtr li{margin-bottom:4px}
+table.part tr.silencio td{color:var(--muted)}
+/* cursor del reproductor de alphaTab */
+.at-cursor-bar{background:rgba(255,107,154,.16)}
+.at-cursor-beat{background:rgba(194,24,91,.85);width:3px}
+.at-selection div{background:rgba(124,156,255,.18)}
+.at-highlight *{fill:#c2185b;stroke:#c2185b}
+/* compás actual cuando la partitura sigue el reloj de la obra */
+.at-compas-actual{position:absolute;pointer-events:none;background:rgba(255,107,154,.14);border-left:2px solid rgba(194,24,91,.7);border-radius:4px;z-index:2;transition:left .15s,top .15s,width .15s}
+.at-linea-actual{position:absolute;pointer-events:none;width:2px;background:#c2185b;z-index:3}
+/* vista dentro del perfil Guitarra: una sola línea que avanza */
+.parte-gtr .hoja{margin-top:0;padding:6px 0;display:inline-block;min-width:100%;border-radius:10px}
+.parte-gtr .scroller{margin-top:10px;border-radius:10px}
+.parte-gtr .scroller{overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
+.parte-gtr .estado-parte{font-size:14px}
+.parte-gtr .estado-parte b{color:#ffd6e3}
+.hoja.para-imprimir{width:720px;max-width:none;margin-left:auto;margin-right:auto}
+@media print{
+  html,body{background:#fff!important;color:#000}
+  body::before,body::after{display:none!important}
+  .no-imprimir,.barra{display:none!important}
+  .wrap{max-width:none;padding:0}
+  .card{background:#fff;border:1px solid #ccc;color:#000;backdrop-filter:none;break-inside:avoid}
+  .card .muted,table.part th,table.part tr.silencio td{color:#555}
+  table.part th,table.part td{border-top:1px solid #ddd}
+  .hoja{box-shadow:none;padding:0;margin-top:8px;background:#fff}
+  .at-cursors,.at-cursor-bar,.at-cursor-beat,.at-selection,.at-compas-actual,.at-linea-actual{display:none!important}
+  /* cada sistema (línea de partitura) como bloque normal: el navegador corta entre líneas, no encima */
+  .hoja .at-surface{height:auto!important}
+  .hoja .at-surface>div{position:relative!important;top:auto!important;left:auto!important;break-inside:avoid;page-break-inside:avoid}
+  a{color:#000}
+}
+.pagina-guitarra .barra{z-index:1100}   /* sobre el cursor de alphaTab */

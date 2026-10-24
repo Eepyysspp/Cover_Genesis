@@ -218,6 +218,127 @@
     muro:         { bombo: "X.x.x.x.X.x.x.x.", caja: "....X.......X...", hihat: "xoxoxoxoxoxoxoxo", crash: "X.......x......." },
   };
   const VEL_ACENTO = { X: 1, x: 0.82, o: 0.62 };
+
+  /* ---------- Render del 808 ----------
+     Cada golpe es un sonido simple (seno, ruido, cuadradas metálicas) que entra fuerte a un saturador:
+     mientras suena fuerte se distorsiona mucho y la cola se va limpiando, como un 808 saturado.
+     El bombo y los toms se afinan a la nota grave del acorde (grave = esa nota, medio = su quinta, agudo = la octava). */
+  const TONALES_808 = new Set(["bombo", "tomgrave", "tommedio", "tomagudo", "tom"]);
+  const TOMAS_808 = { caja: 2, hihat: 2, abierto: 2 };           // golpes de ruido: dos tomas que se alternan
+  const VEL_808 = [0.62, 1];                                   // intensidades renderizadas (suave, fuerte)
+  const DRIVES_808 = [0.1, 0.3, 0.55, 0.85];                   // niveles de saturación renderizados
+  const DUR_808 = { bombo: 1.6, caja: 0.55, hihat: 0.14, abierto: 0.65, crash: 2.3, tomgrave: 0.65, tommedio: 0.65, tomagudo: 0.65, tom: 1.1 };
+  const nivelDrive808 = drive => DRIVES_808.reduce((m, x, i) => Math.abs(x - drive) < Math.abs(DRIVES_808[m] - drive) ? i : m, 0);
+  const CURVAS_808 = new Map();
+  function curva808(k) {
+    const clave = Math.round(k * 4);
+    if (!CURVAS_808.has(clave)) {
+      const kk = clave / 4, len = 4096, c = new Float32Array(len), norma = Math.tanh(kk);
+      for (let i = 0; i < len; i++) { const x = (i * 2) / len - 1; c[i] = Math.tanh(kk * x) / norma; }
+      CURVAS_808.set(clave, c);
+    }
+    return CURVAS_808.get(clave);
+  }
+  // Dibuja un golpe en un contexto (offline) desde t = 0
+  function dibujar808(ctx, pad, pc, v, drive) {
+    const t = 0.002, d = 0.5 + drive * 1.3, dst = ctx.destination;
+    const osc = (tipo, f) => { const o = ctx.createOscillator(); o.type = tipo; o.frequency.value = f; return o; };
+    const ruido = () => { const s = ctx.createBufferSource(); s.buffer = Motor.ruido; s.loop = true; return s; };
+    const fin = (fuentes, dur) => fuentes.forEach(f => { f.start(t); f.stop(t + dur); });
+    // fuente(s) → envolvente → saturador (k) → volumen → filtro(s) → salida. Devuelve la envolvente.
+    const cadena = (k, post, { lp = 12000, hp = 0 } = {}) => {
+      const env = ctx.createGain(), ws = ctx.createWaveShaper(), g = ctx.createGain(), f = ctx.createBiquadFilter();
+      ws.curve = curva808(k); ws.oversample = "4x";
+      g.gain.value = post; f.type = "lowpass"; f.frequency.value = lp; f.Q.value = 0.6;
+      env.connect(ws).connect(g).connect(f);
+      if (hp) { const h = ctx.createBiquadFilter(); h.type = "highpass"; h.frequency.value = hp; f.connect(h).connect(dst); } else f.connect(dst);
+      env.gain.value = 0;
+      return env;
+    };
+    const METAL = [205.3, 304.4, 369.6, 522.7, 540, 800];   // las seis cuadradas del platillo del 808
+    if (pad === "bombo") {
+      // Seno grave afinado (Fa1–Mi2) con caída de altura rápida: el golpe y la cola tonal
+      const f0 = mtof(29 + ((pc - 5 + 12) % 12)), o = osc("sine", f0);
+      o.frequency.setValueAtTime(f0 * (2.2 + v * 1.2), t);
+      o.frequency.exponentialRampToValueAtTime(f0, t + 0.05);
+      o.frequency.setTargetAtTime(f0 * 0.985, t + 0.25, 0.4);
+      const env = cadena(2.4 + 6 * d, 0.3, { lp: 4200 + 4500 * drive });   // saturado fuerte: sus armónicos se oyen hasta en parlantes chicos
+      o.connect(env);
+      env.gain.setValueAtTime(0, t); env.gain.linearRampToValueAtTime(v, t + 0.003);
+      env.gain.setTargetAtTime(0, t + 0.07, 0.16 + 0.1 * v);   // cola de ~1 s
+      fin([o], 1.6);
+      // Clic de ataque: lo que se oye en parlantes chicos
+      const cl = ruido(), bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 3200; bp.Q.value = 0.9;
+      const ce = cadena(2, 0.5, { lp: 9000 }); cl.connect(bp).connect(ce);
+      ce.gain.setValueAtTime(0.5 * v, t); ce.gain.setTargetAtTime(0, t + 0.001, 0.0025);
+      fin([cl], 0.03);
+    } else if (pad === "caja") {
+      // Clap saturado: tres ráfagas de ruido muy juntas + cuerpo tonal, todo contra el clipeo
+      const n = ruido(), bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 1350 + Math.random() * 200; bp.Q.value = 0.8;
+      const env = cadena(2.5 + 7 * d, 0.36, { lp: 8500, hp: 170 }); n.connect(bp).connect(env);
+      env.gain.setValueAtTime(0, t);
+      const sep = 0.0085 + Math.random() * 0.002;
+      [0, sep, 2 * sep].forEach(dt => { env.gain.setValueAtTime(v, t + dt); env.gain.setTargetAtTime(0.12 * v, t + dt + 0.0005, 0.0032); });
+      env.gain.setValueAtTime(0.85 * v, t + 3 * sep); env.gain.setTargetAtTime(0, t + 3 * sep + 0.002, 0.055 + 0.03 * v);
+      const o = osc("triangle", 195); o.frequency.setValueAtTime(205, t); o.frequency.exponentialRampToValueAtTime(160, t + 0.09);
+      const cuerpo = cadena(1.5 + 3 * d, 0.3, { lp: 5000 }); o.connect(cuerpo);
+      cuerpo.gain.setValueAtTime(0.9 * v, t); cuerpo.gain.setTargetAtTime(0, t + 0.004, 0.045);
+      fin([n], 0.55); fin([o], 0.35);
+    } else if (pad === "hihat" || pad === "abierto" || pad === "crash") {
+      const abierto = pad === "abierto", crash = pad === "crash";
+      const bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = crash ? 7000 : 10000; bp.Q.value = crash ? 0.5 : 0.9;
+      const hpf = ctx.createBiquadFilter(); hpf.type = "highpass"; hpf.frequency.value = crash ? 3800 : 7000;
+      const env = cadena((crash ? 2 : 1.4) + (crash ? 4.5 : 2.6) * d, crash ? 0.36 : 0.5, { lp: 13000 });
+      bp.connect(hpf).connect(env);
+      const fuentes = METAL.map(f => { const o = osc("square", f * (crash ? 1.12 : 1)); const g = ctx.createGain(); g.gain.value = 0.17; o.connect(g).connect(bp); return o; });
+      if (crash) { const nr = ruido(), gn = ctx.createGain(); gn.gain.value = 0.55; nr.connect(gn).connect(bp); fuentes.push(nr); }
+      else { const nr = ruido(), gn = ctx.createGain(); gn.gain.value = 0.12 + Math.random() * 0.06; nr.connect(gn).connect(bp); fuentes.push(nr); }   // un poco de aire distinto en cada toma
+      env.gain.setValueAtTime(0, t); env.gain.linearRampToValueAtTime(v * (crash ? 1 : 0.85), t + (crash ? 0.003 : 0.0015));
+      env.gain.setTargetAtTime(0, t + 0.004, crash ? 0.38 : abierto ? 0.1 : 0.014 + 0.006 * v);
+      fin(fuentes, DUR_808[pad]);
+    } else {
+      const base = 41 + ((pc - 5 + 12) % 12);
+      const m = pad === "tommedio" ? base + 7 : pad === "tomagudo" ? base + 12 : base;
+      const pulso = pad === "tom";   // el tom de la intro: un golpe redondo, más largo y menos saturado
+      const f = mtof(m), o = osc("sine", f);
+      o.frequency.setValueAtTime(f * (pulso ? 1.8 : 1.5), t); o.frequency.exponentialRampToValueAtTime(f, t + (pulso ? 0.04 : 0.03));
+      const env = cadena((pulso ? 1.2 : 1.8) + (pulso ? 2.4 : 3.6) * d, pulso ? 0.6 : 0.5, { lp: 5000 });
+      o.connect(env);
+      env.gain.setValueAtTime(0, t); env.gain.linearRampToValueAtTime(v, t + 0.003);
+      env.gain.setTargetAtTime(0, t + 0.03, pulso ? 0.16 : 0.085);
+      fin([o], DUR_808[pad]);
+    }
+  }
+  // Caché compartida por todas las baterías de la página. Se renderiza de a uno para no trabar el audio en vivo.
+  const LISTOS_808 = new Map(), PEDIDOS_808 = new Set(), COLA_808 = [];
+  const clave808 = (pad, pc, vl, dl, tk) => `${pad}|${pc}|${vl}|${dl}|${tk}`;
+  function pedir808(pad, pc, vl, dl, tk) {
+    const k = clave808(pad, pc, vl, dl, tk);
+    if (LISTOS_808.has(k) || PEDIDOS_808.has(k)) return;
+    PEDIDOS_808.add(k); COLA_808.push({ k, pad, pc, vl, dl });
+    if (COLA_808.length === 1) siguiente808();
+  }
+  async function siguiente808() {
+    while (COLA_808.length) {
+      const j = COLA_808[0], sr = Motor.ctx.sampleRate;
+      try {
+        const off = new OfflineAudioContext(1, Math.ceil(DUR_808[j.pad] * sr), sr);
+        dibujar808(off, j.pad, j.pc, VEL_808[j.vl], DRIVES_808[j.dl]);
+        LISTOS_808.set(j.k, await off.startRendering());
+      } catch (e) { console.warn("808:", j.k, e.message); }
+      COLA_808.shift();
+    }
+  }
+  // El buffer pedido, o el más parecido que ya esté listo (otra saturación u otra toma) mientras se renderiza
+  function listo808(pad, pc, vl, dl, tk) {
+    const exacto = LISTOS_808.get(clave808(pad, pc, vl, dl, tk));
+    if (exacto) return exacto;
+    pedir808(pad, pc, vl, dl, tk);
+    for (const dd of [0, 1, -1, 2, -2, 3, -3]) for (const v of [vl, 1 - vl]) for (const t of [tk, 0, 1]) {
+      const b = LISTOS_808.get(clave808(pad, pc, v, dl + dd, t)); if (b) return b;
+    }
+    return null;
+  }
   class Bateria {
     constructor() {
       const ctx = Motor.ctx;
@@ -231,15 +352,25 @@
       this.bus.connect(this.dist.ent); this.dist.sal.connect(this.comp); this.comp.connect(this.out.entrada);
       this.samples = {};
       this.alGolpe = null;
+      // Kit: "muestras" (las de la partitura, FL) · "808" (golpes de distorsión, el bombo afinado al acorde) · "sintetizado"
+      this.kit = "muestras";
+      this.obraEn = null;   // tiempo de audio → segundo de la obra (para afinar el 808 al acorde que suena)
       this.aplicar();
     }
     aplicar() {
       this.out.volumen.gain.setTargetAtTime(this.p.vol, Motor.t, 0.05);
       this.out.envio.gain.setTargetAtTime(this.p.reverb, Motor.t, 0.05);
-      this.dist.mezcla(this.p.drive, Motor.t);
+      // El 808 ya trae su propia distorsión por golpe: el bus le suma menos para no aplastarlo
+      this.dist.mezcla(this.kit === "808" ? this.p.drive * 0.5 : this.p.drive, Motor.t);
+      if (this.kit === "808" && this._capa808 !== this.capaDrive()) { this._capa808 = this.capaDrive(); this.precargar808(); }
+    }
+    ponerKit(kit) { this.kit = kit; this.aplicar(); if (kit === "808") this.precargar808(); }
+    aviso(pad, t) {
+      if (this.alGolpe) setTimeout(() => this.alGolpe(/^tom/.test(pad) ? "tom" : pad), Math.max(0, (t - Motor.t) * 1000));
     }
     // Muestra para un golpe: un archivo, o capas por intensidad con varias tomas que se alternan (no se repite la misma)
     muestra(pad, vel) {
+      if (this.kit !== "muestras") return null;
       const s = this.samples[pad];
       if (!s || !s.capas) return s ? { buffer: s, gan: vel } : null;
       const c = s.capas.find(c => vel <= c.hasta) || s.capas[s.capas.length - 1];
@@ -249,10 +380,12 @@
       c.ultimo = i;
       return { buffer: c.buffers[i], gan: 0.35 + 0.65 * vel };   // la capa ya cambia el color; la ganancia sigue la intensidad sin aplastarla
     }
-    tocar(pad, t = Motor.t, vel = 1) {
+    // r (opcional) = segundo de la obra de este golpe; sirve para afinar el 808
+    tocar(pad, t = Motor.t, vel = 1, r = null) {
       const M = Motor, ctx = M.ctx, dst = this.bus;
-      if (!this.samples[pad] && (pad === "tomgrave" || pad === "tommedio" || pad === "tomagudo")) return this.tocarTom(pad, t, vel);
-      if (this.alGolpe) { const retraso = Math.max(0, (t - M.t) * 1000); setTimeout(() => this.alGolpe(/^tom/.test(pad) ? "tom" : pad), retraso); }
+      if (this.kit === "808") { this.aviso(pad, t); return this.tocar808(pad, t, vel, r); }
+      if (!(this.kit === "muestras" && this.samples[pad]) && (pad === "tomgrave" || pad === "tommedio" || pad === "tomagudo")) return this.tocarTom(pad, t, vel);
+      this.aviso(pad, t);
       const mu = this.muestra(pad, vel);
       if (mu) { M.tocarBuffer(mu.buffer, dst, { vel: mu.gan, t }); return; }
       const g = ctx.createGain(); g.connect(dst);
@@ -279,12 +412,57 @@
     // Toms de los redobles sin muestra propia: el tom, más grave o más agudo
     tocarTom(pad, t, vel) {
       const M = Motor, rate = pad === "tomgrave" ? 0.82 : pad === "tomagudo" ? 1.2 : 1;
-      if (this.alGolpe) setTimeout(() => this.alGolpe("tom"), Math.max(0, (t - M.t) * 1000));
+      this.aviso(pad, t);
       const mu = this.muestra("tom", vel);
       if (mu) { const b = M.tocarBuffer(mu.buffer, this.bus, { vel: mu.gan, t }); b.fuente.playbackRate.value = rate; return; }
       const g = M.ctx.createGain(); g.connect(this.bus);
       const o = M.fuente("sine", 140 * rate); o.frequency.exponentialRampToValueAtTime(80 * rate, t + 0.3);
       o.connect(g); g.gain.setValueAtTime(0.8 * vel, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5); o.start(t); o.stop(t + 0.55);
+    }
+
+    /* ---------- 808: golpes de distorsión ----------
+       Cada golpe se renderiza una vez (en segundo plano) y después se toca como una muestra: así cuesta lo mismo
+       que el kit de FL. Se guarda por golpe, nota grave del acorde, intensidad y nivel de saturación. */
+    capaDrive() { return nivelDrive808(this.p.drive); }
+    precargar808() {
+      const G = window.G, dl = this.capaDrive();
+      const graves = new Set([1]);
+      (G.P && G.P.secciones || []).forEach(s => (s.acordes || []).forEach(n => { const a = G.parseAcorde(n); if (a) graves.add(a.bajo); }));
+      for (const pad of ["bombo", "caja", "hihat", "crash", "abierto", "tomgrave", "tommedio", "tomagudo", "tom"])
+        for (const vl of [1, 0]) for (const pc of TONALES_808.has(pad) ? graves : [0]) for (const tk of [0, 1].slice(0, TOMAS_808[pad] || 1)) pedir808(pad, pc, vl, dl, tk);
+    }
+    // Nota grave del acorde (clase 0–11) en el segundo de la obra de este golpe
+    grave808(t, r) {
+      const G = window.G, obra = r != null ? r : this.obraEn ? this.obraEn(t) : null;
+      if (obra == null || !G.acordeEn) return 1;   // Re♭
+      const a = G.parseAcorde(G.acordeEn(Math.min(Math.max(0, obra + 0.03), G.DURACION - 0.01)).nombre);
+      return a ? a.bajo : 1;
+    }
+    tocar808(pad, t, vel, r) {
+      const M = Motor, ctx = M.ctx;
+      const pc = TONALES_808.has(pad) ? this.grave808(t, r) : 0, vl = vel > 0.78 ? 1 : 0;
+      const tomas = TOMAS_808[pad] || 1, tk = tomas > 1 ? (this._toma808 = ((this._toma808 || 0) + 1) % tomas) : 0;
+      const buf = listo808(pad, pc, vl, this.capaDrive(), tk);
+      if (!buf) { this.precargar808(); return; }   // aún renderizando (solo pasa los primeros instantes)
+      if (!this._trim808) {
+        const trim = ctx.createGain(); trim.gain.value = 0.7;   // mismo volumen percibido que el kit de FL (en parlantes grandes y de laptop)
+        const hp = ctx.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 26; hp.Q.value = 0.7;   // quita lo que solo mueve el parlante
+        const sub = ctx.createBiquadFilter(); sub.type = "lowshelf"; sub.frequency.value = 75; sub.gain.value = -3;   // el sub un poco más contenido
+        trim.connect(hp).connect(sub).connect(this.bus); this._trim808 = trim;
+      }
+      const s = ctx.createBufferSource(); s.buffer = buf;
+      const g = ctx.createGain(); g.gain.value = Math.pow(Math.min(1.3, vel / VEL_808[vl]), 0.8);
+      s.connect(g).connect(this._trim808); s.start(t);
+      if (pad === "bombo") {
+        // Un bombo a la vez: el nuevo corta al anterior. Si vienen seguidos (corcheas del muro), la cola se acorta.
+        const ant = this._bombo808;
+        if (ant && ant.t < t) { ant.g.gain.setTargetAtTime(0, t, 0.006); try { ant.s.stop(t + 0.08); } catch (e) {} }
+        if (ant && t - ant.t < 0.32) g.gain.setTargetAtTime(0, t + 0.07, 0.075);
+        this._bombo808 = { g, s, t };
+      }
+      // El hi-hat cerrado corta al abierto, como el pedal
+      if (pad === "hihat" && this._abierto808 && this._abierto808.t < t) this._abierto808.g.gain.setTargetAtTime(0, t, 0.008);
+      if (pad === "abierto") this._abierto808 = { g, t };
     }
   }
 
@@ -542,5 +720,6 @@
     }
   }
 
-  window.Audio2 = { Motor, Guitarra, Bateria, Teclado, Ambiente, PADS, PATRONES, VEL_ACENTO };
+  const estado808 = () => ({ listos: LISTOS_808.size, pendientes: COLA_808.length });
+  window.Audio2 = { Motor, Guitarra, Bateria, Teclado, Ambiente, PADS, PATRONES, VEL_ACENTO, estado808 };
 })();

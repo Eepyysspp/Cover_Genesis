@@ -62,6 +62,30 @@ Cada instrumento usa por defecto el mismo sonido que su página (`sonidos` de la
 - Parte y para con el reloj de la obra. Para practicar un tramo, elige la sección en «Ir a sección…» y presiona **▶ Iniciar ahora**. Las notas largas que ya venían sonando (como el drone del ambiente) entran aunque partas a la mitad.
 - Lo que elijas queda guardado en el navegador para tu perfil.
 
+## Batería 808 (reinterpretación)
+
+En la página de batería, **Sonido** permite cambiar el kit: **Batería (FL)** (las muestras de la partitura), **808 distorsionado** o **Sintetizado**. En "Practicar con la orquesta", la fila de la batería tiene el mismo selector.
+
+- **808 distorsionado**: cada golpe es un sonido simple que entra fuerte a un saturador, como un 808 pasado por distorsión.
+  - Bombo: seno grave con golpe de altura.
+  - Caja: clap de ruido.
+  - Hi-hats y crash: las seis cuadradas metálicas del 808.
+  - Toms: senos con golpe.
+- El **bombo y los toms se afinan solos** a la nota grave del acorde que suena en la obra (B♭, G♭, D♭…).
+  - Tom grave: esa nota. Tom medio: su quinta. Tom agudo: la octava.
+- **Saturación** (y los efectos automáticos de cada parte) empujan más la distorsión.
+- Los golpes se renderizan una vez al elegir el kit (menos de un segundo) y después se tocan como muestras, así que cuesta lo mismo que el kit de FL.
+
+## Guitarra real: partitura y tablatura
+
+`guitarra.html` tiene la parte de la guitarra eléctrica en partitura y tablatura. Se puede escuchar con cursor, a menor velocidad y con metrónomo, e imprimir o guardar como PDF.
+
+- El **compás 1 es el 0:00** del reloj de la obra, así que los números de compás coinciden con la página de cada perfil.
+- En el perfil Guitarra, el panel **📄 Tu parte** muestra la misma partitura en una línea que sigue el reloj y marca el compás actual.
+- La parte está en `js/guitarra_parte.js`, en formato alphaTex. Es una parte propia sobre los acordes de la obra (arpegios, muro y líneas solistas), no una transcripción de la melodía de la grabación.
+- PDF listo para imprimir: `partituras/guitarra_genesis.pdf`.
+- La dibuja [alphaTab](https://alphatab.net) (MPL 2.0), incluido en `lib/alphatab/` para que funcione sin internet.
+
 ## Pistas MIDI
 
 Las pistas del arreglo están en `midi/` (melodía, medio, pad, bajo, pedal F, ambiente y batería). Están a 130 BPM y empiezan en 0:00, así que calzan con el reloj de la obra.
@@ -116,12 +140,16 @@ Para probarlo en tu computador, abre `index.html` en Chrome. Para cargar sonidos
 ```
 index.html        Hub: perfiles, hora común y partitura general
 tocar.html        Página de control de cada perfil (?p=guitarra, ?p=teclado-2, …)
+guitarra.html     Partitura y tablatura de la guitarra real (leer, escuchar, imprimir)
 js/partitura.js   ← la obra: tempo, secciones, acordes, colores, instrucciones
 js/comun.js       Perfiles, tiempos y acordes
 js/audio.js       Síntesis de los instrumentos (Web Audio) y sampler
 js/midi.js        Pistas MIDI: lector, reproductor sincronizado y modos creativos
 js/pistas_midi.js Los .mid empaquetados (lo genera midi/empaquetar.py)
 js/tocar.js       Interfaz, reloj y controles
+js/guitarra_parte.js  La parte de guitarra real (alphaTex) y su guía por sección
+js/guitarra_vista.js  Dibuja esa parte con alphaTab y la hace seguir el reloj
+lib/alphatab/     alphaTab 1.8.4 (MPL 2.0), fuente Bravura (OFL) y soundfont Sonivox (Apache 2.0)
 css/estilo.css    Estilos
 midi/             Pistas MIDI del arreglo + empaquetar.py
 sonidos/          Sonidos propios (sonidos/extraidos/ no se publica: ver sonidos/LEEME.md)

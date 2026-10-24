@@ -272,7 +272,9 @@
     alEfectos = efectosDe(inst, { fuzz: (e, b) => val(e, b, "fuzz"), tono: (e, b) => val(e, b, "tono"), reverb: (e, b) => val(e, b, "reverb"), vol: volRel });
     // Guía: lo que toca tu pista MIDI (la melodía)
     const guiaG = el(`<div class="guia-midi"></div>`); panel.insertBefore(guiaG, panel.children[2] || null);
+    const parte = parteGuitarra();
     alCuadro = t => {
+      parte.cuadro(t);
       const g = notasGuia(Math.min(Math.max(t, 0), DURACION - 0.01)); if (!g) return;
       const html = `🎼 <b>${esc(g.pista.nombre)}</b> · ahora: <b>${g.ahora.length ? g.ahora.map(nombreB).join(" ") : "—"}</b>` +
         (g.sig.length ? ` · luego: ${g.sig.map(nombreB).join(" ")} <span class="muted">en ${g.enSig.toFixed(1)} s</span>` : "");
@@ -308,6 +310,46 @@
     }) };
   }
 
+  /* Parte de la guitarra real (js/guitarra_parte.js): partitura y tablatura en una línea que sigue el reloj de la obra.
+     La página guitarra.html tiene la misma parte para leer entera, escucharla e imprimirla. */
+  function parteGuitarra() {
+    const caja = $("panelParte");
+    if (!caja || !window.PARTE_GUITARRA || !window.VistaGuitarra) return { cuadro: () => {} };
+    const PG = window.PARTE_GUITARRA;
+    caja.classList.remove("oculto");
+    caja.innerHTML = "";
+    const cab = el(`<div class="fila" style="justify-content:space-between">
+      <div><h3 style="margin:0">📄 Tu parte · partitura y tablatura</h3>
+        <div class="muted small">Guitarra real, compás por compás (compás 1 = 0:00). Lo marcado en rosado es donde va la obra.</div></div>
+      <div class="fila" style="gap:8px"><button class="btn peq" data-r="seguir">Seguir el reloj</button>
+        <a class="btn peq" href="guitarra.html" target="_blank" rel="noopener">Leer entera e imprimir ↗</a></div></div>`);
+    const estado = el(`<div class="guia-midi estado-parte">Cargando la partitura…</div>`);
+    const scroller = el(`<div class="scroller"></div>`), hoja = el(`<div class="hoja"></div>`);
+    scroller.appendChild(hoja); caja.append(cab, estado, scroller);
+    const bSeguir = cab.querySelector("[data-r=seguir]");
+    let seguir = G.leer("gtr:seguir", true), vista = null, ultimo = "";
+    const pintarSeguir = () => bSeguir.classList.toggle("on", seguir);
+    bSeguir.onclick = () => { seguir = !seguir; G.guardar("gtr:seguir", seguir); pintarSeguir(); if (!seguir && vista) vista.ocultarMarca(); };
+    pintarSeguir();
+    VistaGuitarra.crear(hoja, { horizontal: true, escala: 0.85, scroller })
+      .then(v => { vista = v; ultimo = ""; })
+      .catch(e => { estado.textContent = "No se pudo cargar la partitura: " + e.message; });
+    return {
+      cuadro(t) {
+        const tc = Math.min(Math.max(t, 0), DURACION - 0.01), n = Math.floor(tc / PG.SEG_POR_COMPAS) + 1;
+        const sec = VistaGuitarra.seccionDeCompas(n);
+        if (vista && seguir) vista.seguir(tc);
+        if (!sec) return;
+        const sig = PG.SECCIONES.find(x => x.compases[0] > n && x.toca);
+        const faltan = sig ? (sig.compases[0] - 1) * PG.SEG_POR_COMPAS - tc : 0;
+        const html = `Compás <b>${n}</b> · ${esc(sec.nombre)} · ` + (sec.toca
+          ? `<b>▶ tocas</b> (hasta el ${sec.compases[1]})${sec.fuzz ? ` · fuzz ${esc(sec.fuzz)}` : ""}`
+          : `<b>⏸ silencio</b>${sig ? ` · entras en el compás ${sig.compases[0]} (${fmt(faltan)})` : ""}`);
+        if (vista && html !== ultimo) { estado.innerHTML = html; ultimo = html; }
+      },
+    };
+  }
+
   /* ---------- BATERÍA ---------- */
   function panelBateria() {
     inst = new Bateria();
@@ -331,9 +373,26 @@
     });
     function ponerPatron(id) { inst.p.patron = id || null; botonesPat.forEach((b, i) => b.classList.toggle("on", opciones[i][0] === id)); ultimoPaso = null; }
     ponerPatron("");
-    panel.append(pads, pats, sliders([slider("Volumen", inst.p, "vol", () => inst.aplicar()), slider("Reverb", inst.p, "reverb", () => inst.aplicar()),
+    // Kit: las muestras de la partitura (FL), el 808 de golpes distorsionados (afinado al acorde) o el sintetizado simple
+    const KITS = [["muestras", "Batería (FL)"], ["808", "808 distorsionado"], ["sintetizado", "Sintetizado"]];
+    const filaKit = el(`<div class="fila"><span class="muted small">Sonido:</span><select class="sel-sonido" aria-label="Sonido de la batería"></select>
+      <span class="muted small" data-r="nota"></span></div>`);
+    const selKit = filaKit.querySelector("select"), notaKit = filaKit.querySelector("[data-r=nota]");
+    KITS.forEach(([v, n]) => selKit.add(new Option(n, v)));
+    let kit = G.leer("kit:" + perfil.id, "muestras"); if (!KITS.some(k => k[0] === kit)) kit = "muestras";
+    const ponerKit = k => {
+      kit = k; selKit.value = k; inst.ponerKit(k);
+      notaKit.textContent = k === "808" ? "Reinterpretación: golpes de distorsión; bombo y toms se afinan solos al acorde. «Saturación» los empuja más." : "";
+      panel.classList.toggle("kit-808", k === "808");
+      const NOMBRES_808 = { bombo: "Bombo 808", caja: "Clap saturado", hihat: "Hat metálico", abierto: "Hat abierto", tom: "Tom 808", crash: "Crash de ruido" };
+      PADS.forEach(p => { const d = mapa[p.id]; if (d && d.firstChild) d.firstChild.textContent = k === "808" ? NOMBRES_808[p.id] : p.nombre; });
+    };
+    selKit.onchange = () => { ponerKit(selKit.value); G.guardar("kit:" + perfil.id, kit); };
+    ponerKit(kit);
+    inst.obraEn = ta => Math.min(Math.max(0, ahora() + (ta - Motor.t)), DURACION - 0.01);
+    panel.append(pads, pats, filaKit, sliders([slider("Volumen", inst.p, "vol", () => inst.aplicar()), slider("Reverb", inst.p, "reverb", () => inst.aplicar()),
       slider("Saturación", inst.p, "drive", () => inst.aplicar())]), controlesLuces());
-    panel.appendChild(el(`<div class="fila"></div>`)).appendChild(btnEfectos);
+    filaKit.appendChild(btnEfectos);
     alEfectos = efectosDe(inst, { vol: volRel, reverb: (e, b) => val(e, b, "reverb"), drive: (e, b) => val(e, b, "drive") });
 
     const cargs = PADS.map(p => cargador(p.nombre, { alCargar: b => { inst.samples[p.id] = b; }, alQuitar: () => { delete inst.samples[p.id]; } }));
@@ -389,7 +448,7 @@
       const o = opciones.find(o => o[2].toLowerCase() === e.key.toLowerCase()); if (o) ponerPatron(o[0]);
     });
     return { sonidoDefecto: (b, pad) => { inst.samples[pad] = b; const i = PADS.findIndex(p => p.id === pad); if (i >= 0) cargs[i].marcar("Propio (partitura)"); },
-      midiDestino: () => ({ esBateria: true, nota: (m, v, t, d, golpe) => inst.tocar(golpe || MIDI.padDeNota(m), t, v) }) };
+      midiDestino: () => ({ esBateria: true, nota: (m, v, t, d, golpe, r) => inst.tocar(golpe || MIDI.padDeNota(m), t, v, r) }) };
   }
 
   /* ---------- TECLADO ---------- */

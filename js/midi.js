@@ -706,6 +706,9 @@
   const bajar = url => { if (!bufferes.has(url)) bufferes.set(url, window.Audio2.Motor.cargarURL(url)); return bufferes.get(url); };
   // Sonidos extra del catálogo de la partitura (p. ej. Square Woof) que puede elegir un teclado
   const catalogoPara = pf => (pf.tipo === "teclado" ? (P.catalogo || []) : []);
+  // Opciones de sonido de cada fila de la orquesta: [valor, nombre]. Solo teclados y batería tienen para elegir.
+  const opcionesSonido = pf => pf.tipo === "bateria" ? [["partitura", "Sonido: partitura (FL)"], ["808", "808 distorsionado"], ["sintetizado", "Sintetizado"]]
+    : catalogoPara(pf).length ? [["partitura", "Sonido: partitura"], ...catalogoPara(pf).map(c => [c.id, c.nombre]), ["sintetizado", "Sintetizado"]] : [];
   // La grabación del catálogo más cercana al registro del perfil. real = altura verdadera (pistas MIDI);
   // base = altura al tocar a mano (los teclados bajos suenan una octava abajo de la tecla, como su sonido de la partitura).
   function muestraCatalogo(pf, id) {
@@ -739,11 +742,13 @@
     const cargar = alListo => sonidosDe(pf, eleccion).then(s => { if (s) alListo(s); }).catch(e => console.warn("Orquesta: sin sonido propio para", pf.id, e.message));
     if (pista.bateria) {
       const b = new A.Bateria();
-      cargar(s => { if (s.varios) Object.keys(s.varios).forEach(k => b.samples[k] = s.varios[k].buffer); });
+      // Sonido: "partitura" (muestras de FL), "808" (golpes de distorsión afinados al acorde) o "sintetizado"
+      if (eleccion === "808" || eleccion === "sintetizado") b.ponerKit(eleccion);
+      else cargar(s => { if (s.varios) Object.keys(s.varios).forEach(k => b.samples[k] = s.varios[k].buffer); });
       const base = { vol: b.p.vol, reverb: b.p.reverb, drive: b.p.drive };
       const efectos = e => { const n = { vol: base.vol * (e.vol != null ? e.vol : 1), reverb: e.reverb != null ? e.reverb : base.reverb, drive: e.drive != null ? e.drive : base.drive };
         if (cambia(b.p, n)) { Object.assign(b.p, n); b.aplicar(); } };
-      return { esBateria: true, efectos, nota: (m, v, t, d, golpe) => b.tocar(golpe || padDeNota(m), t, v) };
+      return { esBateria: true, efectos, nota: (m, v, t, d, golpe, r) => b.tocar(golpe || padDeNota(m), t, v, r) };
     }
     if (pf.tipo === "guitarra") {
       const g = new A.Guitarra(); g.p.fuzz = 0.3; g.aplicar();
@@ -844,11 +849,11 @@
       const [chk, vol] = fila.querySelectorAll("input");
       chk.onchange = () => { f.capa.mute = !chk.checked; pintar(); guardar(); };
       vol.oninput = () => { f.capa.vol = +vol.value; guardar(); };
-      // Sonido de cada teclado: el de la partitura, uno del catálogo (p. ej. Square Woof) o el sintetizado
-      const extra = catalogoPara(f.pf);
-      if (extra.length) {
+      // Sonido de cada fila: teclados (partitura, catálogo como Square Woof, sintetizado) y batería (FL, 808 distorsionado, sintetizado)
+      const ops = opcionesSonido(f.pf);
+      if (ops.length) {
         const sel = el(`<select class="orq-sonido" title="Sonido de ${esc(f.pf.nombre)}" aria-label="Sonido de ${esc(f.pf.nombre)}"></select>`);
-        [["partitura", "Sonido: partitura"], ...extra.map(c => [c.id, c.nombre]), ["sintetizado", "Sintetizado"]].forEach(([v, n]) => sel.add(new Option(n, v, false, v === f.son)));
+        ops.forEach(([v, n]) => sel.add(new Option(n, v, false, v === f.son)));
         if (sel.value !== f.son) { f.son = "partitura"; sel.value = "partitura"; }
         sel.addEventListener("click", e => e.stopPropagation());
         sel.onchange = () => { f.son = sel.value; guardar(); if (creados) f.capa.destino = destinoDe(f.pf, f.pista, f.son); };

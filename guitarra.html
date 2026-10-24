@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Guitarra real · Genesis</title>
+  <meta name="description" content="Partitura y tablatura de la guitarra real para el cover de Genesis (Orquesta de Laptops UC).">
+  <link rel="stylesheet" href="css/estilo.css">
+</head>
+<body class="pagina-guitarra">
+<header class="barra no-imprimir">
+  <div class="in">
+    <div class="fila" style="gap:8px">
+      <a class="btn peq" href="index.html">← Hub</a>
+      <a class="btn peq" href="tocar.html?p=guitarra">🎸 Perfil Guitarra</a>
+    </div>
+    <div style="font-weight:800">Guitarra real · partitura y tablatura</div>
+    <div class="fila" style="gap:8px">
+      <button class="btn primario" id="btnPlay" disabled>Cargando sonido…</button>
+      <select id="desde" aria-label="Escuchar desde"></select>
+      <select id="vel" aria-label="Velocidad">
+        <option value="0.6">Lento · 60 %</option><option value="0.8">80 %</option><option value="1" selected>Tempo real · 130</option>
+      </select>
+      <button class="btn peq" id="btnMetro" title="Metrónomo mientras escuchas">Metrónomo</button>
+      <button class="btn peq" id="btnImprimir">🖨 Imprimir / PDF</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="card guia-gtr">
+    <h1 style="margin:0 0 6px">🎸 Guitarra real</h1>
+    <p class="muted" style="margin:0 0 10px">Lo que toca la guitarra eléctrica en vivo, compás por compás.
+      El <b>compás 1 es el 0:00</b> del reloj de la obra (130 BPM, 4/4: cada compás dura 1,85 s), así que el número de compás de la
+      partitura coincide con lo que marca la página de cada integrante.</p>
+    <div class="dos-col small">
+      <div>
+        <h3 style="margin:0 0 6px">Cómo está pensada</h3>
+        <ul class="lista-gtr">
+          <li>Afinación estándar, sin cejilla. Casi todo pasa alrededor del <b>traste 9</b>: B♭m7, G♭maj7 y D♭ comparten arriba el Re♭ del traste 9 (1.ª cuerda), que queda sonando como pedal.</li>
+          <li>Es una <b>parte propia sobre los acordes de la obra</b> (arpegios, muro y líneas solistas), no una transcripción de la melodía de la grabación.</li>
+          <li>Tocas en los compases <b>11–22</b>, <b>43–74</b> y <b>92–95</b>. En los silencios, la página de tu perfil muestra cuánto falta para entrar.</li>
+        </ul>
+      </div>
+      <div>
+        <h3 style="margin:0 0 6px">Sonido</h3>
+        <ul class="lista-gtr">
+          <li><b>Fuzz</b> y <b>tono</b> siguen la tabla de efectos de la partitura (<code>js/partitura.js</code>): limpio en el solo, el máximo en el clímax.</li>
+          <li><b>Reverb</b> siempre presente; en el final sube hasta casi lavarlo todo.</li>
+          <li>Los <b>swells</b> (D y H) se hacen con la perilla de volumen o un pedal de volumen.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" style="margin-top:16px">
+    <h2 style="margin-top:0">Mapa de la parte</h2>
+    <div class="tabla-scroll"><table class="part" id="mapa"></table></div>
+  </section>
+
+  <section class="hoja" id="hoja" aria-label="Partitura y tablatura"><p class="muted cargando-hoja">Dibujando la partitura…</p></section>
+  <p class="muted small no-imprimir" style="margin-top:10px">Partitura dibujada con <a href="https://alphatab.net" style="color:var(--accent2)">alphaTab</a> (MPL 2.0). Haz clic en una nota para escuchar desde ahí.</p>
+</main>
+
+<script src="js/guitarra_parte.js"></script>
+<script src="js/guitarra_vista.js"></script>
+<script>
+(async function () {
+  const PG = window.PARTE_GUITARRA;
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const leer = (k, d) => { try { const v = localStorage.getItem("genesis:" + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
+  const guardar = (k, v) => { try { localStorage.setItem("genesis:" + k, JSON.stringify(v)); } catch (e) {} };
+
+  // Mapa por sección
+  document.getElementById("mapa").innerHTML = "<tr><th>Compases</th><th>Desde</th><th>Parte</th><th>Qué tocas</th><th>Fuzz</th><th>Tono</th><th>Reverb</th></tr>" +
+    PG.SECCIONES.map(s => `<tr class="${s.toca ? "" : "silencio"}"><td>${s.compases[0]}–${s.compases[1]}</td><td>${s.hora}</td><td><strong>${esc(s.nombre)}</strong></td>
+      <td class="small">${esc(s.texto)}</td><td class="small">${esc(s.fuzz || "—")}</td><td class="small">${esc(s.tono || "—")}</td><td class="small">${esc(s.reverb || "—")}</td></tr>`).join("");
+
+  // Escuchar desde una sección
+  const desde = document.getElementById("desde");
+  desde.add(new Option("Desde el comienzo", "1"));
+  PG.SECCIONES.filter(s => s.toca).forEach(s => desde.add(new Option(`Desde ${s.hora} · ${s.nombre}`, String(s.compases[0]))));
+  desde.value = String(leer("gtr:desde", "11"));
+
+  const hoja = document.getElementById("hoja");
+  const btnPlay = document.getElementById("btnPlay"), vel = document.getElementById("vel"), metro = document.getElementById("btnMetro");
+  let vista;
+  try {
+    vista = await VistaGuitarra.crear(hoja, { reproductor: true, imprimir: true, escala: 0.95, scrollOffsetY: -(document.querySelector(".barra").offsetHeight + 16),
+      alListo: () => { const c = hoja.querySelector(".cargando-hoja"); if (c) c.remove(); } });
+  } catch (e) { hoja.innerHTML = `<p class="muted">No se pudo cargar la partitura (${esc(e.message)}).</p>`; return; }
+  const api = vista.api;
+  const COMPAS = 3840;   // ticks por compás de 4/4 en alphaTab
+  let tocando = false, metroOn = leer("gtr:metro", false);
+  metro.classList.toggle("on", metroOn);
+  api.playerReady.on(() => { btnPlay.disabled = false; btnPlay.textContent = "▶ Escuchar"; api.metronomeVolume = metroOn ? 1 : 0; });
+  api.playerStateChanged.on(e => { tocando = e.state === 1; btnPlay.textContent = tocando ? "⏸ Pausa" : "▶ Escuchar"; });
+  btnPlay.onclick = () => {
+    if (!tocando && api.tickPosition === 0 && desde.value !== "1") api.tickPosition = (+desde.value - 1) * COMPAS;
+    api.playPause();
+  };
+  desde.onchange = () => { guardar("gtr:desde", +desde.value); api.stop(); api.tickPosition = (+desde.value - 1) * COMPAS; };
+  vel.onchange = () => { api.playbackSpeed = +vel.value; };
+  metro.onclick = () => { metroOn = !metroOn; guardar("gtr:metro", metroOn); metro.classList.toggle("on", metroOn); api.metronomeVolume = metroOn ? 1 : 0; };
+  // Imprimir: se vuelve a dibujar al ancho de una hoja A4, se espera a que termine y recién ahí se abre el diálogo
+  const redibujado = () => new Promise(ok => { let listo = false; api.renderFinished.on(() => { if (!listo) { listo = true; ok(); } }); });
+  window.prepararImpresion = async () => {
+    if (tocando) api.pause();
+    // cambiar el ancho ya hace que alphaTab redibuje; solo si no lo hace se le pide (dos dibujos a la vez se superponen)
+    const fin = redibujado(); hoja.classList.add("para-imprimir");
+    const nada = await Promise.race([fin.then(() => false), new Promise(r => setTimeout(() => r(true), 1500))]);
+    if (nada) { const otra = redibujado(); api.render(); await otra; }
+    await new Promise(r => setTimeout(r, 300));
+  };
+  window.addEventListener("afterprint", () => hoja.classList.remove("para-imprimir"));   // al volver al ancho normal, alphaTab redibuja solo
+  document.getElementById("btnImprimir").onclick = async () => { await window.prepararImpresion(); window.print(); };
+  document.addEventListener("keydown", e => { if (e.code === "Space" && !/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) { e.preventDefault(); if (!btnPlay.disabled) btnPlay.click(); } });
+})();
+</script>
+</body>
+</html>
