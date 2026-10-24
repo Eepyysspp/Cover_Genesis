@@ -50,6 +50,10 @@ Cada instrumento usa por defecto el mismo sonido que su página (`sonidos` de la
 
 **Guía de cada perfil.** Las entradas y silencios (`tocan`), la guía en rosado del piano, los botones de acordes y la línea "🎼 ahora / luego" salen de la pista MIDI de cada perfil (`midi.porPerfil`). Si cambias una pista o el reparto, vuelve a revisar `tocan` en la partitura.
 
+**Efectos automáticos.** La tabla `efectos` de la partitura dice, para cada parte, la distorsión, filtro, reverb y volumen de cada teclado, el fuzz/tono de la guitarra y el volumen/reverb/saturación de la batería (con subidas y fundidos). En "Practicar con la orquesta" se aplican solos (botón 🎛️ Efectos automáticos; los ambientes siguen su guía X/Y). En la página de cada perfil, el mismo botón mueve sus controles; si tocas un control, se desactiva.
+
+**Batería.** Muestras con capas por intensidad y dos tomas que se alternan (`sonidos/fl/bateria/`), un bus con saturación y compresión, y la pista MIDI con acentos, pequeñas variaciones humanas, redobles antes de cada parte y crash al llegar. Los patrones W/E suman el crash y los redobles del MIDI cuando corre el reloj.
+
 **Sonidos a elegir.** Cada teclado tiene un selector **Sonido**: el de la partitura (FL), los del `catalogo` de la partitura (hoy **Square Woof** de FLEX) o el sintetizado. En "Practicar con la orquesta" cada teclado tiene el mismo selector en su fila. La elección se guarda en el navegador.
 
 - **Según la partitura**: cada instrumento entra y calla como dice `tocan` en cada sección. Cada fila muestra en vivo **▶ toca / ⏸ calla**. **Todo el arreglo** hace sonar todas las pistas siempre.

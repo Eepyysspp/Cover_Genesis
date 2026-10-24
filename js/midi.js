@@ -167,12 +167,12 @@
   const acordeObra = r => acordeEn(Math.min(Math.max(0, r), DURACION - 0.01)).nombre;
 
   // Batería General MIDI → pads del perfil Batería
-  const GM = { 35: "bombo", 36: "bombo", 37: "caja", 38: "caja", 39: "caja", 40: "caja", 41: "tom", 43: "tom", 45: "tom", 47: "tom", 48: "tom", 50: "tom",
+  const GM = { 35: "bombo", 36: "bombo", 37: "caja", 38: "caja", 39: "caja", 40: "caja", 41: "tomgrave", 43: "tomgrave", 45: "tommedio", 47: "tommedio", 48: "tomagudo", 50: "tomagudo",
     42: "hihat", 44: "hihat", 46: "abierto", 51: "abierto", 53: "abierto", 59: "abierto", 49: "crash", 52: "crash", 55: "crash", 57: "crash" };
   const PADS_ORDEN = ["bombo", "caja", "hihat", "abierto", "tom", "crash"];
   const padDeNota = m => GM[m] || PADS_ORDEN[((m % 6) + 6) % 6];
   // Batería → notas del acorde actual (cuando una pista de batería se toca con un instrumento melódico)
-  const GOLPE_A_VOZ = { bombo: 0, tom: 0, caja: 2, hihat: 1, abierto: 3 };
+  const GOLPE_A_VOZ = { bombo: 0, tom: 0, tomgrave: 0, tommedio: 0, tomagudo: 1, caja: 2, hihat: 1, abierto: 3 };
 
   /* ============================== REPRODUCTOR ============================== */
   class Reproductor {
@@ -722,19 +722,28 @@
     }
     const def = (P.sonidos || {})[pf.id] || (P.sonidos || {})[pf.grupo];
     if (!def) return null;
-    const leer = async v => { const o = typeof v === "string" ? { archivo: v } : v; return { buffer: await bajar(o.archivo), base: o.real != null ? o.real : (o.base || 60) }; };
+    const leer = async v => {
+      const o = typeof v === "string" ? { archivo: v } : v;
+      if (o.capas) return { buffer: await window.Audio2.Motor.cargarPad(o) };   // pad de batería con capas y tomas
+      return { buffer: await bajar(o.archivo), base: o.real != null ? o.real : (o.base || 60) };
+    };
     if (typeof def === "string" || def.archivo) return { uno: await leer(def) };
     const varios = {};
     for (const k in def) { try { varios[k] = await leer(def[k]); } catch (e) { console.warn("Sonido no disponible:", k, e.message); } }
     return { varios };
   }
+  // Aplica valores nuevos solo si cambian (evita reconstruir nodos de audio en cada vuelta)
+  const cambia = (p, n, tol = 0.004) => Object.keys(n).some(c => Math.abs((p[c] || 0) - n[c]) > tol);
   function destinoDe(pf, pista, eleccion) {
     const A = window.Audio2, M = A.Motor;
     const cargar = alListo => sonidosDe(pf, eleccion).then(s => { if (s) alListo(s); }).catch(e => console.warn("Orquesta: sin sonido propio para", pf.id, e.message));
     if (pista.bateria) {
       const b = new A.Bateria();
       cargar(s => { if (s.varios) Object.keys(s.varios).forEach(k => b.samples[k] = s.varios[k].buffer); });
-      return { esBateria: true, nota: (m, v, t, d, golpe) => b.tocar(golpe || padDeNota(m), t, v) };
+      const base = { vol: b.p.vol, reverb: b.p.reverb, drive: b.p.drive };
+      const efectos = e => { const n = { vol: base.vol * (e.vol != null ? e.vol : 1), reverb: e.reverb != null ? e.reverb : base.reverb, drive: e.drive != null ? e.drive : base.drive };
+        if (cambia(b.p, n)) { Object.assign(b.p, n); b.aplicar(); } };
+      return { esBateria: true, efectos, nota: (m, v, t, d, golpe) => b.tocar(golpe || padDeNota(m), t, v) };
     }
     if (pf.tipo === "guitarra") {
       const g = new A.Guitarra(); g.p.fuzz = 0.3; g.aplicar();
@@ -754,14 +763,26 @@
         M.liberar(gan, t + Math.max(0.1, Math.min(dur, s.buffer.duration)), 0.3, [b.fuente]);
         return true;
       };
-      return { octava: () => 3, nota: (m, v, t, d) => g.tocarNotas([m], { vel: v, t, dur: d }),
+      const baseG = { fuzz: g.p.fuzz, tono: g.p.tono, reverb: g.p.reverb, vol: g.p.vol };
+      const efectosG = e => { const n = { fuzz: e.fuzz != null ? e.fuzz : baseG.fuzz, tono: e.tono != null ? e.tono : baseG.tono,
+          reverb: e.reverb != null ? e.reverb : baseG.reverb, vol: baseG.vol * (e.vol != null ? e.vol : 1) };
+        if (cambia(g.p, n, 0.01)) { Object.assign(g.p, n); g.aplicar(); } };
+      return { efectos: efectosG, octava: () => 3, nota: (m, v, t, d) => g.tocarNotas([m], { vel: v, t, dur: d }),
         grupo: (l, t, r) => acordeGrabado(l, t, r) || g.tocarNotas(l.map(n => n.m), { vel: Math.max(...l.map(n => n.v)), t, dur: Math.max(...l.map(n => n.d)) }) };
     }
     const k = new A.Teclado(pf.tipo === "ambiente" ? "pad" : pf.preset || pista.preset || "epiano");
     if (pf.tipo === "ambiente") { k.p.reverb = 0.7; k.p.filtro = 0.35; k.aplicar(); }
     // Los ambientes son loops: se repiten mientras dure la nota
     cargar(s => { const u = s.uno || Object.values(s.varios)[0]; if (!u) return; k.buffer = u.buffer; k.base = u.base; k.bufferLoop = pf.tipo === "ambiente"; });
-    return { octava: () => k.p.octava, nota: (m, v, t, d) => k.nota(m, v, t, d) };
+    const baseK = { dist: k.p.dist, filtro: k.p.filtro, reverb: k.p.reverb, vol: k.p.vol };
+    // Teclados: dist/filtro/reverb/vol de la parte. Ambientes: su guía X/Y (X = distorsión y brillo, Y = intensidad).
+    const efectosK = (e, xy) => {
+      const n = { dist: e.dist != null ? e.dist : baseK.dist, filtro: e.filtro != null ? e.filtro : baseK.filtro,
+        reverb: e.reverb != null ? e.reverb : baseK.reverb, vol: baseK.vol * (e.vol != null ? e.vol : 1) };
+      if (xy) { n.dist = xy.x * xy.x; n.filtro = 0.2 + xy.x * 0.4; n.vol = baseK.vol * (0.25 + xy.y); }
+      if (cambia(k.p, n)) { Object.assign(k.p, n); k.aplicar(); }
+    };
+    return { efectos: efectosK, octava: () => k.p.octava, nota: (m, v, t, d) => k.nota(m, v, t, d) };
   }
   async function crearAcompanamiento({ contenedor, perfil, reloj, motor }) {
     const pistas = await pistasDeLaObra();
@@ -806,7 +827,11 @@
       .map(([n, fn]) => { const b = el(`<button class="btn peq">${esc(n)}</button>`); b.onclick = () => { filas.forEach(f => f.capa.mute = !fn(f)); pintar(); guardar(); }; return b; });
     const volL = el(`<label class="orq-vol muted small">Volumen orquesta <input type="range" min="0" max="1.5" step="0.01" value="${rep.cfg.volumen}"></label>`);
     volL.querySelector("input").oninput = e => { rep.cfg.volumen = +e.target.value; G.guardar("orq:vol", rep.cfg.volumen); };
-    opciones.append(segM, ...rapidos, volL);
+    let efectosAuto = G.leer("orq:efectos", true);
+    const bEfec = el(`<button class="btn peq" title="En cada parte, cada instrumento cambia solo su distorsión, filtro, reverb y volumen como dice la partitura">🎛️ Efectos automáticos</button>`);
+    bEfec.onclick = () => { efectosAuto = !efectosAuto; G.guardar("orq:efectos", efectosAuto); bEfec.classList.toggle("on", efectosAuto); };
+    bEfec.classList.toggle("on", efectosAuto);
+    opciones.append(segM, ...rapidos, bEfec, volL);
     contenedor.appendChild(opciones);
     bPart.onclick = () => { segunPartitura = true; G.guardar("orq:partitura", true); pintar(); };
     bTodo.onclick = () => { segunPartitura = false; G.guardar("orq:partitura", false); pintar(); };
@@ -853,6 +878,8 @@
       const c = reloj();
       if (encendida && c.corriendo && !rep.activo && c.t < DURACION) rep.iniciar();
       const t = Math.min(Math.max(c.t, 0), DURACION - 0.01), sec = G.seccionEn(t);
+      // Efectos de la parte para cada instrumento (los ambientes, con su guía X/Y)
+      if (encendida && efectosAuto) filas.forEach(f => { const d = f.capa.destino; if (d && d.efectos) d.efectos(G.efectosEn(t, f.pf), f.pf.tipo === "ambiente" ? G.guiaXYEn(t, f.pf) : null); });
       filas.forEach(f => {
         const toca = !segunPartitura || G.toca(sec, f.pf);
         // Al entrar a una sección donde toca, suenan las notas largas que ya venían sonando

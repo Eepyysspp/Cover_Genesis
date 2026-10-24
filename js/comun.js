@@ -97,6 +97,29 @@
     return claves(perfil).some(k => ps.includes(k));
   }
 
+  // ---------- Efectos automáticos (partitura → efectos) ----------
+  // Cada entrada vale desde su tiempo hasta la siguiente. Un valor [a, b] va de a hasta b a lo largo de ese tramo.
+  // Se combinan de lo general a lo particular (todos → grupo → subgrupo → perfil): la clave más específica gana por parámetro.
+  const EFECTOS = (P.efectos || []).map(e => Object.assign({}, e, { seg: aSeg(e.desde) })).sort((a, b) => a.seg - b.seg);
+  function efectosEn(t, perfil) {
+    let i = -1; for (let k = 0; k < EFECTOS.length; k++) if (t >= EFECTOS[k].seg) i = k;
+    if (i < 0) return {};
+    const e = EFECTOS[i], fin = i + 1 < EFECTOS.length ? EFECTOS[i + 1].seg : DURACION;
+    const f = Math.min(1, Math.max(0, (t - e.seg) / Math.max(0.01, fin - e.seg)));
+    const out = {};
+    claves(perfil).forEach(k => { const v = e[k]; if (v && typeof v === "object") for (const p in v) out[p] = Array.isArray(v[p]) ? v[p][0] + (v[p][1] - v[p][0]) * f : v[p]; });
+    return out;
+  }
+  // Guía X/Y de los ambientes en t (X = distorsión, Y = intensidad), la misma que dibuja su página
+  function guiaXYEn(t, perfil) {
+    const fuente = ["id", "sub", "grupo"].map(k => perfil[k]).find(k => k && P.guiaXY && P.guiaXY[k]);
+    const ps = fuente ? P.guiaXY[fuente].map(([tt, x, y]) => ({ t: aSeg(tt), x, y })).sort((a, b) => a.t - b.t) : [];
+    if (!ps.length) return null;
+    if (t <= ps[0].t) return ps[0];
+    for (let i = 1; i < ps.length; i++) if (t < ps[i].t) { const a = ps[i - 1], b = ps[i], k = (t - a.t) / (b.t - a.t); return { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k }; }
+    return ps[ps.length - 1];
+  }
+
   // ---------- Acordes ----------
   const NOTAS = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
   const CALIDADES = [
@@ -142,7 +165,7 @@
 
   window.G = {
     P, PERFILES, perfilesActivos, aSeg, fmt, DURACION, SECCIONES, EVENTOS, SEG_POR_COMPAS,
-    seccionEn, acordeEn, instrucciones, toca, proximoCambio, eventoAplica, nombreGrupo,
+    seccionEn, acordeEn, instrucciones, toca, proximoCambio, eventoAplica, nombreGrupo, efectosEn, guiaXYEn,
     parseAcorde, notasAcorde, mtof, nombreNota, guardar, leer,
   };
 })();

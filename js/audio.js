@@ -67,6 +67,17 @@
     async decodificar(arrayBuffer) { this.init(); return await this.ctx.decodeAudioData(arrayBuffer); },
     async cargarArchivo(file) { return this.decodificar(await file.arrayBuffer()); },
     async cargarURL(url) { const r = await fetch(url); if (!r.ok) throw new Error(url + " → " + r.status); return this.decodificar(await r.arrayBuffer()); },
+    // Un pad de batería de la partitura: "archivo.wav" o { capas: [{ hasta: 0.6, archivos: [...] }, …] } (de suave a fuerte)
+    async cargarPad(def) {
+      if (typeof def === "string") return this.cargarURL(def);
+      if (def && def.archivo) return this.cargarURL(def.archivo);
+      const capas = await Promise.all((def.capas || []).map(async c => ({
+        hasta: c.hasta == null ? 1 : c.hasta, ultimo: -1,
+        buffers: (await Promise.all((c.archivos || []).map(a => this.cargarURL(a).catch(() => null)))).filter(Boolean),
+      })));
+      if (!capas.some(c => c.buffers.length)) throw new Error("sin archivos");
+      return { capas: capas.filter(c => c.buffers.length).sort((a, b) => a.hasta - b.hasta) };
+    },
     // Reproduce un buffer (sonido propio) con altura relativa a la nota base
     tocarBuffer(buffer, destino, { midi = 60, base = 60, vel = 1, t = this.t, loop = false } = {}) {
       const s = this.ctx.createBufferSource(); s.buffer = buffer; s.loop = loop;
@@ -199,27 +210,51 @@
   // 16 pasos por compás (semicorcheas en 4/4)
   // "sinplatillos" y "platillos" son el mismo ritmo que la pista MIDI de batería (midi/genesis_bateria.mid).
   // El crash de la pista (inicio de sección) lo agrega la página de batería en su momento. "pulso" y "muro" son extras.
+  // Acentos: X fuerte · x normal · o suave (como la pista MIDI: el 1 más fuerte que el 3, el 4 de la caja más que el 2).
   const PATRONES = {
-    pulso:        { tom: "x...x...x...x..." },
-    sinplatillos: { bombo: "x.......x.......", caja: "....x.......x..." },
-    platillos:    { bombo: "x...x...x...x...", caja: "....x.......x...", hihat: "x...x...x...x..." },
-    muro:         { bombo: "x.x.x.x.x.x.x.x.", caja: "....x.......x...", hihat: "xxxxxxxxxxxxxxxx", crash: "x.......x......." },
+    pulso:        { tom: "X...o...x...o..." },
+    sinplatillos: { bombo: "X.......x.......", caja: "....x.......X..." },
+    platillos:    { bombo: "X...o...x...o...", caja: "....x.......X...", hihat: "x...o...x...o..." },
+    muro:         { bombo: "X.x.x.x.X.x.x.x.", caja: "....X.......X...", hihat: "xoxoxoxoxoxoxoxo", crash: "X.......x......." },
   };
+  const VEL_ACENTO = { X: 1, x: 0.82, o: 0.62 };
   class Bateria {
     constructor() {
-      this.p = { vol: 0.8, reverb: 0.2, patron: null };
+      const ctx = Motor.ctx;
+      this.p = { vol: 0.8, reverb: 0.2, patron: null, drive: 0.15 };
       this.out = Motor.salida(this.p.vol, this.p.reverb);
+      // Bus de batería: saturación suave + compresión de grupo (pega los golpes como en una mezcla real)
+      this.bus = ctx.createGain();
+      this.dist = Motor.bloqueDistorsion(12);
+      this.comp = ctx.createDynamicsCompressor();
+      this.comp.threshold.value = -16; this.comp.knee.value = 8; this.comp.ratio.value = 3; this.comp.attack.value = 0.006; this.comp.release.value = 0.14;
+      this.bus.connect(this.dist.ent); this.dist.sal.connect(this.comp); this.comp.connect(this.out.entrada);
       this.samples = {};
       this.alGolpe = null;
+      this.aplicar();
     }
     aplicar() {
       this.out.volumen.gain.setTargetAtTime(this.p.vol, Motor.t, 0.05);
       this.out.envio.gain.setTargetAtTime(this.p.reverb, Motor.t, 0.05);
+      this.dist.mezcla(this.p.drive, Motor.t);
+    }
+    // Muestra para un golpe: un archivo, o capas por intensidad con varias tomas que se alternan (no se repite la misma)
+    muestra(pad, vel) {
+      const s = this.samples[pad];
+      if (!s || !s.capas) return s ? { buffer: s, gan: vel } : null;
+      const c = s.capas.find(c => vel <= c.hasta) || s.capas[s.capas.length - 1];
+      if (!c.buffers.length) return null;
+      let i = Math.floor(Math.random() * c.buffers.length);
+      if (c.buffers.length > 1 && i === c.ultimo) i = (i + 1) % c.buffers.length;
+      c.ultimo = i;
+      return { buffer: c.buffers[i], gan: 0.35 + 0.65 * vel };   // la capa ya cambia el color; la ganancia sigue la intensidad sin aplastarla
     }
     tocar(pad, t = Motor.t, vel = 1) {
-      const M = Motor, ctx = M.ctx, dst = this.out.entrada;
-      if (this.alGolpe) { const retraso = Math.max(0, (t - M.t) * 1000); setTimeout(() => this.alGolpe(pad), retraso); }
-      if (this.samples[pad]) { M.tocarBuffer(this.samples[pad], dst, { vel, t }); return; }
+      const M = Motor, ctx = M.ctx, dst = this.bus;
+      if (!this.samples[pad] && (pad === "tomgrave" || pad === "tommedio" || pad === "tomagudo")) return this.tocarTom(pad, t, vel);
+      if (this.alGolpe) { const retraso = Math.max(0, (t - M.t) * 1000); setTimeout(() => this.alGolpe(/^tom/.test(pad) ? "tom" : pad), retraso); }
+      const mu = this.muestra(pad, vel);
+      if (mu) { M.tocarBuffer(mu.buffer, dst, { vel: mu.gan, t }); return; }
       const g = ctx.createGain(); g.connect(dst);
       const env = (nivel, dur) => { g.gain.setValueAtTime(nivel * vel, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); };
       if (pad === "bombo") {
@@ -241,6 +276,16 @@
         n.connect(hp).connect(bp).connect(g); env(0.4, 1.8); n.start(t); n.stop(t + 1.9);
       }
     }
+    // Toms de los redobles sin muestra propia: el tom, más grave o más agudo
+    tocarTom(pad, t, vel) {
+      const M = Motor, rate = pad === "tomgrave" ? 0.82 : pad === "tomagudo" ? 1.2 : 1;
+      if (this.alGolpe) setTimeout(() => this.alGolpe("tom"), Math.max(0, (t - M.t) * 1000));
+      const mu = this.muestra("tom", vel);
+      if (mu) { const b = M.tocarBuffer(mu.buffer, this.bus, { vel: mu.gan, t }); b.fuente.playbackRate.value = rate; return; }
+      const g = M.ctx.createGain(); g.connect(this.bus);
+      const o = M.fuente("sine", 140 * rate); o.frequency.exponentialRampToValueAtTime(80 * rate, t + 0.3);
+      o.connect(g); g.gain.setValueAtTime(0.8 * vel, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5); o.start(t); o.stop(t + 0.55);
+    }
   }
 
   /* ---------------------------------------------------------------- TECLADO */
@@ -252,7 +297,9 @@
       this.out = Motor.salida(this.p.vol, this.p.reverb);
       this.filtro = Motor.ctx.createBiquadFilter(); this.filtro.type = "lowpass"; this.filtro.Q.value = preset === "bajo" ? 4 : 1;
       this.dist = Motor.bloqueDistorsion(30);
-      this.filtro.connect(this.dist.ent); this.dist.sal.connect(this.out.entrada);
+      // Filtro después de la distorsión (como el parlante de un amplificador): la saturación queda cálida, no chillona
+      this.post = Motor.ctx.createBiquadFilter(); this.post.type = "lowpass"; this.post.Q.value = 0.6;
+      this.filtro.connect(this.dist.ent); this.dist.sal.connect(this.post); this.post.connect(this.out.entrada);
       this.activas = new Map(); this.buffer = null; this.base = 60;
       this.mono = null; // para lead
       this.aplicar();
@@ -261,6 +308,7 @@
       const t = Motor.t;
       this.filtro.frequency.setTargetAtTime(150 + Math.pow(this.p.filtro, 2) * 9000, t, 0.05);
       this.dist.mezcla(this.p.dist, t);
+      this.post.frequency.setTargetAtTime(Math.min(18000, 1200 + Math.pow(this.p.filtro, 2) * 9000 + (1 - this.p.dist) * 9000), t, 0.05);
       this.out.volumen.gain.setTargetAtTime(this.p.vol, t, 0.05);
       this.out.envio.gain.setTargetAtTime(this.p.reverb, t, 0.05);
     }
@@ -494,5 +542,5 @@
     }
   }
 
-  window.Audio2 = { Motor, Guitarra, Bateria, Teclado, Ambiente, PADS, PATRONES };
+  window.Audio2 = { Motor, Guitarra, Bateria, Teclado, Ambiente, PADS, PATRONES, VEL_ACENTO };
 })();

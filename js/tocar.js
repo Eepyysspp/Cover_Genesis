@@ -1,7 +1,7 @@
 /* Página de control de cada perfil: reloj, partitura, instrucciones y controles del instrumento. */
 (function () {
   const { P, PERFILES, SECCIONES, EVENTOS, DURACION, fmt, seccionEn, acordeEn, instrucciones, toca, proximoCambio, eventoAplica, notasAcorde, nombreNota } = G;
-  const { Motor, Guitarra, Bateria, Teclado, Ambiente, PADS, PATRONES } = window.Audio2;
+  const { Motor, Guitarra, Bateria, Teclado, Ambiente, PADS, PATRONES, VEL_ACENTO } = window.Audio2;
   const $ = id => document.getElementById(id);
   const params = new URLSearchParams(location.search);
   const perfil = PERFILES.find(p => p.id === params.get("p"));
@@ -157,10 +157,33 @@
   let alCuadro = () => {};   // animación por cuadro (ambientes)
   const panel = $("panel");
 
+  /* ---------- Efectos automáticos (partitura → efectos) ---------- */
+  // En cada parte los controles se ajustan solos como dice la partitura. Tocar un control lo desactiva.
+  let efectosAuto = G.leer("efectos:" + perfil.id, true), alEfectos = null, ultimoEfecto = 0;
+  const btnEfectos = el(`<button class="btn peq" title="En cada parte, los controles se ajustan solos como dice la partitura. Si mueves un control, se desactiva.">🎛️ Efectos automáticos</button>`);
+  const pintarEfectos = () => btnEfectos.classList.toggle("on", efectosAuto);
+  const ponerEfectos = v => { efectosAuto = v; G.guardar("efectos:" + perfil.id, v); pintarEfectos(); };
+  btnEfectos.onclick = () => ponerEfectos(!efectosAuto);
+  pintarEfectos();
+  // Valores de la partitura → parámetros del instrumento (base = cómo parte el instrumento; vol multiplica)
+  function efectosDe(inst, mapa) {
+    const base = Object.assign({}, inst.p);
+    return t => {
+      const e = G.efectosEn(t, perfil), n = {};
+      for (const [clave, def] of Object.entries(mapa)) n[clave] = def(e, base);
+      if (!Object.keys(n).some(c => Math.abs((inst.p[c] || 0) - n[c]) > 0.006)) return;
+      Object.assign(inst.p, n); inst.aplicar();
+      panel.querySelectorAll("input[data-clave]").forEach(i => { if (i._obj === inst.p) i.value = inst.p[i.dataset.clave]; });
+    };
+  }
+  const val = (e, base, k) => (e[k] != null ? e[k] : base[k]);
+  const volRel = (e, base) => base.vol * (e.vol != null ? e.vol : 1);
+
   function slider(label, obj, clave, onChange, min = 0, max = 1, paso = 0.01) {
     const l = document.createElement("label");
     l.innerHTML = `${label}<input type="range" min="${min}" max="${max}" step="${paso}" value="${obj[clave]}">`;
-    l.querySelector("input").addEventListener("input", e => { obj[clave] = +e.target.value; onChange(); });
+    const inp = l.querySelector("input"); inp.dataset.clave = clave; inp._obj = obj;
+    inp.addEventListener("input", e => { obj[clave] = +e.target.value; onChange(); if (efectosAuto && alEfectos) ponerEfectos(false); });
     return l;
   }
   function sliders(lista) { const d = document.createElement("div"); d.className = "sliders"; lista.forEach(x => d.appendChild(x)); return d; }
@@ -245,6 +268,8 @@
     const rasgOrig = inst.rasguear.bind(inst);
     inst.rasguear = (...a) => { rasgOrig(...a); Luces.destellar(0.6); };
     panel.appendChild(controlesLuces());
+    panel.appendChild(el(`<div class="fila"></div>`)).appendChild(btnEfectos);
+    alEfectos = efectosDe(inst, { fuzz: (e, b) => val(e, b, "fuzz"), tono: (e, b) => val(e, b, "tono"), reverb: (e, b) => val(e, b, "reverb"), vol: volRel });
     // Guía: lo que toca tu pista MIDI (la melodía)
     const guiaG = el(`<div class="guia-midi"></div>`); panel.insertBefore(guiaG, panel.children[2] || null);
     alCuadro = t => {
@@ -306,7 +331,10 @@
     });
     function ponerPatron(id) { inst.p.patron = id || null; botonesPat.forEach((b, i) => b.classList.toggle("on", opciones[i][0] === id)); ultimoPaso = null; }
     ponerPatron("");
-    panel.append(pads, pats, sliders([slider("Volumen", inst.p, "vol", () => inst.aplicar()), slider("Reverb", inst.p, "reverb", () => inst.aplicar())]), controlesLuces());
+    panel.append(pads, pats, sliders([slider("Volumen", inst.p, "vol", () => inst.aplicar()), slider("Reverb", inst.p, "reverb", () => inst.aplicar()),
+      slider("Saturación", inst.p, "drive", () => inst.aplicar())]), controlesLuces());
+    panel.appendChild(el(`<div class="fila"></div>`)).appendChild(btnEfectos);
+    alEfectos = efectosDe(inst, { vol: volRel, reverb: (e, b) => val(e, b, "reverb"), drive: (e, b) => val(e, b, "drive") });
 
     const cargs = PADS.map(p => cargador(p.nombre, { alCargar: b => { inst.samples[p.id] = b; }, alQuitar: () => { delete inst.samples[p.id]; } }));
     panel.appendChild(cajaSonidos(cargs));
@@ -314,10 +342,21 @@
     // Secuenciador: agenda semicorcheas alineadas al reloj de la obra
     const pasoSeg = 60 / P.bpm / 4;
     let libreInicio = performance.now();
-    // Crash de la pista MIDI (nota 49): suena con los patrones del MIDI cuando el reloj de la obra está en marcha
-    const crashPasos = new Set();
+    // De la pista MIDI de batería: crash y redobles (toms o caja fuera del 2 y el 4). Con el reloj en marcha y un patrón
+    // del MIDI (W/E) suenan en su momento, y desde donde empieza un redoble el patrón deja de tocar caja y hi-hat, como el MIDI.
+    const extrasMidi = new Map(), inicioRelleno = new Map();   // paso → [{pad, v, dt}] · compás → primer paso del redoble
     if (window.MIDI && P.midi && P.midi.porPerfil && P.midi.porPerfil.bateria)
-      MIDI.pistasDeLaObra().then(ps => { const b = ps.find(x => x.id === P.midi.porPerfil.bateria); if (b) b.notas.forEach(n => { if (n.m === 49) crashPasos.add(Math.round(n.t / pasoSeg)); }); }).catch(() => {});
+      MIDI.pistasDeLaObra().then(ps => {
+        const b = ps.find(x => x.id === P.midi.porPerfil.bateria); if (!b) return;
+        b.notas.forEach(n => {
+          const pad = MIDI.padDeNota(n.m), k = Math.round(n.t / pasoSeg), paso = ((k % 16) + 16) % 16, compas = Math.floor(k / 16);
+          const relleno = /^tom/.test(pad) || (pad === "caja" && paso !== 4 && paso !== 12);
+          if (!relleno && pad !== "crash") return;
+          if (!extrasMidi.has(k)) extrasMidi.set(k, []); extrasMidi.get(k).push({ pad, v: n.v, dt: n.t - k * pasoSeg });
+          if (relleno) inicioRelleno.set(compas, Math.min(inicioRelleno.has(compas) ? inicioRelleno.get(compas) : 16, paso));
+        });
+      }).catch(() => {});
+    const humano = () => (Math.random() - 0.5) * 0.008;   // ±4 ms, como una persona
     setInterval(() => {
       if (!inst.p.patron || !Motor.ctx) return;
       const pat = PATRONES[inst.p.patron];
@@ -332,8 +371,14 @@
       for (; k * pasoSeg < t + ventana; k++) {
         const paso = ((k % 16) + 16) % 16;
         const cuando = tCtx + (k * pasoSeg - t);
-        for (const pad in pat) if (pat[pad][paso] === "x") inst.tocar(pad, Math.max(cuando, tCtx), paso % 4 === 0 ? 1 : 0.75);
-        if (corriendo() && crashPasos.has(k) && (inst.p.patron === "platillos" || inst.p.patron === "sinplatillos")) inst.tocar("crash", Math.max(cuando, tCtx), 1);
+        const delMidi = corriendo() && (inst.p.patron === "platillos" || inst.p.patron === "sinplatillos");
+        const desde = delMidi && inicioRelleno.has(Math.floor(k / 16)) ? inicioRelleno.get(Math.floor(k / 16)) : 16;
+        for (const pad in pat) {
+          const va = VEL_ACENTO[pat[pad][paso]]; if (!va) continue;
+          if (paso >= desde && (pad !== "bombo" || paso !== desde)) continue;   // el redoble reemplaza al patrón
+          inst.tocar(pad, Math.max(cuando + humano(), tCtx), va * (0.92 + Math.random() * 0.12));
+        }
+        if (delMidi) (extrasMidi.get(k) || []).forEach(e => inst.tocar(e.pad, Math.max(cuando + e.dt, tCtx), e.v));
         ultimoPaso = k;
       }
     }, 25);
@@ -392,6 +437,8 @@
     }
     selSonido.onchange = () => { eleccion = selSonido.value; G.guardar("sonido:" + perfil.id, eleccion); aplicarSonido(); };
     panel.appendChild(filaSon);
+    filaSon.appendChild(btnEfectos);
+    alEfectos = efectosDe(inst, { dist: (e, b) => val(e, b, "dist"), filtro: (e, b) => val(e, b, "filtro"), reverb: (e, b) => val(e, b, "reverb"), vol: volRel });
     panel.appendChild(cajaSonidos([carg]));
     // Guía: las notas de tu pista MIDI (en rosado en el piano) y las que vienen
     const guiaT = el(`<div class="guia-midi"></div>`); panel.insertBefore(guiaT, piano.nextSibling);
@@ -778,6 +825,7 @@
     $("restaSeccion").textContent = `${s.nombre} · quedan ${fmt(s.fin - tc)}`;
     Luces.cuadro(t, dt);
     alCuadro(t, dt);
+    if (efectosAuto && alEfectos && nowp - ultimoEfecto > 100) { ultimoEfecto = nowp; alEfectos(tc); }
     requestAnimationFrame(cuadro);
   }
 
@@ -804,7 +852,7 @@
       // Formatos: "ruta.wav" · { archivo, base } · { clave: "ruta.wav" | { archivo, base }, … } (pads o acordes)
       const uno = async (v, clave) => {
         const o = typeof v === "string" ? { archivo: v } : v;
-        api.sonidoDefecto(await Motor.cargarURL(o.archivo), clave, o.base, o.real);
+        api.sonidoDefecto(o.capas ? await Motor.cargarPad(o) : await Motor.cargarURL(o.archivo), clave, o.base, o.real);
       };
       if (typeof def === "string" || (def && def.archivo)) await uno(def);
       else if (def && typeof def === "object") for (const k in def) { try { await uno(def[k], k); } catch (e) { console.warn("Sonido no disponible:", k, e.message); } }

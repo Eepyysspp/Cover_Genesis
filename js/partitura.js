@@ -267,6 +267,43 @@ window.PARTITURA = {
     { t: "2:43.00", perfiles: ["todos"], texto: "En 5 s: resolución en Re♭" },
   ],
 
+  // Efectos automáticos: cómo suena cada instrumento en cada parte. Se aplican solos en "Practicar con la orquesta"
+  // y en la página de cada perfil si está activo 🎛️ Efectos automáticos (tocar un control lo desactiva).
+  // Claves como en "tocan" (todos, teclados, teclados-bajos, teclado-3, guitarra, bateria…); la más específica gana.
+  // Valores 0…1. Un par [a, b] va de a hasta b a lo largo de la parte (subidas y fundidos).
+  //   teclados: dist (distorsión) · filtro (brillo) · reverb · vol (1 = normal)
+  //   guitarra: fuzz · tono · reverb · vol        batería: vol · reverb · drive (saturación del bus)
+  // Los ambientes siguen su guía X/Y (guiaXY): X = distorsión, Y = intensidad.
+  efectos: [
+    { desde: "0:00",    todos: { reverb: 0.6 } },
+    { desde: "0:03.69", bateria: { vol: [0.63, 0.98], reverb: 0.35, drive: 0.08 } },                              // la batería entra de a poco
+    { desde: "0:18.46", teclados: { dist: 0, filtro: 0.44, reverb: 0.4 }, "teclado-3": { vol: 1.6, dist: 0.05, filtro: 0.32 },
+                        guitarra: { fuzz: 0.15, tono: 0.38, reverb: 0.45 }, bateria: { vol: 0.98, reverb: 0.3, drive: 0.12 } },
+    { desde: "0:33.23", teclados: { dist: [0.3, 0.6], filtro: 0.52, reverb: 0.4 }, "teclado-3": { vol: 1.6, dist: 0.1, filtro: 0.36 },
+                        guitarra: { fuzz: 0.27, tono: 0.41, reverb: 0.45 }, bateria: { vol: 1.09, reverb: 0.28, drive: 0.2 } },
+    { desde: "0:40.62", teclados: { dist: 0.6, filtro: 0.56, reverb: 0.4 }, "teclado-2": { dist: 0.15, filtro: 0.6, reverb: 0.65 },
+                        "teclado-3": { vol: 1.6, dist: 0.25, filtro: 0.36 }, bateria: { vol: 1.09, reverb: 0.28, drive: 0.2 } },
+    { desde: "1:02.77", teclados: { dist: 0.5, filtro: 0.48, reverb: 0.45 }, "teclado-1": { filtro: 0.4 },
+                        "teclado-3": { vol: 1.6, dist: 0.25, filtro: 0.36 }, bateria: { vol: 0.98, reverb: 0.3, drive: 0.15 } },
+    { desde: "1:10.15", teclados: { dist: [0.5, 0.65], filtro: [0.48, 0.58], reverb: 0.4 }, "teclado-3": { vol: 1.6, dist: 0.3, filtro: 0.4 },
+                        bateria: { vol: 1.09, reverb: 0.28, drive: 0.22 } },
+    { desde: "1:17.54", teclados: { dist: 0, filtro: 0.4, reverb: 0.5 }, guitarra: { fuzz: 0.09, tono: 0.46, reverb: 0.55 },   // todo limpio: el solo
+                        bateria: { vol: 0.86, reverb: 0.35, drive: 0.05 } },
+    { desde: "1:26.77", teclados: { dist: [0, 0.45], filtro: [0.4, 0.64], reverb: 0.45 }, guitarra: { fuzz: [0.09, 0.3], tono: 0.45 }, // subida al muro
+                        bateria: { vol: [0.86, 1.15], reverb: 0.3, drive: [0.05, 0.25] } },
+    { desde: "1:32.31", teclados: { dist: 0.65, filtro: 0.62, reverb: 0.4 }, "teclado-3": { vol: 1.6, dist: 0.35, filtro: 0.44 },
+                        guitarra: { vol: 0.85, fuzz: 0.39, tono: 0.45, reverb: 0.5 }, bateria: { vol: 1.15, reverb: 0.25, drive: 0.3 } },
+    { desde: "1:47.08", teclados: { dist: 0.75, filtro: 0.7, reverb: 0.42 }, "teclado-3": { vol: 1.6, dist: 0.4, filtro: 0.48 },              // clímax
+                        guitarra: { vol: 0.85, fuzz: 0.48, tono: 0.49, reverb: 0.55 }, bateria: { vol: 1.15, reverb: 0.25, drive: 0.38 } },
+    { desde: "2:01.85", teclados: { dist: 0.6, filtro: 0.58, reverb: 0.45 }, "teclado-3": { vol: 1.6, dist: 0.3, filtro: 0.4 },
+                        guitarra: { vol: 0.85, fuzz: [0.39, 0.3], tono: 0.45, reverb: 0.55 }, bateria: { vol: 1.06, reverb: 0.28, drive: 0.25 } },
+    { desde: "2:16.62", teclados: { dist: [0.6, 0.35], filtro: [0.58, 0.44], reverb: 0.5, vol: [1, 0.6] }, "teclado-2": { reverb: 0.75 }, // se desvanece
+                        bateria: { vol: [1.03, 0.69], reverb: 0.32, drive: [0.25, 0.1] } },
+    { desde: "2:31.38", teclados: { dist: 0.3, filtro: 0.4, reverb: 0.55, vol: 0.6 }, "teclado-3": { dist: 0.2, vol: 0.75 }, "teclado-4": { vol: 0.65 } },
+    { desde: "2:48.00", teclados: { dist: [0.2, 0.05], filtro: [0.4, 0.24], reverb: [0.5, 0.8], vol: [0.6, 0] },                   // resuelve y muere
+                        guitarra: { fuzz: 0.18, tono: 0.38, reverb: [0.6, 0.85], vol: [0.9, 0] } },
+  ],
+
   // Pistas MIDI del arreglo (carpeta midi/). Están a 130 BPM y empiezan en 0:00, así que calzan con el reloj.
   // Cada perfil parte con la pista de "porPerfil"; en la página se puede cambiar por cualquier otra.
   // preset: el sonido que usa la pista en el perfil Multipista (pad, epiano, bajo, lead).
@@ -339,13 +376,18 @@ window.PARTITURA = {
       "Gbmaj7": { archivo: "sonidos/fl/guitarra_Gbmaj7.wav", base: 42 },
       "Db":     { archivo: "sonidos/fl/guitarra_Db.wav",     base: 49 },
     },
+    // Batería: kits de FLEX (Room + Power) procesados para sonar como la grabación (ver sonidos/fl/bateria/LEEME.md).
+    // capas: de suave a fuerte ("hasta" = intensidad 0…1); cada capa tiene dos tomas que se alternan.
     bateria: {
-      bombo:   "sonidos/fl/bateria_bombo.wav",
-      caja:    "sonidos/fl/bateria_caja.wav",
-      hihat:   "sonidos/fl/bateria_hihat.wav",
-      abierto: "sonidos/fl/bateria_abierto.wav",
-      tom:     "sonidos/fl/bateria_tom.wav",
-      crash:   "sonidos/fl/bateria_crash.wav",
+      bombo:    { capas: [{ hasta: 0.62, archivos: ["sonidos/fl/bateria/bombo_suave_1.wav", "sonidos/fl/bateria/bombo_suave_2.wav"] }, { hasta: 0.84, archivos: ["sonidos/fl/bateria/bombo_media_1.wav", "sonidos/fl/bateria/bombo_media_2.wav"] }, { hasta: 1, archivos: ["sonidos/fl/bateria/bombo_fuerte_1.wav", "sonidos/fl/bateria/bombo_fuerte_2.wav"] }] },
+      caja:     { capas: [{ hasta: 0.62, archivos: ["sonidos/fl/bateria/caja_suave_1.wav", "sonidos/fl/bateria/caja_suave_2.wav"] }, { hasta: 0.84, archivos: ["sonidos/fl/bateria/caja_media_1.wav", "sonidos/fl/bateria/caja_media_2.wav"] }, { hasta: 1, archivos: ["sonidos/fl/bateria/caja_fuerte_1.wav", "sonidos/fl/bateria/caja_fuerte_2.wav"] }] },
+      hihat:    { capas: [{ hasta: 0.62, archivos: ["sonidos/fl/bateria/hihat_suave_1.wav", "sonidos/fl/bateria/hihat_suave_2.wav"] }, { hasta: 0.84, archivos: ["sonidos/fl/bateria/hihat_media_1.wav", "sonidos/fl/bateria/hihat_media_2.wav"] }, { hasta: 1, archivos: ["sonidos/fl/bateria/hihat_fuerte_1.wav", "sonidos/fl/bateria/hihat_fuerte_2.wav"] }] },
+      abierto:  "sonidos/fl/bateria/abierto.wav",
+      tom:      "sonidos/fl/bateria/tom.wav",            // el pulso grave de la intro
+      tomgrave: { capas: [{ hasta: 0.75, archivos: ["sonidos/fl/bateria/tomgrave_suave_1.wav"] }, { hasta: 1, archivos: ["sonidos/fl/bateria/tomgrave_fuerte_1.wav"] }] },
+      tommedio: { capas: [{ hasta: 0.75, archivos: ["sonidos/fl/bateria/tommedio_suave_1.wav"] }, { hasta: 1, archivos: ["sonidos/fl/bateria/tommedio_fuerte_1.wav"] }] },
+      tomagudo: { capas: [{ hasta: 0.75, archivos: ["sonidos/fl/bateria/tomagudo_suave_1.wav"] }, { hasta: 1, archivos: ["sonidos/fl/bateria/tomagudo_fuerte_1.wav"] }] },
+      crash:    "sonidos/fl/bateria/crash.wav",
     },
     "teclado-1":  { archivo: "sonidos/fl/teclado_medio_Db4.wav", base: 61 }, // grabado en Re♭4, suena a su altura real
     "teclado-2":  { archivo: "sonidos/fl/teclado_agudo_F5.wav",  base: 77 }, // grabado en Fa5, suena a su altura real
