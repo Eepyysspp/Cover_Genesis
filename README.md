@@ -16,10 +16,10 @@ Una interfaz hecha desde cero a partir del feedback del ensayo. Usa la misma par
   - se deslizan a la nota del acorde más cercana;
   - se mueven junto con el acorde, conservando la disonancia;
   - se quedan donde están.
-- **Mantener y acorde sostenido.** 📌 *Mantener notas* hace que cada toque encienda o apague la nota. 🎶 *Acorde sostenido* deja sonando el acorde, que se desliza solo de un acorde a otro.
+- **Pantalla del teclado en pasos.** 1 Sonido · 2 Cómo tocar · 3 Cuando cambia el acorde · 4 Efectos. *Cómo tocar* tiene tres modos: 🎹 **Normal** (suena mientras aprietas), 📌 **Notas fijas** (un toque enciende y otro apaga) y 🎶 **Acorde automático** (suena el acorde de la partitura y cambia solo). Sobre el piano, una línea dice qué notas suenan y adónde se deslizará cada una en el próximo cambio. El botón **? Cómo funciona** (o la tecla `?`) abre una ayuda con los colores, los modos y los atajos; se abre sola la primera vez.
 - **Batería.** Usa el kit de FL, la batería sintetizada o la base 808. Los ritmos siguen el cronómetro, y 🤖 *Pista MIDI* toca sola la batería del arreglo.
 - **Guitarra opcional.** En modo *Automática* la melodía suena sola desde esa laptop. En modo *Guitarrista real* la laptop calla y muestra la partitura y la tablatura siguiendo el compás.
-- **🎧 Escuchar a los demás.** Sirve para ensayar en casa: la laptop toca también el resto del arreglo.
+- **🎧 Orquesta.** Sirve para ensayar: el botón abre una ventana donde se enciende la orquesta, se elige qué partes suenan (con atajos *Todos*, *Ninguno*, *Solo la base* y *Todos menos yo*) y con qué sample toca cada una (cualquier sample de FL, el sintetizado, y para la batería también la base 808). Tu propio rol viene apagado. Si un sample está muy lejos del registro de la parte, se toca en otra octava para no deformarlo, y su volumen se iguala con el sample original. La elección se guarda en el navegador.
 
 ### Cronómetro en red (`servidor.py`)
 

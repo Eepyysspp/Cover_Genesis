@@ -200,3 +200,89 @@ input[type=range] { accent-color: var(--acento); width: 100%; }
   .barra-rol #btnOrquesta { margin-left: 0; }
   .col-inst { padding: 14px; }
 }
+
+/* ---------- teclado: pasos con nombre ---------- */
+.paso { display: flex; flex-direction: column; gap: 10px; }
+.paso + .paso, .paso.glis { border-top: 1px solid var(--borde); padding-top: 14px; }
+.paso-cab { display: flex; align-items: center; gap: 10px; }
+.paso-cab .n { width: 24px; height: 24px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 13px; font-weight: 800; background: var(--panel2); border: 1px solid var(--borde); color: var(--muted); flex: none; }
+.paso-cab b { font-size: 15px; }
+.btn-ayuda { margin-left: auto; padding: 6px 12px; font-size: 14px; border-color: rgba(124,156,255,.45); color: var(--acento2); }
+.explica { margin: 0; font-size: 14px; color: var(--muted); max-width: 70ch; }
+.explica b { color: var(--texto); font-weight: 600; }
+.paso .efectos { border-top: 0; padding-top: 0; }
+.modos { flex-wrap: wrap; }
+.modos button { display: inline-flex; align-items: center; gap: 6px; }
+kbd { font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 3px 5px; border-radius: 5px; border: 1px solid rgba(255,255,255,.22); border-bottom-width: 2px; color: inherit; opacity: .8; }
+.estado-tec { min-height: 44px; padding: 11px 12px; border-radius: 12px; background: color-mix(in srgb, var(--color) 12%, var(--panel2)); border: 1px solid color-mix(in srgb, var(--color) 35%, transparent); font-size: 14px; color: var(--muted); }
+.estado-tec b { color: var(--texto); }
+.estado-tec .ac { color: color-mix(in srgb, var(--color) 60%, #fff); }
+.estado-tec .va { margin-left: 4px; }
+
+/* ---------- ventanas emergentes ---------- */
+.ventana { padding: 0; border: 0; background: transparent; color: var(--texto); max-width: min(640px, calc(100vw - 24px)); width: 100%; max-height: calc(100dvh - 32px); }
+.ventana.ancha { max-width: min(760px, calc(100vw - 24px)); }
+.ventana::backdrop { background: rgba(5,4,10,.72); backdrop-filter: blur(3px); }
+.ventana[open] { animation: aparecer .16s ease-out; }
+@keyframes aparecer { from { opacity: 0; transform: translateY(8px) scale(.98); } }
+.v-marco { background: var(--panel); border: 1px solid var(--borde); border-radius: var(--radio); box-shadow: 0 24px 60px rgba(0,0,0,.55); display: flex; flex-direction: column; max-height: calc(100dvh - 32px); }
+.v-cab { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--borde); }
+.v-cab h2 { margin: 0; font-size: 18px; }
+.v-cerrar { margin-left: auto; padding: 6px 11px; }
+.v-cuerpo { padding: 16px 18px 20px; overflow-y: auto; }
+
+/* ayuda del teclado */
+.ayuda-tec section + section { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--borde); }
+.ayuda-tec h3 { margin: 0 0 8px; font-size: 15px; }
+.ayuda-tec p { margin: 0 0 8px; font-size: 14px; color: var(--muted); }
+.ayuda-tec p b, .ayuda-tec dd b { color: var(--texto); }
+.ayuda-tec .lista-colores { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.ayuda-tec .lista-colores li { display: flex; align-items: center; gap: 12px; font-size: 14px; color: var(--muted); }
+.ayuda-tec .lista-colores b { color: var(--texto); }
+.mini-tecla { --color: #7c9cff; position: relative; flex: none; width: 26px; height: 40px; border-radius: 0 0 5px 5px; background: #ece8f3; display: inline-flex; justify-content: center; }
+.mini-tecla.t-acorde { background: color-mix(in srgb, var(--color) 55%, #fff); }
+.mini-tecla.t-raiz::after { content: ""; position: absolute; top: 7px; width: 9px; height: 9px; border-radius: 50%; background: #120f1c; box-shadow: 0 0 0 2px #fff; }
+.mini-tecla.t-fuera { background: repeating-linear-gradient(135deg, #b4adc4 0 4px, #a39cb5 4px 8px); }
+.mini-tecla.t-guia { box-shadow: inset 0 0 0 3px var(--acento); }
+.mini-tecla.t-sig::before { content: ""; position: absolute; top: 14px; width: 8px; height: 8px; border-radius: 50%; border: 2px dashed #3a3550; }
+.mini-tecla.t-on { background: var(--acento); }
+.ayuda-tec dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; font-size: 14px; }
+.ayuda-tec dt { font-weight: 700; }
+.ayuda-tec dd { margin: 0; color: var(--muted); }
+.atajos .fila-teclas { display: flex; gap: 4px; margin-bottom: 4px; }
+.atajos .fila-teclas.medio { margin-left: 0; }
+.atajos .fila-teclas:first-child { margin-left: 15px; }
+.atajos .fila-teclas kbd, .atajos .hueco { width: 26px; text-align: center; padding: 6px 0; font-size: 12px; }
+.atajos .hueco { display: inline-block; }
+
+/* ---------- ventana de la orquesta ---------- */
+.insignia { margin-left: 4px; padding: 1px 7px; border-radius: 999px; background: var(--acento); color: #19060e; font-size: 12px; font-weight: 700; }
+.orq { display: flex; flex-direction: column; gap: 14px; }
+.orq > p { margin: 0; }
+.orq-master .desliz { flex: 1 1 220px; }
+.orq-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.orq-fila { display: grid; grid-template-columns: minmax(170px, 1fr) minmax(0, 1.3fr); grid-template-areas: "nombre son" "nota nota"; align-items: center; gap: 2px 12px; padding: 10px 12px; border: 1px solid var(--borde); border-radius: 12px; background: var(--panel2); transition: opacity .15s; }
+.orq-fila.apagada { opacity: .55; }
+.orq-fila.tuyo { border-style: dashed; }
+.orq-nombre { grid-area: nombre; display: flex; align-items: center; gap: 10px; cursor: pointer; min-width: 0; }
+.orq-nombre input { width: 18px; height: 18px; accent-color: var(--acento); flex: none; }
+.orq-nombre .ico { font-size: 20px; }
+.orq-nombre small { display: block; color: var(--muted); font-size: 12px; }
+.orq-fila select { grid-area: son; min-width: 0; width: 100%; background: var(--panel); border: 1px solid var(--borde); border-radius: 10px; padding: 7px 9px; }
+.orq-fila.apagada select { pointer-events: auto; }
+.orq-nota { grid-area: nota; padding-left: 28px; }
+.orq-nota:empty { display: none; }
+.orq-punto { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.15); flex: none; transition: background .08s, box-shadow .08s; }
+.orq-fila.toca .orq-punto { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+@media (max-width: 560px) {
+  .orq-fila { grid-template-columns: 1fr; grid-template-areas: "nombre" "son" "nota"; gap: 8px; }
+  .orq-nota { padding-left: 0; }
+  .v-cuerpo { padding: 14px; }
+  .ayuda-tec dl { grid-template-columns: 1fr; }
+  .modos button { padding: 9px 11px; }
+  .btn-ayuda { padding: 5px 9px; }
+}
+@media (max-width: 560px) {
+  .modos { display: flex; flex-direction: column; width: 100%; }
+  .modos button { justify-content: flex-start; width: 100%; }
+}
