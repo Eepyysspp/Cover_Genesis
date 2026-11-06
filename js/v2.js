@@ -64,12 +64,20 @@
         <p>Puedes elegir si van a la nota del acorde más cercana, si se mueven todas juntas (conservan la disonancia) o si se quedan quietas, y cuánto dura el deslizamiento.</p></section>
       <section><h3>4 · Efectos</h3>
         <p>Con <b>🎛️ Efectos automáticos</b> encendido, la distorsión, el brillo, la reverb y el volumen cambian solos en cada parte de la obra. Si mueves un control a mano, el modo automático se apaga hasta que lo vuelvas a encender.</p></section>
-      <section><h3>Atajos con el teclado de la computadora</h3>
+      <section><h3>5 · Notas que caen</h3>
+        <p>Sobre el piano caen las notas de <b>tu parte del arreglo</b>. Cuando una nota <b>toca el piano</b>, tócala; su largo es cuánto mantenerla. Las líneas horizontales marcan los cambios de acorde.</p>
+        <p>Si la tocas a tiempo se pone verde (<b>Perfecto</b> o <b>Bien</b>); si se te pasa, queda gris. Arriba se cuentan los aciertos y la racha. Puedes apagarlas o cambiar su velocidad. Es una guía, no una obligación: improvisar sigue valiendo.</p></section>
+      <section><h3>Tocar con el teclado de la computadora</h3>
         <div class="atajos">
-          <div class="fila-teclas">${"WE TYU OP".split("").map(c => c === " " ? `<span class="hueco"></span>` : `<kbd>${c}</kbd>`).join("")}</div>
-          <div class="fila-teclas medio">${"ASDFGHJKLÑ".split("").map(c => `<kbd>${c}</kbd>`).join("")}</div>
-          <p class="muted small">La fila del medio son las teclas blancas y la de arriba, las negras y empiezan en la primera tecla de la izquierda del piano. Cada tecla del piano muestra su letra.</p>
-          <p><kbd>Z</kbd> <kbd>X</kbd> bajar o subir octava · <kbd>M</kbd> notas fijas · <kbd>C</kbd> acorde automático · <kbd>Esc</kbd> soltar todo</p>
+          <p>Las <b>25 teclas</b> del piano tienen su tecla, igual que el teclado de tipeo de FL Studio. Cada tecla del piano muestra su letra.</p>
+          <div class="oct-pc"><b>Octava de abajo</b>
+            <div class="fila-teclas">${"S D · G H J".split(" ").map(c => c === "·" ? `<span class="hueco"></span>` : `<kbd class="negra">${c}</kbd>`).join("")}</div>
+            <div class="fila-teclas blancas">${"ZXCVBNM".split("").map(c => `<kbd>${c}</kbd>`).join("")}</div></div>
+          <div class="oct-pc"><b>Octava de arriba</b>
+            <div class="fila-teclas">${"2 3 · 5 6 7".split(" ").map(c => c === "·" ? `<span class="hueco"></span>` : `<kbd class="negra">${c}</kbd>`).join("")}</div>
+            <div class="fila-teclas blancas">${"QWERTYUI".split("").map(c => `<kbd>${c}</kbd>`).join("")}</div></div>
+          <p class="muted small">Las letras de abajo son las teclas blancas y las de arriba, las negras. Z es la primera tecla de la izquierda del piano.</p>
+          <p><kbd>←</kbd> <kbd>→</kbd> bajar o subir octava · <kbd>8</kbd> normal · <kbd>9</kbd> notas fijas · <kbd>0</kbd> acorde automático · <kbd>Esc</kbd> soltar todo · <kbd>?</kbd> esta ayuda</p>
         </div></section>
     </div>`), { clase: "ancha" });
   }
@@ -242,8 +250,141 @@
     return caja;
   }
 
+  /* ============================== notas que caen (como osu!mania) ============================== */
+  // Las notas de la pista MIDI de tu parte caen hacia el piano; cuando lo tocan, hay que tocarlas.
+  // piano: el elemento con las teclas (.tecla[data-m]); mapear(m) lleva una nota de la pista a una tecla visible.
+  const VENTANAS = { perfecto: 0.07, bien: 0.16 };
+  const VELOCIDADES = [[4, "Lenta"], [2.6, "Normal"], [1.7, "Rápida"]];
+  function crearCascada(pista, piano, mapear) {
+    const caja = el(`<div class="cascada">
+      <div class="cascada-cab">
+        <button class="chip" data-r="on" title="Las notas de tu parte caen hacia el piano: tócalas cuando lleguen">🎼 Notas que caen</button>
+        <label class="campo">Velocidad <select data-r="vel"></select></label>
+        <span class="marcador" data-r="marcador"></span>
+      </div>
+      <div class="cascada-lienzo"><canvas></canvas></div>
+    </div>`);
+    const r = x => $(`[data-r="${x}"]`, caja), lienzo = $("canvas", caja), marco = $(".cascada-lienzo", caja), g = lienzo.getContext("2d");
+    const notas = pista.notas, durMax = notas.reduce((a, n) => Math.max(a, n.d), 0);
+    let activo = leer("v2:cascada", true), mirar = leer("v2:cascadaVel", 2.6);
+    VELOCIDADES.forEach(([v, n]) => r("vel").add(new Option(n, v)));
+    r("vel").value = mirar;
+    r("vel").onchange = e => { mirar = +e.target.value; guardar("v2:cascadaVel", mirar); };
+    const pintarOn = () => { r("on").classList.toggle("on", activo); marco.hidden = !activo; r("vel").closest("label").hidden = !activo; r("marcador").hidden = !activo; };
+    r("on").onclick = () => { activo = !activo; guardar("v2:cascada", activo); pintarOn(); medir(); };
+    pintarOn();
+
+    // columnas: la posición de cada tecla del piano
+    let cols = new Map(), ancho = 0, alto = 0, dpr = 1;
+    function medir() {
+      const base = piano.getBoundingClientRect(); cols = new Map();
+      piano.querySelectorAll(".tecla").forEach(t => {
+        const b = t.getBoundingClientRect();
+        cols.set(+t.dataset.m, { x: b.left - base.left, w: b.width, negra: t.classList.contains("negra") });
+      });
+      dpr = window.devicePixelRatio || 1; ancho = marco.clientWidth; alto = marco.clientHeight;
+      lienzo.width = Math.round(ancho * dpr); lienzo.height = Math.round(alto * dpr);
+      lienzo.style.width = ancho + "px"; lienzo.style.height = alto + "px";
+    }
+    const ro = window.ResizeObserver ? new ResizeObserver(medir) : null;
+    if (ro) { ro.observe(piano); ro.observe(marco); } else window.addEventListener("resize", medir);
+
+    // juicio de cada nota (índice → { tipo, t }) y marcador
+    const juicio = new Map(), avisos = [];
+    let cuenta = { perfecto: 0, bien: 0, fallo: 0 }, racha = 0, mejor = 0, tPrevio = null, marcadorPrevio = "", desdeT = Infinity, corriaAntes = false;
+    function reiniciar() { juicio.clear(); cuenta = { perfecto: 0, bien: 0, fallo: 0 }; racha = 0; avisos.length = 0; desdeT = Infinity; }
+    function avisar(m, texto, color) { const c = cols.get(m); if (c) avisos.push({ x: c.x + c.w / 2, texto, color, t0: performance.now() }); }
+    // al tocar una tecla: ¿había una nota llegando a esa tecla?
+    function golpe(m, tc) {
+      if (!activo) return;
+      let mejorI = -1, mejorD = Infinity;
+      for (let i = lb(notas, tc - VENTANAS.bien, n => n.t); i < notas.length && notas[i].t <= tc + VENTANAS.bien; i++) {
+        if (juicio.has(i) || mapear(notas[i].m) !== m) continue;
+        const d = Math.abs(notas[i].t - tc); if (d < mejorD) { mejorD = d; mejorI = i; }
+      }
+      if (mejorI < 0) return;
+      const tipo = mejorD <= VENTANAS.perfecto ? "perfecto" : "bien", tN = notas[mejorI].t;
+      // las notas que caen juntas en la misma tecla (la misma nota en dos octavas) se cuentan con un solo toque
+      for (let i = lb(notas, tN - 0.03, n => n.t); i < notas.length && notas[i].t <= tN + 0.03; i++) {
+        if (juicio.has(i) || mapear(notas[i].m) !== m) continue;
+        juicio.set(i, { tipo, t: tc }); cuenta[tipo]++; racha++;
+      }
+      mejor = Math.max(mejor, racha);
+      avisar(m, tipo === "perfecto" ? "¡Perfecto!" : "Bien", tipo === "perfecto" ? "#5be3a1" : "#9fe0ff");
+    }
+    function pintarMarcador() {
+      const total = cuenta.perfecto + cuenta.bien + cuenta.fallo;
+      const txt = total ? `<b class="ok">✓ ${cuenta.perfecto + cuenta.bien}</b> <span class="muted">(${cuenta.perfecto} perfectos)</span> · <b class="mal">✗ ${cuenta.fallo}</b> · racha <b>${racha}</b>${mejor > racha ? ` <span class="muted">(mejor ${mejor})</span>` : ""}`
+        : `<span class="muted">Toca cada nota cuando llegue al piano</span>`;
+      if (txt !== marcadorPrevio) { marcadorPrevio = txt; r("marcador").innerHTML = txt; }
+    }
+
+    function rect(x, y, w, h, rad) { g.beginPath(); if (g.roundRect) g.roundRect(x, y, w, h, rad); else g.rect(x, y, w, h); g.fill(); }
+    function dibujar(tc, corriendo) {
+      if (!activo) return;
+      if (!ancho || cols.size === 0) medir();
+      // un salto del reloj (ir a otra sección, volver atrás) reinicia el marcador
+      if (tPrevio != null && (tc < tPrevio - 0.3 || tc > tPrevio + 1.5)) reiniciar();
+      tPrevio = tc;
+      // las notas que pasaron sin tocarse cuentan como fallo (solo con el reloj en marcha, y desde que arrancó)
+      if (corriendo && (!corriaAntes || desdeT === Infinity)) desdeT = Math.min(desdeT, tc);
+      if (!corriendo) desdeT = Infinity;
+      corriaAntes = corriendo;
+      if (corriendo) for (let i = lb(notas, Math.max(desdeT, tc - VENTANAS.bien - 1), n => n.t); i < notas.length && notas[i].t < tc - VENTANAS.bien; i++) {
+        if (!juicio.has(i)) { juicio.set(i, { tipo: "fallo", t: tc }); cuenta.fallo++; racha = 0; avisar(mapear(notas[i].m), "Fallo", "#ffb44d"); }
+      }
+      pintarMarcador();
+      const W = ancho, H = alto, porSeg = H / mirar;
+      g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+      // carriles: un fondo más oscuro bajo las teclas negras
+      cols.forEach(c => { if (c.negra) { g.fillStyle = "rgba(0,0,0,.28)"; g.fillRect(c.x, 0, c.w, H); } });
+      cols.forEach((c, m) => { if (!c.negra && m % 12 === 0) { g.fillStyle = "rgba(255,255,255,.07)"; g.fillRect(c.x, 0, 1, H); } });
+      // cambios de acorde que vienen: una línea con el nombre
+      let x = tc;
+      g.font = "600 12px system-ui, sans-serif"; g.textBaseline = "bottom";
+      for (let k = 0; k < 8; k++) {
+        const a = acordeEn(tObra(x)); if (!a.siguiente || a.falta == null) break;
+        const tCambio = x + a.falta; if (tCambio > tc + mirar) break;
+        const y = H - (tCambio - tc) * porSeg, sig = acordeEn(tObra(tCambio + 0.01));
+        g.fillStyle = sig.color || "#7c9cff"; g.globalAlpha = 0.55; g.fillRect(0, y, W, 1.5); g.globalAlpha = 1;
+        g.fillStyle = "rgba(242,239,248,.85)"; g.fillText(bonito(a.siguiente), 6, y - 2);
+        x = tCambio + 0.02;
+      }
+      // notas
+      const desde = lb(notas, tc - durMax - 0.5, n => n.t);
+      for (let i = desde; i < notas.length && notas[i].t <= tc + mirar; i++) {
+        const n = notas[i]; if (n.t + n.d < tc - 0.3) continue;
+        const c = cols.get(mapear(n.m)); if (!c) continue;
+        const yIni = H - (n.t - tc) * porSeg, h = Math.max(8, n.d * porSeg), j = juicio.get(i);
+        const suena = n.t <= tc && tc < n.t + n.d;
+        g.fillStyle = j ? (j.tipo === "fallo" ? "rgba(154,149,173,.45)" : "#5be3a1") : c.negra ? "#b98bff" : "#ff6b9a";
+        if (suena && !j) g.fillStyle = "#ffd36b";
+        const pad = c.negra ? 1 : 2;
+        rect(c.x + pad, yIni - h, c.w - pad * 2, h, Math.min(6, c.w / 3));
+        if (!j || j.tipo !== "fallo") { g.fillStyle = "rgba(255,255,255,.55)"; g.fillRect(c.x + pad + 2, yIni - 4, c.w - pad * 2 - 4, 3); }   // el borde que golpea
+      }
+      // la línea donde se toca (el borde del piano)
+      g.fillStyle = "rgba(255,107,154,.9)"; g.fillRect(0, H - 3, W, 3);
+      // avisos: Perfecto / Bien / Fallo
+      const ahora = performance.now();
+      g.textAlign = "center"; g.font = "800 13px system-ui, sans-serif";
+      for (let k = avisos.length - 1; k >= 0; k--) {
+        const a = avisos[k], e = (ahora - a.t0) / 600;
+        if (e >= 1) { avisos.splice(k, 1); continue; }
+        g.globalAlpha = 1 - e; g.fillStyle = a.color; g.fillText(a.texto, Math.min(W - 34, Math.max(34, a.x)), H - 12 - e * 26);
+      }
+      g.globalAlpha = 1; g.textAlign = "start";
+    }
+    return { caja, dibujar, golpe, medir, reiniciar, destruir() { if (ro) ro.disconnect(); else window.removeEventListener("resize", medir); } };
+  }
+
   /* ============================== teclado ============================== */
-  const TECLAS_PC = "awsedftgyhujkolpñ";
+  // Las 25 teclas del piano en el teclado de la computadora, como el teclado de tipeo de FL Studio:
+  // octava de abajo en la fila Z (negras en la fila A) y octava de arriba en la fila Q (negras en los números).
+  // Se usa la posición física de la tecla (e.code), así funciona igual con teclado en español o en inglés.
+  const TECLAS_PC = ["KeyZ", "KeyS", "KeyX", "KeyD", "KeyC", "KeyV", "KeyG", "KeyB", "KeyH", "KeyN", "KeyJ", "KeyM",
+    "KeyQ", "Digit2", "KeyW", "Digit3", "KeyE", "KeyR", "Digit5", "KeyT", "Digit6", "KeyY", "Digit7", "KeyU", "KeyI"];
+  const letraPC = code => code.replace(/^Key|^Digit/, "");
   async function crearTeclado(perfil, caja) {
     const id = perfil.id, k = new Teclado(perfil.preset), pista = await pistaDe(id);
     const defFL = P.sonidos && P.sonidos[id];
@@ -261,14 +402,14 @@
     const opciones = el(`<div class="paso">
       <div class="paso-cab"><span class="n">1</span><b>Sonido</b><button class="btn btn-ayuda" data-r="ayuda" title="Cómo funciona el teclado">? Cómo funciona</button></div>
       <div class="fila"><label class="campo"><select data-r="son" aria-label="Sonido"></select></label>
-        <div class="grupo-oct"><button class="btn" data-r="oct-" title="Bajar una octava (Z)">− oct</button><span data-r="oct"></span><button class="btn" data-r="oct+" title="Subir una octava (X)">+ oct</button></div></div>
+        <div class="grupo-oct"><button class="btn" data-r="oct-" title="Bajar una octava (←)">− oct</button><span data-r="oct"></span><button class="btn" data-r="oct+" title="Subir una octava (→)">+ oct</button></div></div>
     </div>`);
     const toques = el(`<div class="paso">
       <div class="paso-cab"><span class="n">2</span><b>Cómo tocar</b></div>
       <div class="fila"><div class="segmentado modos" role="radiogroup" aria-label="Cómo tocar">
-          <button data-v="normal" role="radio">🎹 Normal</button>
-          <button data-v="fijas" role="radio">📌 Notas fijas <kbd>M</kbd></button>
-          <button data-v="auto" role="radio">🎶 Acorde automático <kbd>C</kbd></button></div>
+          <button data-v="normal" role="radio">🎹 Normal <kbd>8</kbd></button>
+          <button data-v="fijas" role="radio">📌 Notas fijas <kbd>9</kbd></button>
+          <button data-v="auto" role="radio">🎶 Acorde automático <kbd>0</kbd></button></div>
         <button class="btn" data-r="soltar" title="Apaga todas las notas que suenan">✋ Soltar todo <kbd>Esc</kbd></button></div>
       <p class="explica" data-r="explica"></p>
     </div>`);
@@ -291,7 +432,10 @@
     const fx = el(`<div class="efectos"></div>`);
     const pasoFx = el(`<div class="paso"><div class="paso-cab"><span class="n">4</span><b>Efectos</b></div></div>`);
     pasoFx.appendChild(fx);
-    caja.append(opciones, toques, estado, piano, leyenda, glis, pasoFx);
+    // tu parte, llevada a la octava visible del piano
+    const mapear = m0 => { let m = m0 + desplaz; while (m < inicio) m += 12; while (m > inicio + 24) m -= 12; return m; };
+    const cascada = pista && pista.notas.length ? crearCascada(pista, piano, mapear) : null;
+    caja.append(opciones, toques, estado, ...(cascada ? [cascada.caja] : []), piano, leyenda, glis, pasoFx);
     const r = (x, raiz = caja) => $(`[data-r="${x}"]`, raiz);
 
     // sonido
@@ -392,7 +536,7 @@
         const t = el(`<button class="tecla ${negra ? "negra" : "blanca"}" data-m="${m}" tabindex="-1"><span class="nom"></span><i class="pc"></i></button>`);
         if (negra) { const iz = blancas.indexOf(m - 1); t.style.left = `calc(${(iz + 1) * ancho}% - ${ancho * 0.31}%)`; t.style.width = ancho * 0.62 + "%"; }
         else t.style.width = ancho + "%";
-        const idx = m - inicio; if (idx < TECLAS_PC.length) $(".pc", t).textContent = TECLAS_PC[idx].toUpperCase();
+        const idx = m - inicio; if (idx < TECLAS_PC.length) $(".pc", t).textContent = letraPC(TECLAS_PC[idx]);
         t.addEventListener("pointerdown", e => { e.preventDefault(); if (t.hasPointerCapture(e.pointerId)) t.releasePointerCapture(e.pointerId); pulsar(m); });
         t.addEventListener("pointerup", () => soltarTecla(m));
         t.addEventListener("pointerleave", e => { if (e.buttons) soltarTecla(m); });
@@ -402,8 +546,13 @@
       r("oct", opciones).textContent = "desde " + nombreNota(inicio);
       ultimoPintado = "";
       pintarTeclas();
+      if (cascada) { cascada.medir(); cascada.reiniciar(); }
     }
-    function pulsar(m) { if (mantener) { voces.has(m) ? off(m) : on(m); } else on(m); }
+    function pulsar(m) {
+      const nueva = !voces.has(m);
+      if (mantener) { voces.has(m) ? off(m) : on(m); } else on(m);
+      if (cascada && nueva) cascada.golpe(m, tObra(R.ahora()));
+    }
     function soltarTecla(m) { if (!mantener) { const x = voces.get(m); if (x && !x.fija) off(m); } }
     let ultimoPintado = "", guia = [], sigTonos = [];
     function pintarTeclas() {
@@ -484,16 +633,20 @@
     const abajo = new Set();
     const alBajar = e => {
       if (escribiendo(e) || e.repeat || e.ctrlKey || e.metaKey) return;
-      const c = e.key.toLowerCase();
-      if (c === "z") return mover(-12); if (c === "x") return mover(12);
-      if (c === "m") { ponerToque(toque === "fijas" ? "normal" : "fijas"); return; }
-      if (c === "c") { ponerToque(toque === "auto" ? "normal" : "auto"); return; }
+      if (e.key === "ArrowLeft" || e.key === "ArrowDown") { e.preventDefault(); return mover(-12); }
+      if (e.key === "ArrowRight" || e.key === "ArrowUp") { e.preventDefault(); return mover(12); }
+      if (e.code === "Digit8") { ponerToque("normal"); return; }
+      if (e.code === "Digit9") { ponerToque(toque === "fijas" ? "normal" : "fijas"); return; }
+      if (e.code === "Digit0") { ponerToque(toque === "auto" ? "normal" : "auto"); return; }
       if (e.key === "Escape") { soltarTodo(); return; }
       if (e.key === "?") { ayudaTeclado(); return; }
-      const i = TECLAS_PC.indexOf(c === ";" ? "ñ" : c); if (i < 0) return;
-      e.preventDefault(); abajo.add(c); pulsar(inicio + i);
+      const i = TECLAS_PC.indexOf(e.code); if (i < 0 || e.altKey) return;
+      e.preventDefault(); abajo.add(e.code); pulsar(inicio + i);
     };
-    const alSubir = e => { const c = e.key.toLowerCase(), i = TECLAS_PC.indexOf(c === ";" ? "ñ" : c); if (i >= 0 && abajo.delete(c)) soltarTecla(inicio + i); };
+    const alSubir = e => { const i = TECLAS_PC.indexOf(e.code); if (i >= 0 && abajo.delete(e.code)) soltarTecla(inicio + i); };
+    // si la ventana pierde el foco con teclas apretadas, se sueltan
+    const alPerderFoco = () => { abajo.forEach(code => soltarTecla(inicio + TECLAS_PC.indexOf(code))); abajo.clear(); };
+    window.addEventListener("blur", alPerderFoco);
     document.addEventListener("keydown", alBajar); document.addEventListener("keyup", alSubir);
 
     // la primera vez, la ayuda se abre sola
@@ -502,7 +655,7 @@
     // cada cuadro: glissando a tiempo con el cambio de acorde, guía MIDI y marcas
     let acordeActual = acordeEn(tObra(R.ahora())).nombre, agendado = null;
     return {
-      ayuda: "Teclas A–Ñ tocan · Z/X octava · M notas fijas · C acorde automático · Esc soltar todo · ? ayuda",
+      ayuda: "Filas Z/A y Q/números tocan las 25 teclas · ← → octava · 8 normal · 9 notas fijas · 0 acorde automático · Esc soltar todo · ? ayuda",
       cuadro(t, dt, corriendo) {
         auto.cuadro(t);
         const tc = tObra(t), ac = acordeEn(tc);
@@ -514,11 +667,12 @@
         }
         if (ac.nombre === acordeActual && agendado != null && agendado / 20 < tc - 0.5) agendado = null;
         // guía: notas de tu pista MIDI que suenan ahora, llevadas a la octava visible
-        guia = pista ? window.MIDI.sonando(pista, tc).map(n => { let m = n.m + desplaz; while (m < inicio) m += 12; while (m > inicio + 24) m -= 12; return m; }) : [];
+        guia = pista ? window.MIDI.sonando(pista, tc).map(n => mapear(n.m)) : [];
+        if (cascada) cascada.dibujar(tc, corriendo && t >= 0 && t < DURACION);
         sigTonos = ac.falta < 2.2 && ac.siguiente ? tonosDe(ac.siguiente) : [];
         pintarTeclas(); pintarEstado(ac);
       },
-      destruir() { soltarTodo(); document.removeEventListener("keydown", alBajar); document.removeEventListener("keyup", alSubir); },
+      destruir() { soltarTodo(); document.removeEventListener("keydown", alBajar); document.removeEventListener("keyup", alSubir); window.removeEventListener("blur", alPerderFoco); if (cascada) cascada.destruir(); },
     };
   }
 

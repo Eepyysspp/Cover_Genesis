@@ -286,3 +286,23 @@ kbd { font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   .modos { display: flex; flex-direction: column; width: 100%; }
   .modos button { justify-content: flex-start; width: 100%; }
 }
+
+/* ---------- notas que caen ---------- */
+.cascada { display: flex; flex-direction: column; gap: 8px; margin-bottom: -16px; }
+.cascada-cab { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.cascada-cab .marcador { margin-left: auto; font-size: 14px; font-variant-numeric: tabular-nums; }
+.marcador .ok { color: var(--ok); }
+.marcador .mal { color: var(--mal); }
+.cascada-lienzo { position: relative; height: clamp(170px, 30vh, 300px); border-radius: 12px 12px 0 0; overflow: hidden;
+  background: linear-gradient(180deg, rgba(255,255,255,.015), color-mix(in srgb, var(--color) 14%, transparent)); border: 1px solid var(--borde); border-bottom: 0; }
+.cascada-lienzo canvas { position: absolute; inset: 0; display: block; }
+.ayuda-tec .oct-pc { display: inline-flex; flex-direction: column; gap: 4px; margin: 4px 22px 10px 0; vertical-align: top; }
+.ayuda-tec .oct-pc > b { font-size: 13px; color: var(--muted); font-weight: 600; }
+.atajos .fila-teclas.blancas { margin-left: 0 !important; }
+.atajos .oct-pc .fila-teclas:not(.blancas) { margin-left: 15px; }
+.atajos kbd.negra { background: #1e1b28; border-color: rgba(255,255,255,.35); }
+@media (max-width: 560px) {
+  .cascada-lienzo { height: 150px; }
+  .cascada-cab .marcador { margin-left: 0; width: 100%; }
+}
+.cascada-cab .campo select { flex: none; }
