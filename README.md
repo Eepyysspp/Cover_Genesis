@@ -3,6 +3,35 @@
 Propuesta de obra de Felipe Osorio (Tarea 1). Hub web para interpretar **“genesis”** de Robin Callaway (álbum *i saw an angel in the mirror*, 2024) con la Orquesta de Laptops UC.
 Cada integrante abre la página, elige su perfil y toca desde el navegador. No hay que instalar nada.
 
+## Versión 2 (`v2.html`): interfaz simple
+
+Una interfaz hecha desde cero a partir del feedback del ensayo. Usa la misma partitura, los mismos sonidos de FL Studio y las mismas pistas MIDI que la versión 1, que sigue disponible en `index.html`.
+
+- **Una pantalla por rol.** A la izquierda, lo esencial: si tocas o no, cuánto falta para entrar, la sección, el acorde de ahora y el que viene. A la derecha, el instrumento.
+- **Teclados para improvisar.** Se puede tocar cualquier nota.
+  - Las notas del acorde actual se marcan con su color y la raíz con un punto.
+  - Las notas de la escala de Re♭ quedan claras, y las que están fuera de la escala (disonancia) quedan rayadas.
+  - También se marcan las notas de tu pista MIDI y las del acorde que viene.
+- **Glissando entre acordes.** Las notas que mantienes no tienen que soltarse a tiempo: al cambiar el acorde se deslizan solas y llegan justo con el acorde nuevo. Puedes elegir entre tres comportamientos:
+  - se deslizan a la nota del acorde más cercana;
+  - se mueven junto con el acorde, conservando la disonancia;
+  - se quedan donde están.
+- **Mantener y acorde sostenido.** 📌 *Mantener notas* hace que cada toque encienda o apague la nota. 🎶 *Acorde sostenido* deja sonando el acorde, que se desliza solo de un acorde a otro.
+- **Batería.** Usa el kit de FL, la batería sintetizada o la base 808. Los ritmos siguen el cronómetro, y 🤖 *Pista MIDI* toca sola la batería del arreglo.
+- **Guitarra opcional.** En modo *Automática* la melodía suena sola desde esa laptop. En modo *Guitarrista real* la laptop calla y muestra la partitura y la tablatura siguiendo el compás.
+- **🎧 Escuchar a los demás.** Sirve para ensayar en casa: la laptop toca también el resto del arreglo.
+
+### Cronómetro en red (`servidor.py`)
+
+Para que todas las laptops compartan el mismo cronómetro sin internet:
+
+1. Conecta todas las laptops a la misma red (wifi o router).
+2. En una laptop, la del director, corre `python servidor.py` desde la carpeta de la obra. Solo necesita Python 3. Si Windows pregunta por el firewall, permite el acceso en redes privadas.
+3. El programa muestra una dirección, por ejemplo `http://192.168.0.12:8000/v2.html`, que todas las laptops abren.
+4. El director entra como **⏱️ Cronómetro** para iniciar, pausar y saltar entre secciones. Las demás pantallas siguen el cronómetro solas, con unos pocos milisegundos de diferencia.
+
+Si una laptop quiere ensayar aparte, usa *Practicar solo*. Sin el servidor (GitHub Pages o abriendo el archivo directamente), cada laptop tiene su propio cronómetro.
+
 ## Perfiles (dotación de la propuesta)
 
 | Perfil | Rol |
@@ -143,6 +172,8 @@ Para probarlo en tu computador, abre `index.html` en Chrome. Para cargar sonidos
 ```
 index.html        Hub: perfiles, hora común y partitura general
 tocar.html        Página de control de cada perfil (?p=guitarra, ?p=teclado-2, …)
+v2.html           Versión 2: interfaz simple (js/v2.js, js/v2_reloj.js, css/v2.css)
+servidor.py       Cronómetro en red para la versión 2 (python servidor.py)
 guitarra.html     Partitura y tablatura de la guitarra real (leer, escuchar, imprimir)
 js/partitura.js   ← la obra: tempo, secciones, acordes, colores, instrucciones
 js/comun.js       Perfiles, tiempos y acordes

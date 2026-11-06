@@ -1,3 +1,17 @@
+/* Abriendo la página con doble clic (file://) el navegador no deja usar fetch(): en ese caso los sonidos se leen
+   de embebidos/<ruta>.js, los mismos archivos en base64 (copia sin internet del sitio de la orquesta). */
+window.LeerEmbebido = window.LeerEmbebido || function (ruta) {
+  const datos = window.ARCHIVOS_EMBEBIDOS = window.ARCHIVOS_EMBEBIDOS || {};
+  const aBuffer = b64 => { const s = atob(b64); const u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u.buffer; };
+  if (datos[ruta]) return Promise.resolve(aBuffer(datos[ruta]));
+  return new Promise((ok, mal) => {
+    const s = document.createElement("script"); s.src = "embebidos/" + ruta + ".js";
+    s.onload = () => (datos[ruta] ? ok(aBuffer(datos[ruta])) : mal(new Error(ruta + " sin datos")));
+    s.onerror = () => mal(new Error(ruta + " no está en embebidos/"));
+    document.head.appendChild(s);
+  });
+};
+
 /* Motor de audio (Web Audio API): síntesis de cada instrumento + sampler para sonidos propios. */
 (function () {
   const { mtof, notasAcorde, parseAcorde } = window.G;
@@ -88,7 +102,10 @@
     },
     async decodificar(arrayBuffer) { this.init(); return await this.ctx.decodeAudioData(arrayBuffer); },
     async cargarArchivo(file) { return this.decodificar(await file.arrayBuffer()); },
-    async cargarURL(url) { const r = await fetch(url); if (!r.ok) throw new Error(url + " → " + r.status); return this.decodificar(await r.arrayBuffer()); },
+    async cargarURL(url) {
+      if (window.LeerEmbebido && location.protocol === "file:") return this.decodificar(await window.LeerEmbebido(url));
+      const r = await fetch(url); if (!r.ok) throw new Error(url + " → " + r.status); return this.decodificar(await r.arrayBuffer());
+    },
     // Un pad de batería de la partitura: "archivo.wav" o { capas: [{ hasta: 0.6, archivos: [...] }, …] } (de suave a fuerte)
     async cargarPad(def) {
       if (typeof def === "string") return this.cargarURL(def);
