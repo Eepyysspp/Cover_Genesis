@@ -111,7 +111,11 @@ input[type=range] { accent-color: var(--acento); width: 100%; }
 .tecla.blanca { height: 100%; background: #ece8f3; border-right: 1px solid #b9b3c8; border-radius: 0 0 8px 8px; color: #3a3550; }
 .tecla.negra { position: absolute; top: 0; height: 60%; z-index: 2; background: #1e1b28; border-radius: 0 0 6px 6px; color: #d8d3e6; box-shadow: 0 3px 6px rgba(0,0,0,.5); }
 .tecla .nom { font-size: 12px; font-weight: 800; margin-bottom: 8px; }
-.tecla .pc { font-size: 10px; font-style: normal; opacity: .45; margin-bottom: 6px; }
+.tecla .pc { font: 800 15px/1 system-ui, sans-serif; font-style: normal; margin-bottom: 8px; min-width: 24px; padding: 4px 5px; border-radius: 6px; text-align: center;
+  background: rgba(18,15,28,.82); color: #fff; box-shadow: 0 1px 0 rgba(0,0,0,.4); }
+.tecla .pc:empty { display: none; }
+.tecla.negra .pc { background: #fff; color: #120f1c; font-size: 13px; min-width: 20px; padding: 3px 4px; }
+@media (max-width: 560px) { .tecla .pc { font-size: 12px; min-width: 18px; padding: 3px; } .tecla.negra .pc { font-size: 11px; min-width: 15px; padding: 2px; } }
 /* marcas: escala (neutra), fuera de la escala (disonancia), notas del acorde (color del acorde) */
 .tecla.blanca.fuera { background: repeating-linear-gradient(135deg, #b4adc4 0 6px, #a39cb5 6px 12px); color: #3a3550; }
 .tecla.negra.fuera { background: #121018; }

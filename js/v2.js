@@ -69,14 +69,11 @@
         <p>Si la tocas a tiempo se pone verde (<b>Perfecto</b> o <b>Bien</b>); si se te pasa, queda gris. Arriba se cuentan los aciertos y la racha. Puedes apagarlas o cambiar su velocidad. Es una guía, no una obligación: improvisar sigue valiendo.</p></section>
       <section><h3>Tocar con el teclado de la computadora</h3>
         <div class="atajos">
-          <p>Las <b>25 teclas</b> del piano tienen su tecla, igual que el teclado de tipeo de FL Studio. Cada tecla del piano muestra su letra.</p>
-          <div class="oct-pc"><b>Octava de abajo</b>
-            <div class="fila-teclas">${"S D · G H J".split(" ").map(c => c === "·" ? `<span class="hueco"></span>` : `<kbd class="negra">${c}</kbd>`).join("")}</div>
-            <div class="fila-teclas blancas">${"ZXCVBNM".split("").map(c => `<kbd>${c}</kbd>`).join("")}</div></div>
-          <div class="oct-pc"><b>Octava de arriba</b>
-            <div class="fila-teclas">${"2 3 · 5 6 7".split(" ").map(c => c === "·" ? `<span class="hueco"></span>` : `<kbd class="negra">${c}</kbd>`).join("")}</div>
-            <div class="fila-teclas blancas">${"QWERTYUI".split("").map(c => `<kbd>${c}</kbd>`).join("")}</div></div>
-          <p class="muted small">Las letras de abajo son las teclas blancas y las de arriba, las negras. Z es la primera tecla de la izquierda del piano.</p>
+          <p>El piano muestra <b>solo el registro de tu parte</b> (al menos una octava), y cada tecla tiene su letra:</p>
+          <div class="oct-pc">
+            <div class="fila-teclas">${"QWERTYUIO".split("").map(c => `<kbd class="negra">${c}</kbd>`).join("")}</div>
+            <div class="fila-teclas blancas">${"ASDFGHJKLÑ".split("").map(c => `<kbd>${c}</kbd>`).join("")}</div></div>
+          <p class="muted small">Las blancas van en la fila del medio, desde la A. Cada negra es la tecla de arriba que queda en su hueco: entre A y S está la Q, entre S y D la W, y así. Donde no hay negra (entre Mi y Fa, o entre Si y Do) esa letra no suena. Los números no tocan notas.</p>
           <p><kbd>←</kbd> <kbd>→</kbd> bajar o subir octava · <kbd>8</kbd> normal · <kbd>9</kbd> notas fijas · <kbd>0</kbd> acorde automático · <kbd>Esc</kbd> soltar todo · <kbd>?</kbd> esta ayuda</p>
         </div></section>
     </div>`), { clase: "ancha" });
@@ -280,7 +277,8 @@
       const base = piano.getBoundingClientRect(); cols = new Map();
       piano.querySelectorAll(".tecla").forEach(t => {
         const b = t.getBoundingClientRect();
-        cols.set(+t.dataset.m, { x: b.left - base.left, w: b.width, negra: t.classList.contains("negra") });
+        const pc = t.querySelector(".pc");
+        cols.set(+t.dataset.m, { x: b.left - base.left, w: b.width, negra: t.classList.contains("negra"), letra: pc ? pc.textContent : "" });
       });
       dpr = window.devicePixelRatio || 1; ancho = marco.clientWidth; alto = marco.clientHeight;
       lienzo.width = Math.round(ancho * dpr); lienzo.height = Math.round(alto * dpr);
@@ -363,6 +361,10 @@
         rect(c.x + pad, yIni - h, c.w - pad * 2, h, Math.min(6, c.w / 3));
         if (!j || j.tipo !== "fallo") { g.fillStyle = "rgba(255,255,255,.55)"; g.fillRect(c.x + pad + 2, yIni - 4, c.w - pad * 2 - 4, 3); }   // el borde que golpea
       }
+      // la letra de cada carril, justo sobre la tecla
+      g.textAlign = "center"; g.textBaseline = "alphabetic"; g.font = "800 13px system-ui, sans-serif";
+      cols.forEach(c => { if (!c.letra) return; g.fillStyle = c.negra ? "rgba(185,139,255,.55)" : "rgba(242,239,248,.42)"; g.fillText(c.letra, c.x + c.w / 2, H - (c.negra ? 26 : 9)); });
+      g.textAlign = "start"; g.textBaseline = "bottom";
       // la línea donde se toca (el borde del piano)
       g.fillStyle = "rgba(255,107,154,.9)"; g.fillRect(0, H - 3, W, 3);
       // avisos: Perfecto / Bien / Fallo
@@ -379,17 +381,34 @@
   }
 
   /* ============================== teclado ============================== */
-  // Las 25 teclas del piano en el teclado de la computadora, como el teclado de tipeo de FL Studio:
-  // octava de abajo en la fila Z (negras en la fila A) y octava de arriba en la fila Q (negras en los números).
-  // Se usa la posición física de la tecla (e.code), así funciona igual con teclado en español o en inglés.
-  const TECLAS_PC = ["KeyZ", "KeyS", "KeyX", "KeyD", "KeyC", "KeyV", "KeyG", "KeyB", "KeyH", "KeyN", "KeyJ", "KeyM",
-    "KeyQ", "Digit2", "KeyW", "Digit3", "KeyE", "KeyR", "Digit5", "KeyT", "Digit6", "KeyY", "Digit7", "KeyU", "KeyI"];
-  const letraPC = code => code.replace(/^Key|^Digit/, "");
+  // El piano muestra solo el registro de tu parte (al menos una octava). Teclado de la computadora:
+  // teclas blancas en la fila del medio (A S D F G H J K L Ñ) y cada negra en la tecla de arriba que queda en ese hueco
+  // (entre A y S → Q, entre S y D → W, …, hasta I/O). Se usa la posición física de la tecla (e.code): da igual el idioma.
+  const FILA_BLANCAS = ["KeyA", "KeyS", "KeyD", "KeyF", "KeyG", "KeyH", "KeyJ", "KeyK", "KeyL", "Semicolon"];
+  const FILA_NEGRAS = ["KeyQ", "KeyW", "KeyE", "KeyR", "KeyT", "KeyY", "KeyU", "KeyI", "KeyO"];
+  const letraPC = code => code === "Semicolon" ? "Ñ" : code.replace(/^Key|^Digit/, "");
+  const esNegra = m => [1, 3, 6, 8, 10].includes(((m % 12) + 12) % 12);
+  // Registro del piano para una pista: de la nota más grave a la más aguda, ampliado a una octava como mínimo,
+  // con blancas en los bordes y a lo más 10 blancas (las que caben en la fila A–Ñ)
+  function registroDe(notas, desplaz, porDefecto) {
+    let lo, hi;
+    if (notas && notas.length) { lo = Infinity; hi = -Infinity; notas.forEach(n => { lo = Math.min(lo, n.m + desplaz); hi = Math.max(hi, n.m + desplaz); }); }
+    else { lo = porDefecto; hi = porDefecto + 12; }
+    // si la parte usa menos de una octava, el piano parte en el Do de abajo (más fácil de ubicar) y mide al menos una octava
+    if (hi - lo < 12) { const lo2 = lo - (((lo % 12) + 12) % 12); if (Math.max(lo2 + 12, hi) - lo2 <= 16) { hi = Math.max(lo2 + 12, hi); lo = lo2; } else { const c = (lo + hi) / 2; lo = Math.floor(c - 6); hi = lo + 12; } }
+    while (esNegra(lo)) lo--;
+    while (esNegra(hi)) hi++;
+    const blancas = m => { let n = 0; for (let x = lo; x <= m; x++) if (!esNegra(x)) n++; return n; };
+    while (blancas(hi) > FILA_BLANCAS.length) { hi--; while (esNegra(hi)) hi--; }
+    return [lo, hi];
+  }
   async function crearTeclado(perfil, caja) {
     const id = perfil.id, k = new Teclado(perfil.preset), pista = await pistaDe(id);
     const defFL = P.sonidos && P.sonidos[id];
     const desplaz = defFL && defFL.real != null ? defFL.base - defFL.real : 0;   // los teclados bajos se tocan una octava arriba de cómo suenan
-    let inicio = 12 * (leer("v2:oct:" + id, k.p.octava) + 1);
+    const [lo0, hi0] = registroDe(pista && pista.notas, desplaz, 12 * (k.p.octava + 1));
+    let octavas = leer("v2:octd:" + id, 0), inicio = lo0 + 12 * octavas, fin = hi0 + 12 * octavas;
+    const teclaDe = new Map();   // e.code → nota MIDI del piano visible
     let bucle = null;
     const voces = new Map();   // tecla → { v, m0, actual, fija }
     // Cómo tocar: "normal" (suena mientras aprietas), "fijas" (un toque enciende, otro apaga), "auto" (suena el acorde de la partitura)
@@ -433,7 +452,7 @@
     const pasoFx = el(`<div class="paso"><div class="paso-cab"><span class="n">4</span><b>Efectos</b></div></div>`);
     pasoFx.appendChild(fx);
     // tu parte, llevada a la octava visible del piano
-    const mapear = m0 => { let m = m0 + desplaz; while (m < inicio) m += 12; while (m > inicio + 24) m -= 12; return m; };
+    const mapear = m0 => { let m = m0 + desplaz + 12 * octavas; while (m < inicio) m += 12; while (m > fin) m -= 12; return m; };
     const cascada = pista && pista.notas.length ? crearCascada(pista, piano, mapear) : null;
     caja.append(opciones, toques, estado, ...(cascada ? [cascada.caja] : []), piano, leyenda, glis, pasoFx);
     const r = (x, raiz = caja) => $(`[data-r="${x}"]`, raiz);
@@ -449,7 +468,7 @@
         if (v === "fl" && defFL) { const s = await cargarSonido(defFL.archivo); k.buffer = s.buffer; bucle = s.bucle; k.base = defFL.base; return; }
         const c = (P.catalogo || []).find(x => x.id === v);
         if (c) {
-          const centro = inicio + 12 - desplaz;
+          const centro = (inicio + fin) / 2 - desplaz;
           const mu = c.muestras.slice().sort((a, b) => Math.abs(a.real - centro) - Math.abs(b.real - centro))[0];
           const s = await cargarSonido(mu.archivo); k.buffer = s.buffer; bucle = s.bucle; k.base = mu.real + desplaz; return;
         }
@@ -516,8 +535,10 @@
       acordeFijo = si;
       if (si) {
         const nombre = acordeEn(tObra(R.ahora())).nombre, a = parseAcorde(nombre);
-        let ms = a ? a.intervalos.map(i => inicio + 12 + ((a.raiz + i) % 12) - (((a.raiz + i) % 12) > 7 ? 12 : 0)) : [];
-        if (perfil.preset === "bajo" && a) ms = [inicio + 12 + a.raiz - (a.raiz > 7 ? 12 : 0)].flatMap(m => [m, m + 7]);
+        // cada nota del acorde, en la tecla visible más cercana al centro del piano
+        const centro = (inicio + fin) / 2, cerca = pc => { let m = Math.round(centro - 6); while (((m % 12) + 12) % 12 !== pc) m++; return m; };
+        let ms = a ? [...new Set(a.intervalos.map(i => cerca((a.raiz + i) % 12)))] : [];
+        if (perfil.preset === "bajo" && a) { let r0 = inicio; while (r0 % 12 !== a.raiz) r0++; ms = r0 + 7 <= fin ? [r0, r0 + 7] : r0 - 5 >= inicio ? [r0 - 5, r0] : [r0]; }
         ms.sort((x, y) => x - y).forEach(m => on(m, true));
       }
       pintarOpciones();
@@ -528,22 +549,25 @@
     function dibujarPiano() {
       piano.innerHTML = "";
       const blancas = [];
-      for (let m = inicio; m <= inicio + 24; m++) if (![1, 3, 6, 8, 10].includes(m % 12)) blancas.push(m);
+      for (let m = inicio; m <= fin; m++) if (!esNegra(m)) blancas.push(m);
+      teclaDe.clear();
       const ancho = 100 / blancas.length;
       teclas = [];
-      for (let m = inicio; m <= inicio + 24; m++) {
+      for (let m = inicio; m <= fin; m++) {
         const negra = [1, 3, 6, 8, 10].includes(m % 12);
         const t = el(`<button class="tecla ${negra ? "negra" : "blanca"}" data-m="${m}" tabindex="-1"><span class="nom"></span><i class="pc"></i></button>`);
         if (negra) { const iz = blancas.indexOf(m - 1); t.style.left = `calc(${(iz + 1) * ancho}% - ${ancho * 0.31}%)`; t.style.width = ancho * 0.62 + "%"; }
         else t.style.width = ancho + "%";
-        const idx = m - inicio; if (idx < TECLAS_PC.length) $(".pc", t).textContent = letraPC(TECLAS_PC[idx]);
+        // blanca n → fila A–Ñ; negra entre la blanca n y la n+1 → la tecla de arriba en ese hueco (Q, W, E…)
+        const nb = blancas.filter(b => b < m).length, code = negra ? FILA_NEGRAS[nb - 1] : FILA_BLANCAS[nb];
+        if (code) { teclaDe.set(code, m); $(".pc", t).textContent = letraPC(code); }
         t.addEventListener("pointerdown", e => { e.preventDefault(); if (t.hasPointerCapture(e.pointerId)) t.releasePointerCapture(e.pointerId); pulsar(m); });
         t.addEventListener("pointerup", () => soltarTecla(m));
         t.addEventListener("pointerleave", e => { if (e.buttons) soltarTecla(m); });
         t.addEventListener("pointerenter", e => { if (e.buttons && !mantener) pulsar(m); });   // arrastrar el dedo = glissando de teclas
         piano.appendChild(t); teclas.push(t);
       }
-      r("oct", opciones).textContent = "desde " + nombreNota(inicio);
+      r("oct", opciones).textContent = nombreNota(inicio) + "–" + nombreNota(fin);
       ultimoPintado = "";
       pintarTeclas();
       if (cascada) { cascada.medir(); cascada.reiniciar(); }
@@ -593,7 +617,9 @@
     r("soltar", toques).onclick = () => soltarTodo();
     r("oct-", opciones).onclick = () => mover(-12); r("oct+", opciones).onclick = () => mover(12);
     function mover(d) {
-      const auto = toque === "auto"; soltarTodo(); inicio = lim(inicio + d, 12, 96); guardar("v2:oct:" + id, inicio / 12 - 1); dibujarPiano();
+      const auto = toque === "auto"; soltarTodo();
+      const o = lim(octavas + Math.sign(d), -3, 3); if (o === octavas || lo0 + 12 * o < 12 || hi0 + 12 * o > 108) return;
+      octavas = o; inicio = lo0 + 12 * o; fin = hi0 + 12 * o; guardar("v2:octd:" + id, o); dibujarPiano();
       if (auto) { toque = "auto"; sostenerAcorde(true); }
     }
     r("modo", glis).onchange = e => { modo = e.target.value; guardar("v2:modo:" + id, modo); };
@@ -630,7 +656,7 @@
     fx.append(ba.b, ...ds);
 
     // teclado de la computadora
-    const abajo = new Set();
+    const abajo = new Map();   // e.code → la nota que encendió (aunque cambies de octava mientras la mantienes)
     const alBajar = e => {
       if (escribiendo(e) || e.repeat || e.ctrlKey || e.metaKey) return;
       if (e.key === "ArrowLeft" || e.key === "ArrowDown") { e.preventDefault(); return mover(-12); }
@@ -640,12 +666,12 @@
       if (e.code === "Digit0") { ponerToque(toque === "auto" ? "normal" : "auto"); return; }
       if (e.key === "Escape") { soltarTodo(); return; }
       if (e.key === "?") { ayudaTeclado(); return; }
-      const i = TECLAS_PC.indexOf(e.code); if (i < 0 || e.altKey) return;
-      e.preventDefault(); abajo.add(e.code); pulsar(inicio + i);
+      const m = teclaDe.get(e.code); if (m == null || e.altKey) return;
+      e.preventDefault(); abajo.set(e.code, m); pulsar(m);
     };
-    const alSubir = e => { const i = TECLAS_PC.indexOf(e.code); if (i >= 0 && abajo.delete(e.code)) soltarTecla(inicio + i); };
+    const alSubir = e => { const m = abajo.get(e.code); if (m != null) { abajo.delete(e.code); soltarTecla(m); } };
     // si la ventana pierde el foco con teclas apretadas, se sueltan
-    const alPerderFoco = () => { abajo.forEach(code => soltarTecla(inicio + TECLAS_PC.indexOf(code))); abajo.clear(); };
+    const alPerderFoco = () => { abajo.forEach(m => soltarTecla(m)); abajo.clear(); };
     window.addEventListener("blur", alPerderFoco);
     document.addEventListener("keydown", alBajar); document.addEventListener("keyup", alSubir);
 
@@ -655,7 +681,7 @@
     // cada cuadro: glissando a tiempo con el cambio de acorde, guía MIDI y marcas
     let acordeActual = acordeEn(tObra(R.ahora())).nombre, agendado = null;
     return {
-      ayuda: "Filas Z/A y Q/números tocan las 25 teclas · ← → octava · 8 normal · 9 notas fijas · 0 acorde automático · Esc soltar todo · ? ayuda",
+      ayuda: "A–Ñ teclas blancas · Q–O negras · ← → octava · 8 normal · 9 notas fijas · 0 acorde automático · Esc soltar todo · ? ayuda",
       cuadro(t, dt, corriendo) {
         auto.cuadro(t);
         const tc = tObra(t), ac = acordeEn(tc);
