@@ -1176,6 +1176,7 @@
       ponerSuena(id, si) { if (id === propio) propioSuena = si; else { conf.on[id] = si; guardarConf(); } sincronizar(); },
       ponerVarias(ids) { PARTES_ORQ.forEach(d => { const si = ids.includes(d.id); if (d.id === propio) propioSuena = si; else conf.on[d.id] = si; }); guardarConf(); sincronizar(); },
       ponerSonido(id, son) { conf.son[id] = son; guardarConf(); sincronizar(); },
+      ponerSonidos(mapa) { Object.assign(conf.son, mapa); guardarConf(); sincronizar(); },
       volumen(v) { conf.vol = v; guardarConf(); partes.forEach(p => { if (p.inst) { p.inst.p.vol = p.base * v; p.inst.aplicar(); } }); },
       // tu propio rol viene apagado: lo tocas tú
       rol(id) { propio = id === "director" ? null : id; propioSuena = false; sincronizar(); },
@@ -1195,6 +1196,9 @@
         <button class="chip" data-r="todos">Todos</button><button class="chip" data-r="ninguno">Ninguno</button>
         <button class="chip" data-r="base" title="Batería, Teclado 3 (bajo) y Ambiente">Solo la base</button>
         <button class="chip" data-r="otros" title="Todos menos tu rol">Todos menos yo</button></div>
+      <div class="fila orq-atajos"><span class="muted small">Sonidos de todos:</span>
+        <button class="chip" data-r="son-fl" title="Cada instrumento con su sample de la partitura, hecho en FL Studio">🎛️ FL Studio (los tuyos)</button>
+        <button class="chip" data-r="son-sint" title="Cada instrumento con el sonido sintetizado en el navegador">🧪 Sintetizados en el navegador</button></div>
       <ul class="orq-lista"></ul>
     </div>`);
     const r = x => $(`[data-r="${x}"]`, caja), lista = $(".orq-lista", caja), filas = {};
@@ -1215,6 +1219,10 @@
     r("ninguno").onclick = () => orq.ponerVarias([]);
     r("base").onclick = () => orq.ponerVarias(BASE_ORQ);
     r("otros").onclick = () => orq.ponerVarias(todos.filter(id => id !== orq.propio));
+    // todos los instrumentos a la vez: los samples de FL Studio (los de la partitura) o los sintetizados
+    const SINT = { bateria: "sint", guitarra: "gtr-sint" };
+    r("son-fl").onclick = () => orq.ponerSonidos(Object.fromEntries(orq.PARTES.map(d => [d.id, d.def])));
+    r("son-sint").onclick = () => orq.ponerSonidos(Object.fromEntries(orq.PARTES.map(d => [d.id, SINT[d.tipo] || "sint"])));
     r("on").onclick = () => orq.encender(!orq.activa);
     r("vol").value = orq.conf.vol;
     r("vol").oninput = e => { orq.volumen(+e.target.value); pintar(); };
@@ -1222,6 +1230,9 @@
       const b = r("on");
       b.textContent = orq.activa ? "⏸ Detener la orquesta" : "▶ Escuchar la orquesta"; b.classList.toggle("on", orq.activa);
       r("volv").textContent = Math.round(orq.conf.vol * 100) + " %";
+      const sons = orq.PARTES.map(d => orq.sonDe(d));
+      r("son-fl").classList.toggle("on", orq.PARTES.every((d, i) => sons[i] === d.def));
+      r("son-sint").classList.toggle("on", orq.PARTES.every((d, i) => sons[i] === (SINT[d.tipo] || "sint")));
       orq.PARTES.forEach(def => {
         const li = filas[def.id], si = orq.suena(def.id), p = orq.parte(def.id), tuyo = def.id === orq.propio;
         $("input", li).checked = si; $("select", li).value = orq.sonDe(def);
