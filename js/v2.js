@@ -143,6 +143,8 @@
     }
     const pid = P.midi && P.midi.porPerfil[id]; return pid ? (await pistas()).find(p => p.id === pid) || null : null;
   }
+  // volumen propio de una altura de la pista del perfil (1 si no tiene)
+  const volNota = (id, m) => { const v = P.midi && P.midi.reparto && P.midi.reparto[id] && P.midi.reparto[id].volumen; return v && v[m] != null ? v[m] : 1; };
   const carrilesDe = id => { const rep = P.midi && P.midi.reparto && P.midi.reparto[id]; return rep && rep.carriles ? rep.notas.slice().sort((a, b) => a - b) : null; };
 
   /* Programador de notas MIDI: en cada cuadro agenda las notas de los próximos instantes (en el reloj de audio) */
@@ -508,7 +510,7 @@
     }
     function on(m, fija = false) {
       if (voces.has(m)) return;
-      voces.set(m, { v: crearVoz(m, 0.85, Motor.t), m0: m, actual: m, cents: 0, fija });
+      voces.set(m, { v: crearVoz(m, 0.85 * volNota(id, m - desplaz - 12 * octavas), Motor.t), m0: m, actual: m, cents: 0, fija });
       pintarTeclas();
     }
     function off(m) {
@@ -1105,7 +1107,7 @@
     } else if (son === "sint" && def.tipo === "ambiente") {
       inst = new Ambiente("drone"); alNota = (n, at) => inst.nota(n.m, n.v, at, n.d); mapa = {};
     } else if (son === "sint") {
-      inst = new Teclado(def.tipo === "guitarra" ? "lead" : perfil.preset); alNota = (n, at) => inst.nota(n.m, n.v, at, n.d);
+      inst = new Teclado(def.tipo === "guitarra" ? "lead" : perfil.preset); alNota = (n, at) => inst.nota(n.m, n.v * volNota(def.id, n.m), at, n.d);
     } else {
       // un sample de FL: se toca con la cadena de efectos de un teclado
       const mu0 = MUESTRAS.find(m => m.id === son) || MUESTRAS[0], med = mediana(pista.notas);
@@ -1120,7 +1122,7 @@
       const ajuste = lim(ref / rmsDe(s.buffer), 0.25, 4);
       parte.octavas = son === def.def ? 0 : octavasPara(mu.real, med) / 12;   // con su propio sample, la parte suena como siempre
       const sube = parte.octavas * 12;
-      alNota = (n, at) => vozMuestra(inst, s, mu.real, n.m + sube, n.v * ajuste, at, n.d);
+      alNota = (n, at) => vozMuestra(inst, s, mu.real, n.m + sube, n.v * ajuste * volNota(def.id, n.m), at, n.d);
     }
     parte.inst = inst;
     parte.efx = efectosAuto(perfil, inst, mapa, null, { escala, guardarlo: false });

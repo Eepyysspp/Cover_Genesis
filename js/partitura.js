@@ -336,9 +336,11 @@ window.PARTITURA = {
     // Reparto (versión 2): la línea de la pista Medio se divide entre los teclados 1 y 2 por altura, así cada uno
     // toca pocas notas y se van alternando (F–B♭–F–A♭ = 1–2–1–2). notas: alturas MIDI que le tocan a cada uno.
     // carriles: el piano de ese teclado muestra solo esas notas, en la fila A S D F… (una tecla por nota).
+    // volumen: { altura: factor } para que una nota suene más baja (o más alta) que las demás, a mano y en la orquesta.
     reparto: {
       "teclado-1": { pistas: ["medio"], notas: [61, 65, 66], carriles: true },           // Re♭4, Fa4, Sol♭4
-      "teclado-2": { pistas: ["medio", "pedal"], notas: [68, 70, 72, 73, 77], carriles: true }, // La♭4, Si♭4, Do5, Re♭5 y el Fa5 del pedal
+      "teclado-2": { pistas: ["medio", "pedal"], notas: [68, 70, 72, 73, 77], carriles: true,  // La♭4, Si♭4, Do5, Re♭5 y el Fa5 del pedal
+                     volumen: { 77: 0.4 } },   // el Fa agudo del pedal suena largo y se come al resto: va más bajo (≈ −8 dB)
     },
     // midi/genesis_completo.mid tiene todas las pistas juntas (para abrirlo en un DAW o MuseScore).
   },
