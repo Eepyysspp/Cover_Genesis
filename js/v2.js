@@ -61,7 +61,7 @@
         </dl></section>
       <section><h3>3 · Cuando cambia el acorde: glissando</h3>
         <p>Las notas que siguen sonando en el cambio <b>se deslizan solas</b> y llegan justo con el acorde nuevo. Así no hace falta seguir el tempo al soltar las notas. Sobre el piano verás adónde irá cada nota (por ejemplo, <i>A♭4 → G♭4</i>).</p>
-        <p>Puedes elegir si van a la nota del acorde más cercana, si se mueven todas juntas (conservan la disonancia) o si se quedan quietas, y cuánto dura el deslizamiento.</p></section>
+        <p>Con el botón <b>🎚️ Cambio de acorde</b> (junto a "Soltar todo") eliges si van a la nota del acorde más cercana, si se mueven todas juntas (conservan la disonancia) o si se quedan quietas, y cuánto dura el deslizamiento.</p></section>
       <section><h3>4 · Efectos</h3>
         <p>Con <b>🎛️ Efectos automáticos</b> encendido, la distorsión, el brillo, la reverb y el volumen cambian solos en cada parte de la obra. Si mueves un control a mano, el modo automático se apaga hasta que lo vuelvas a encender.</p></section>
       <section><h3>5 · Notas que caen</h3>
@@ -69,7 +69,7 @@
         <p>Si la tocas a tiempo se pone verde (<b>Perfecto</b> o <b>Bien</b>); si se te pasa, queda gris. Arriba se cuentan los aciertos y la racha. Puedes apagarlas o cambiar su velocidad. Es una guía, no una obligación: improvisar sigue valiendo.</p></section>
       <section><h3>Tocar con el teclado de la computadora</h3>
         <div class="atajos">
-          <p>El piano tiene <b>una tecla ancha por nota, todas en la fila A</b> (A S D F G H J K L Ñ): las notas que pide tu parte y, para completar hasta 10, otras de la escala de la obra (Re♭ mayor) marcadas <b>libre</b>, para improvisar. Las notas que caen solo llegan a tus notas.</p>
+          <p>El piano tiene <b>una tecla ancha por nota, todas en la fila A</b> (A S D F G H J K L Ñ): las notas que pide tu parte y, para completar hasta 10, otras de la escala de la obra (Re♭ mayor), un poco más apagadas, para improvisar. Las notas que caen solo llegan a tus notas.</p>
           <div class="oct-pc"><div class="fila-teclas blancas">${"ASDFGHJKLÑ".split("").map(c => `<kbd>${c}</kbd>`).join("")}</div></div>
           <p class="muted small">De izquierda a derecha, de la nota más grave a la más aguda. Cada tecla del piano muestra su nota y su letra. Los números no tocan notas.</p>
           <p><kbd>←</kbd> <kbd>→</kbd> bajar o subir octava · <kbd>8</kbd> normal · <kbd>9</kbd> notas fijas · <kbd>0</kbd> acorde automático · <kbd>Esc</kbd> soltar todo · <kbd>?</kbd> esta ayuda</p>
@@ -462,7 +462,8 @@
           <button data-v="normal" role="radio">🎹 Normal <kbd>8</kbd></button>
           <button data-v="fijas" role="radio">📌 Notas fijas <kbd>9</kbd></button>
           <button data-v="auto" role="radio">🎶 Acorde automático <kbd>0</kbd></button></div>
-        <button class="btn" data-r="soltar" title="Apaga todas las notas que suenan">✋ Soltar todo <kbd>Esc</kbd></button></div>
+        <button class="btn" data-r="soltar" title="Apaga todas las notas que suenan">✋ Soltar todo <kbd>Esc</kbd></button>
+        <button class="btn btn-glis" data-r="glis" title="Qué hacen las notas que siguen sonando cuando cambia el acorde"></button></div>
       <p class="explica" data-r="explica"></p>
     </div>`);
     const estado = el(`<div class="estado-tec" aria-live="polite"></div>`);
@@ -470,24 +471,24 @@
     const leyenda = el(`<div class="leyenda"><span class="l-acorde">nota del acorde: suena segura</span><span class="l-raiz">raíz del acorde</span>
       <span class="l-escala">de la escala: tensión</span><span class="l-fuera">fuera de la escala: disonancia</span>
       <span class="l-guia">lo que toca tu parte en el arreglo</span><span class="l-sig">nota del acorde que viene</span></div>`);
-    const glis = el(`<div class="paso glis">
-      <div class="paso-cab"><span class="n">3</span><b>Cuando cambia el acorde</b></div>
+    // "Cuando cambia el acorde" vive en una ventana que se abre con su botón
+    const glis = el(`<div class="glis-ventana">
       <div class="fila"><label class="campo">Las notas que siguen sonando
         <select data-r="modo">
           <option value="cercana">se deslizan a la nota del acorde más cercana</option>
-          <option value="paralelo">se mueven junto con el acorde (conservan la disonancia)</option>
+          <option value="paralelo">se mueven junto con el acorde (conservan la tensión)</option>
           <option value="quieto">se quedan donde están</option>
         </select></label>
       <label class="campo corto">El deslizamiento dura <input type="range" min="0.05" max="2" step="0.05" data-r="desliz"><b data-r="deslizv"></b></label></div>
       <p class="explica">Deja una nota apretada (o fija) cuando llega el cambio: se desliza sola y llega justo con el acorde nuevo, sin tener que seguir el tempo.</p>
     </div>`);
     const fx = el(`<div class="efectos"></div>`);
-    const pasoFx = el(`<div class="paso"><div class="paso-cab"><span class="n">4</span><b>Efectos</b></div></div>`);
+    const pasoFx = el(`<div class="paso"><div class="paso-cab"><span class="n">3</span><b>Efectos</b></div></div>`);
     pasoFx.appendChild(fx);
     // tu parte, llevada a la octava visible del piano
     const mapear = m0 => { let m = m0 + desplaz + 12 * octavas; if (carriles0) return m; while (m < inicio) m += 12; while (m > fin) m -= 12; return m; };
     const cascada = pista && pista.notas.length ? crearCascada(pista, piano, mapear) : null;
-    caja.append(opciones, toques, estado, ...(cascada ? [cascada.caja] : []), piano, leyenda, glis, pasoFx);
+    caja.append(opciones, toques, estado, ...(cascada ? [cascada.caja] : []), piano, leyenda, pasoFx);
     const r = (x, raiz = caja) => $(`[data-r="${x}"]`, raiz);
 
     // sonido
@@ -598,7 +599,7 @@
       for (const m of notas) {
         const negra = !carriles && esNegra(m);
         const libre = carriles && !esRequerida(m);
-        const t = el(`<button class="tecla ${negra ? "negra" : "blanca"}${carriles ? " carril" + (esNegra(m) ? " alterada" : "") + (libre ? " libre" : "") : ""}" data-m="${m}" tabindex="-1"${libre ? ' title="Nota libre de la escala: para improvisar"' : ""}>${libre ? '<small class="etq-libre">libre</small>' : ""}<span class="nom"></span><i class="pc"></i></button>`);
+        const t = el(`<button class="tecla ${negra ? "negra" : "blanca"}${carriles ? " carril" + (esNegra(m) ? " alterada" : "") + (libre ? " libre" : "") : ""}" data-m="${m}" tabindex="-1"${libre ? ' title="Nota libre de la escala: para improvisar"' : ""}><span class="nom"></span><i class="pc"></i></button>`);
         if (negra) { const iz = blancas.indexOf(m - 1); t.style.left = `calc(${(iz + 1) * ancho}% - ${ancho * 0.31}%)`; t.style.width = ancho * 0.62 + "%"; }
         else t.style.width = ancho + "%";
         // blanca n → fila A–Ñ; negra entre la blanca n y la n+1 → la tecla de arriba en ese hueco (Q, W, E…)
@@ -646,6 +647,7 @@
       toques.querySelectorAll("[data-v]").forEach(b => { const si = b.dataset.v === toque; b.classList.toggle("on", si); b.setAttribute("aria-checked", si); });
       r("explica", toques).innerHTML = EXPLICA[toque];
       r("modo", glis).value = modo; r("desliz", glis).value = deslizT; r("deslizv", glis).textContent = deslizT.toFixed(2).replace(".", ",") + " s";
+      r("glis", toques).textContent = `🎚️ Cambio de acorde: ${{ cercana: "se deslizan", paralelo: "se mueven juntas", quieto: "quietas" }[modo]} · ${deslizT.toFixed(2).replace(".", ",")} s`;
     }
     function ponerToque(v) {
       if (v === toque && v !== "auto") return;
@@ -665,7 +667,8 @@
       octavas = o; inicio = lo0 + 12 * o; fin = hi0 + 12 * o; guardar("v2:octd:" + id, o); dibujarPiano();
       if (auto) { toque = "auto"; sostenerAcorde(true); }
     }
-    r("modo", glis).onchange = e => { modo = e.target.value; guardar("v2:modo:" + id, modo); };
+    r("modo", glis).onchange = e => { modo = e.target.value; guardar("v2:modo:" + id, modo); pintarOpciones(); };
+    r("glis", toques).onclick = () => abrirVentana("🎚️ Cuando cambia el acorde", glis, { alCerrar: () => glis.remove() });
     r("desliz", glis).oninput = e => { deslizT = +e.target.value; guardar("v2:desliz:" + id, deslizT); pintarOpciones(); };
     r("ayuda", opciones).onclick = () => ayudaTeclado();
     dibujarPiano(); pintarOpciones();
