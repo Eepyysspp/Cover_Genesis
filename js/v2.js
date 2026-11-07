@@ -69,11 +69,9 @@
         <p>Si la tocas a tiempo se pone verde (<b>Perfecto</b> o <b>Bien</b>); si se te pasa, queda gris. Arriba se cuentan los aciertos y la racha. Puedes apagarlas o cambiar su velocidad. Es una guía, no una obligación: improvisar sigue valiendo.</p></section>
       <section><h3>Tocar con el teclado de la computadora</h3>
         <div class="atajos">
-          <p>El piano muestra <b>solo el registro de tu parte</b> (al menos una octava), y cada tecla tiene su letra. En los <b>teclados 1 y 2</b>, que se reparten el arpegio, el piano son solo tus notas: una tecla ancha por nota, todas en la fila A (A S D…).</p>
-          <div class="oct-pc">
-            <div class="fila-teclas">${"QWERTYUIO".split("").map(c => `<kbd class="negra">${c}</kbd>`).join("")}</div>
-            <div class="fila-teclas blancas">${"ASDFGHJKLÑ".split("").map(c => `<kbd>${c}</kbd>`).join("")}</div></div>
-          <p class="muted small">Las blancas van en la fila del medio, desde la A. Cada negra es la tecla de arriba que queda en su hueco: entre A y S está la Q, entre S y D la W, y así. Donde no hay negra (entre Mi y Fa, o entre Si y Do) esa letra no suena. Los números no tocan notas.</p>
+          <p>El piano tiene <b>una tecla ancha por nota, todas en la fila A</b> (A S D F G H J K L Ñ): las notas que pide tu parte y, para completar hasta 10, otras de la escala de la obra (Re♭ mayor) marcadas <b>libre</b>, para improvisar. Las notas que caen solo llegan a tus notas.</p>
+          <div class="oct-pc"><div class="fila-teclas blancas">${"ASDFGHJKLÑ".split("").map(c => `<kbd>${c}</kbd>`).join("")}</div></div>
+          <p class="muted small">De izquierda a derecha, de la nota más grave a la más aguda. Cada tecla del piano muestra su nota y su letra. Los números no tocan notas.</p>
           <p><kbd>←</kbd> <kbd>→</kbd> bajar o subir octava · <kbd>8</kbd> normal · <kbd>9</kbd> notas fijas · <kbd>0</kbd> acorde automático · <kbd>Esc</kbd> soltar todo · <kbd>?</kbd> esta ayuda</p>
         </div></section>
     </div>`), { clase: "ancha" });
@@ -145,7 +143,22 @@
   }
   // volumen propio de una altura de la pista del perfil (1 si no tiene)
   const volNota = (id, m) => { const v = P.midi && P.midi.reparto && P.midi.reparto[id] && P.midi.reparto[id].volumen; return v && v[m] != null ? v[m] : 1; };
-  const carrilesDe = id => { const rep = P.midi && P.midi.reparto && P.midi.reparto[id]; return rep && rep.carriles ? rep.notas.slice().sort((a, b) => a - b) : null; };
+  // Piano en carriles: las notas que pide tu parte (todas) más notas de la escala de la obra (Re♭ mayor) para improvisar,
+  // hasta llenar la fila A S D F G H J K L Ñ. Primero las de la escala que caen entre tus notas, después alternando
+  // una más grave y una más aguda.
+  const MAX_CARRILES = 10;
+  function carrilesConEscala(requeridas, maximo = MAX_CARRILES) {
+    if (!requeridas.length || requeridas.length > maximo) return null;
+    const enEscala = m => ESCALA.has(((m % 12) + 12) % 12), set = new Set(requeridas);
+    const lo = requeridas[0], hi = requeridas[requeridas.length - 1];
+    for (let m = lo; m <= hi && set.size < maximo; m++) if (enEscala(m)) set.add(m);
+    let abajo = lo - 1, arriba = hi + 1, turno = 0;
+    while (set.size < maximo && (abajo > 12 || arriba < 108)) {
+      if (turno++ % 2 === 0) { while (!enEscala(abajo)) abajo--; if (abajo > 12) set.add(abajo--); }
+      else { while (!enEscala(arriba)) arriba++; if (arriba < 108) set.add(arriba++); }
+    }
+    return [...set].sort((a, b) => a - b);
+  }
 
   /* Programador de notas MIDI: en cada cuadro agenda las notas de los próximos instantes (en el reloj de audio) */
   function programador(pista, alNota) {
@@ -423,7 +436,8 @@
     const defFL = P.sonidos && P.sonidos[id];
     const desplaz = defFL && defFL.real != null ? defFL.base - defFL.real : 0;   // los teclados bajos se tocan una octava arriba de cómo suenan
     // con carriles, el piano son solo las notas de tu parte, una por tecla en la fila A S D F…
-    const carriles0 = carrilesDe(id);
+    const requeridas = pista ? [...new Set(pista.notas.map(n => n.m + desplaz))].sort((a, b) => a - b) : [];
+    const carriles0 = carrilesConEscala(requeridas), esRequerida = m => requeridas.includes(m - 12 * octavas);
     const [lo0, hi0] = carriles0 ? [carriles0[0], carriles0[carriles0.length - 1]] : registroDe(pista && pista.notas, desplaz, 12 * (k.p.octava + 1));
     const enCarriles = () => carriles0 ? carriles0.map(m => m + 12 * octavas) : null;
     let octavas = leer("v2:octd:" + id, 0), inicio = lo0 + 12 * octavas, fin = hi0 + 12 * octavas;
@@ -558,7 +572,11 @@
         const centro = (inicio + fin) / 2, cerca = pc => { let m = Math.round(centro - 6); while (((m % 12) + 12) % 12 !== pc) m++; return m; };
         let ms = a ? [...new Set(a.intervalos.map(i => cerca((a.raiz + i) % 12)))] : [];
         const carr = enCarriles();
-        if (carr && a) { const tn = a.intervalos.map(i => (a.raiz + i) % 12); ms = carr.filter(m => tn.includes(m % 12)); }
+        if (carr && a) {
+          const tn = a.intervalos.map(i => (a.raiz + i) % 12); ms = carr.filter(m => tn.includes(m % 12));
+          // el bajo: la raíz más grave y su quinta (si está en el teclado)
+          if (perfil.preset === "bajo") { const r0 = carr.find(m => m % 12 === a.raiz); ms = r0 == null ? ms.slice(0, 1) : [r0, ...carr.filter(m => m === r0 + 7)]; }
+        }
         if (perfil.preset === "bajo" && a && !carr) { let r0 = inicio; while (r0 % 12 !== a.raiz) r0++; ms = r0 + 7 <= fin ? [r0, r0 + 7] : r0 - 5 >= inicio ? [r0 - 5, r0] : [r0]; }
         ms.sort((x, y) => x - y).forEach(m => on(m, true));
       }
@@ -579,7 +597,8 @@
       const ancho = 100 / blancas.length;
       for (const m of notas) {
         const negra = !carriles && esNegra(m);
-        const t = el(`<button class="tecla ${negra ? "negra" : "blanca"}${carriles ? " carril" + (esNegra(m) ? " alterada" : "") : ""}" data-m="${m}" tabindex="-1"><span class="nom"></span><i class="pc"></i></button>`);
+        const libre = carriles && !esRequerida(m);
+        const t = el(`<button class="tecla ${negra ? "negra" : "blanca"}${carriles ? " carril" + (esNegra(m) ? " alterada" : "") + (libre ? " libre" : "") : ""}" data-m="${m}" tabindex="-1"${libre ? ' title="Nota libre de la escala: para improvisar"' : ""}>${libre ? '<small class="etq-libre">libre</small>' : ""}<span class="nom"></span><i class="pc"></i></button>`);
         if (negra) { const iz = blancas.indexOf(m - 1); t.style.left = `calc(${(iz + 1) * ancho}% - ${ancho * 0.31}%)`; t.style.width = ancho * 0.62 + "%"; }
         else t.style.width = ancho + "%";
         // blanca n → fila A–Ñ; negra entre la blanca n y la n+1 → la tecla de arriba en ese hueco (Q, W, E…)

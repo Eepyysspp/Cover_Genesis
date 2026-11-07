@@ -317,3 +317,12 @@ kbd { font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 .piano.en-carriles .tecla .nom { font-size: 20px; margin-bottom: 10px; }
 .piano.en-carriles .tecla .pc { font-size: 20px; min-width: 34px; padding: 6px 8px; margin-bottom: 14px; }
 @media (max-width: 560px) { .piano.en-carriles .tecla .nom { font-size: 16px; } .piano.en-carriles .tecla .pc { font-size: 16px; min-width: 28px; padding: 5px; } }
+/* notas libres de la escala (para improvisar): se ven, pero más apagadas que las de tu parte */
+.piano.en-carriles .tecla.libre { filter: saturate(.55) brightness(.82); }
+.etq-libre { position: absolute; top: 50px; font: 700 10px/1 system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #3a3550; opacity: .7; }
+@media (max-width: 560px) {
+  .piano.en-carriles { gap: 3px; }
+  .piano.en-carriles .tecla .nom { font-size: 12px; }
+  .piano.en-carriles .tecla .pc { font-size: 13px; min-width: 22px; padding: 4px 3px; }
+  .etq-libre { font-size: 8px; top: 46px; }
+}

@@ -90,12 +90,12 @@ window.PARTITURA = {
       colores: ["#2a2f8f", "#3a2f9a"],
       tocan: ["guitarra", "bateria", "teclado-1", "teclado-2", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-4"],
       instrucciones: {
-        "teclado-1": "Sigue el arpegio con el teclado 2: tus notas son las graves: Re♭, Fa y Sol♭ (teclas A S D).",
+        "teclado-1": "Sigue el arpegio con el teclado 2: tus notas son las graves: Re♭, Fa y Sol♭ (las teclas que no dicen LIBRE).",
         todos: "Entran los platillos y la distorsión en los teclados medios.",
         teclados: "Sube la DISTORSIÓN (≈ 20 %) y déjala así.",
         "teclado-3": "Bajo todavía limpio.",
         guitarra: "Arriba alternas Do y Mi♭ (ver tu pista MIDI). Al final de esta parte callas.",
-        "teclado-2": "Sigue el arpegio con el teclado 1: tus notas son las agudas: La♭, Si♭, Do y Re♭ (teclas A S D F).",
+        "teclado-2": "Sigue el arpegio con el teclado 1: tus notas son las agudas: La♭, Si♭, Do y Re♭ (las teclas que no dicen LIBRE).",
         bateria: "CON PLATILLOS (E).",
       },
     },
@@ -108,7 +108,7 @@ window.PARTITURA = {
       instrucciones: {
         todos: "Sale la melodía y entra el pedal agudo en Fa.",
         "ambiente-3": "PEDAL F: Fa agudo sostenido sobre los dos acordes.",
-        "teclado-2": "PEDAL F: mantén el Fa agudo (tecla G) sobre los dos acordes, junto con ambiente 3, y con la otra mano sigue tus notas del arpegio.",
+        "teclado-2": "PEDAL F: mantén el Fa agudo (tu tecla más aguda) sobre los dos acordes, junto con ambiente 3, y con la otra mano sigue tus notas del arpegio.",
         guitarra: "Silencio. Vuelves en 1:17 con el solo.",
         bateria: "CON PLATILLOS (E).",
       },
@@ -175,8 +175,8 @@ window.PARTITURA = {
       colores: ["#b0245e", "#c0392b"],
       tocan: ["guitarra", "bateria", "teclado-1", "teclado-2", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-4"],
       instrucciones: {
-        "teclado-2": "Arpegio con el teclado 1: tus notas son las agudas: La♭, Si♭, Do y Re♭ (teclas A S D F).",
-        "teclado-1": "Arpegio con el teclado 2: tus notas son las graves: Re♭, Fa y Sol♭ (teclas A S D).",
+        "teclado-2": "Arpegio con el teclado 1: tus notas son las agudas: La♭, Si♭, Do y Re♭ (las teclas que no dicen LIBRE).",
+        "teclado-1": "Arpegio con el teclado 2: tus notas son las graves: Re♭, Fa y Sol♭ (las teclas que no dicen LIBRE).",
         todos: "Ahora los acordes duran DOS compases. La melodía sigue igual.",
         teclados: "Distorsión ≈ 20 %. Acordes de dos compases.",
         bateria: "CON PLATILLOS (E).",
@@ -190,8 +190,8 @@ window.PARTITURA = {
       colores: ["#ff4e50", "#ff7a3c"],
       tocan: ["guitarra", "bateria", "teclado-1", "teclado-2", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-4"],
       instrucciones: {
-        "teclado-2": "Arpegio con el teclado 1: tus notas son las agudas: La♭, Si♭, Do y Re♭ (teclas A S D F).",
-        "teclado-1": "Arpegio con el teclado 2: tus notas son las graves: Re♭, Fa y Sol♭ (teclas A S D).",
+        "teclado-2": "Arpegio con el teclado 1: tus notas son las agudas: La♭, Si♭, Do y Re♭ (las teclas que no dicen LIBRE).",
+        "teclado-1": "Arpegio con el teclado 2: tus notas son las graves: Re♭, Fa y Sol♭ (las teclas que no dicen LIBRE).",
         todos: "Clímax.",
         guitarra: "Variante de la melodía con Fa agudo. En 1:54 haz un pequeño desfase: atrásate un poco. Fuzz alto.",
         bateria: "CON PLATILLOS (E), o MURO (R) si quieres más.",
@@ -206,8 +206,8 @@ window.PARTITURA = {
       colores: ["#c0392b", "#9b2c6f"],
       tocan: ["guitarra", "bateria", "teclado-1", "teclado-2", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-4"],
       instrucciones: {
-        "teclado-2": "Arpegio con el teclado 1: tus notas son las agudas: La♭, Si♭, Do y Re♭ (teclas A S D F).",
-        "teclado-1": "Arpegio con el teclado 2: tus notas son las graves: Re♭, Fa y Sol♭ (teclas A S D).",
+        "teclado-2": "Arpegio con el teclado 1: tus notas son las agudas: La♭, Si♭, Do y Re♭ (las teclas que no dicen LIBRE).",
+        "teclado-1": "Arpegio con el teclado 2: tus notas son las graves: Re♭, Fa y Sol♭ (las teclas que no dicen LIBRE).",
         todos: "Outro: siguen todos; la melodía con Fa hace sus dos últimas frases.",
         bateria: "CON PLATILLOS (E).",
       },
@@ -220,7 +220,7 @@ window.PARTITURA = {
       tocan: ["bateria", "teclado-1", "teclado-2", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-3", "ambiente-4"],
       instrucciones: {
         todos: "Sale la melodía, vuelve el pedal en Fa. Las líneas bajas empiezan a bajar de volumen.",
-        "teclado-2": "PEDAL F otra vez (tecla G, hasta 2:48) y, encima, tus notas del arpegio.",
+        "teclado-2": "PEDAL F otra vez (hasta 2:48) y, encima, tus notas del arpegio.",
         guitarra: "Silencio. Vuelves solo para el final (2:48).",
         "ambiente-3": "PEDAL F otra vez.",
         "ambiente-principal": "Empieza a desvanecerse poco a poco.",
@@ -335,11 +335,10 @@ window.PARTITURA = {
     },
     // Reparto (versión 2): la línea de la pista Medio se divide entre los teclados 1 y 2 por altura, así cada uno
     // toca pocas notas y se van alternando (F–B♭–F–A♭ = 1–2–1–2). notas: alturas MIDI que le tocan a cada uno.
-    // carriles: el piano de ese teclado muestra solo esas notas, en la fila A S D F… (una tecla por nota).
     // volumen: { altura: factor } para que una nota suene más baja (o más alta) que las demás, a mano y en la orquesta.
     reparto: {
-      "teclado-1": { pistas: ["medio"], notas: [61, 65, 66], carriles: true },           // Re♭4, Fa4, Sol♭4
-      "teclado-2": { pistas: ["medio", "pedal"], notas: [68, 70, 72, 73, 77], carriles: true,  // La♭4, Si♭4, Do5, Re♭5 y el Fa5 del pedal
+      "teclado-1": { pistas: ["medio"], notas: [61, 65, 66] },           // Re♭4, Fa4, Sol♭4
+      "teclado-2": { pistas: ["medio", "pedal"], notas: [68, 70, 72, 73, 77],  // La♭4, Si♭4, Do5, Re♭5 y el Fa5 del pedal
                      volumen: { 77: 0.4 } },   // el Fa agudo del pedal suena largo y se come al resto: va más bajo (≈ −8 dB)
     },
     // midi/genesis_completo.mid tiene todas las pistas juntas (para abrirlo en un DAW o MuseScore).
