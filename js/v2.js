@@ -69,7 +69,7 @@
         <p>Si la tocas a tiempo se pone verde (<b>Perfecto</b> o <b>Bien</b>); si se te pasa, queda gris. Arriba se cuentan los aciertos y la racha. Puedes apagarlas o cambiar su velocidad. Es una guía, no una obligación: improvisar sigue valiendo.</p></section>
       <section><h3>Tocar con el teclado de la computadora</h3>
         <div class="atajos">
-          <p>El piano muestra <b>solo el registro de tu parte</b> (al menos una octava), y cada tecla tiene su letra:</p>
+          <p>El piano muestra <b>solo el registro de tu parte</b> (al menos una octava), y cada tecla tiene su letra. En los <b>teclados 1 y 2</b>, que se reparten el arpegio, el piano son solo tus notas: una tecla ancha por nota, todas en la fila A (A S D…).</p>
           <div class="oct-pc">
             <div class="fila-teclas">${"QWERTYUIO".split("").map(c => `<kbd class="negra">${c}</kbd>`).join("")}</div>
             <div class="fila-teclas blancas">${"ASDFGHJKLÑ".split("").map(c => `<kbd>${c}</kbd>`).join("")}</div></div>
@@ -82,8 +82,8 @@
   /* ============================== roles ============================== */
   const pf = id => PERFILES.find(p => p.id === id);
   const ROLES = [
-    { id: "teclado-1", titulo: "Teclado 1", sub: "Medio/alto · arpegio", icono: "🎹" },
-    { id: "teclado-2", titulo: "Teclado 2", sub: "Medio/alto · pedal agudo", icono: "🎹" },
+    { id: "teclado-1", titulo: "Teclado 1", sub: "Arpegio · notas graves", icono: "🎹" },
+    { id: "teclado-2", titulo: "Teclado 2", sub: "Arpegio · notas agudas y pedal", icono: "🎹" },
     { id: "teclado-3", titulo: "Teclado 3", sub: "Bajo/medio · el bajo", icono: "🎹" },
     { id: "teclado-4", titulo: "Teclado 4", sub: "Bajo/medio · acordes", icono: "🎹" },
     { id: "bateria", titulo: "Batería", sub: "Kit de FL o base 808", icono: "🥁" },
@@ -129,7 +129,21 @@
   }
   let pistasProm = null;
   const pistas = () => (pistasProm = pistasProm || window.MIDI.pistasDeLaObra());
-  async function pistaDe(id) { const pid = P.midi && P.midi.porPerfil[id]; return pid ? (await pistas()).find(p => p.id === pid) || null : null; }
+  // La pista de cada perfil. Con un "reparto" (partitura → midi.reparto), se juntan las pistas indicadas y se
+  // quedan solo las alturas que le tocan a ese perfil (así los teclados 1 y 2 se reparten la línea de la pista Medio).
+  const cacheReparto = new Map();
+  async function pistaDe(id) {
+    const rep = P.midi && P.midi.reparto && P.midi.reparto[id];
+    if (rep) {
+      if (!cacheReparto.has(id)) cacheReparto.set(id, pistas().then(ps => {
+        const notas = rep.pistas.flatMap(pid => { const p = ps.find(x => x.id === pid); return p ? p.notas : []; }).filter(n => rep.notas.includes(n.m));
+        return notas.length ? window.MIDI.preparar({ id: "reparto-" + id, nombre: "Reparto " + id, notas: notas.map(n => Object.assign({}, n)) }) : null;
+      }));
+      return cacheReparto.get(id);
+    }
+    const pid = P.midi && P.midi.porPerfil[id]; return pid ? (await pistas()).find(p => p.id === pid) || null : null;
+  }
+  const carrilesDe = id => { const rep = P.midi && P.midi.reparto && P.midi.reparto[id]; return rep && rep.carriles ? rep.notas.slice().sort((a, b) => a - b) : null; };
 
   /* Programador de notas MIDI: en cada cuadro agenda las notas de los próximos instantes (en el reloj de audio) */
   function programador(pista, alNota) {
@@ -406,7 +420,10 @@
     const id = perfil.id, k = new Teclado(perfil.preset), pista = await pistaDe(id);
     const defFL = P.sonidos && P.sonidos[id];
     const desplaz = defFL && defFL.real != null ? defFL.base - defFL.real : 0;   // los teclados bajos se tocan una octava arriba de cómo suenan
-    const [lo0, hi0] = registroDe(pista && pista.notas, desplaz, 12 * (k.p.octava + 1));
+    // con carriles, el piano son solo las notas de tu parte, una por tecla en la fila A S D F…
+    const carriles0 = carrilesDe(id);
+    const [lo0, hi0] = carriles0 ? [carriles0[0], carriles0[carriles0.length - 1]] : registroDe(pista && pista.notas, desplaz, 12 * (k.p.octava + 1));
+    const enCarriles = () => carriles0 ? carriles0.map(m => m + 12 * octavas) : null;
     let octavas = leer("v2:octd:" + id, 0), inicio = lo0 + 12 * octavas, fin = hi0 + 12 * octavas;
     const teclaDe = new Map();   // e.code → nota MIDI del piano visible
     let bucle = null;
@@ -452,7 +469,7 @@
     const pasoFx = el(`<div class="paso"><div class="paso-cab"><span class="n">4</span><b>Efectos</b></div></div>`);
     pasoFx.appendChild(fx);
     // tu parte, llevada a la octava visible del piano
-    const mapear = m0 => { let m = m0 + desplaz + 12 * octavas; while (m < inicio) m += 12; while (m > fin) m -= 12; return m; };
+    const mapear = m0 => { let m = m0 + desplaz + 12 * octavas; if (carriles0) return m; while (m < inicio) m += 12; while (m > fin) m -= 12; return m; };
     const cascada = pista && pista.notas.length ? crearCascada(pista, piano, mapear) : null;
     caja.append(opciones, toques, estado, ...(cascada ? [cascada.caja] : []), piano, leyenda, glis, pasoFx);
     const r = (x, raiz = caja) => $(`[data-r="${x}"]`, raiz);
@@ -538,7 +555,9 @@
         // cada nota del acorde, en la tecla visible más cercana al centro del piano
         const centro = (inicio + fin) / 2, cerca = pc => { let m = Math.round(centro - 6); while (((m % 12) + 12) % 12 !== pc) m++; return m; };
         let ms = a ? [...new Set(a.intervalos.map(i => cerca((a.raiz + i) % 12)))] : [];
-        if (perfil.preset === "bajo" && a) { let r0 = inicio; while (r0 % 12 !== a.raiz) r0++; ms = r0 + 7 <= fin ? [r0, r0 + 7] : r0 - 5 >= inicio ? [r0 - 5, r0] : [r0]; }
+        const carr = enCarriles();
+        if (carr && a) { const tn = a.intervalos.map(i => (a.raiz + i) % 12); ms = carr.filter(m => tn.includes(m % 12)); }
+        if (perfil.preset === "bajo" && a && !carr) { let r0 = inicio; while (r0 % 12 !== a.raiz) r0++; ms = r0 + 7 <= fin ? [r0, r0 + 7] : r0 - 5 >= inicio ? [r0 - 5, r0] : [r0]; }
         ms.sort((x, y) => x - y).forEach(m => on(m, true));
       }
       pintarOpciones();
@@ -548,14 +567,17 @@
     let teclas = [];
     function dibujarPiano() {
       piano.innerHTML = "";
-      const blancas = [];
-      for (let m = inicio; m <= fin; m++) if (!esNegra(m)) blancas.push(m);
       teclaDe.clear();
-      const ancho = 100 / blancas.length;
       teclas = [];
-      for (let m = inicio; m <= fin; m++) {
-        const negra = [1, 3, 6, 8, 10].includes(m % 12);
-        const t = el(`<button class="tecla ${negra ? "negra" : "blanca"}" data-m="${m}" tabindex="-1"><span class="nom"></span><i class="pc"></i></button>`);
+      const carriles = enCarriles();
+      piano.classList.toggle("en-carriles", !!carriles);
+      // con carriles: una tecla ancha por nota, todas en la fila A S D F…; si no, el piano cromático
+      const notas = carriles || Array.from({ length: fin - inicio + 1 }, (_, i) => inicio + i);
+      const blancas = carriles ? notas : notas.filter(m => !esNegra(m));
+      const ancho = 100 / blancas.length;
+      for (const m of notas) {
+        const negra = !carriles && esNegra(m);
+        const t = el(`<button class="tecla ${negra ? "negra" : "blanca"}${carriles ? " carril" + (esNegra(m) ? " alterada" : "") : ""}" data-m="${m}" tabindex="-1"><span class="nom"></span><i class="pc"></i></button>`);
         if (negra) { const iz = blancas.indexOf(m - 1); t.style.left = `calc(${(iz + 1) * ancho}% - ${ancho * 0.31}%)`; t.style.width = ancho * 0.62 + "%"; }
         else t.style.width = ancho + "%";
         // blanca n → fila A–Ñ; negra entre la blanca n y la n+1 → la tecla de arriba en ese hueco (Q, W, E…)
@@ -590,7 +612,7 @@
         t.classList.toggle("escala", !tn.includes(pc) && ESCALA.has(pc)); t.classList.toggle("fuera", !ESCALA.has(pc));
         t.classList.toggle("on", apretadas.has(m)); t.classList.toggle("suena", suenan.has(m) && !apretadas.has(m));
         t.classList.toggle("guia", guia.includes(m)); t.classList.toggle("sig", sigTonos.includes(pc) && !tn.includes(pc));
-        $(".nom", t).textContent = tn.includes(pc) || pc === 0 ? PC[pc] + (pc === 0 ? Math.floor(m / 12) - 1 : "") : "";
+        $(".nom", t).textContent = t.classList.contains("carril") ? nombreNota(m) : tn.includes(pc) || pc === 0 ? PC[pc] + (pc === 0 ? Math.floor(m / 12) - 1 : "") : "";
       });
       caja.style.setProperty("--color", ac.color || "#7c9cff");
     }
@@ -987,8 +1009,8 @@
   /* ============================== acompañamiento: la orquesta ============================== */
   // Para ensayar: esta laptop toca las pistas MIDI del arreglo. Se elige qué partes suenan y con qué sample.
   const PARTES_ORQ = [
-    { id: "teclado-1", tipo: "teclado", nombre: "Teclado 1", sub: "arpegio", icono: "🎹", def: "teclado-1" },
-    { id: "teclado-2", tipo: "teclado", nombre: "Teclado 2", sub: "pedal agudo", icono: "🎹", def: "teclado-2" },
+    { id: "teclado-1", tipo: "teclado", nombre: "Teclado 1", sub: "arpegio, notas graves", icono: "🎹", def: "teclado-1" },
+    { id: "teclado-2", tipo: "teclado", nombre: "Teclado 2", sub: "arpegio agudo y pedal", icono: "🎹", def: "teclado-2" },
     { id: "teclado-3", tipo: "teclado", nombre: "Teclado 3", sub: "el bajo", icono: "🎹", def: "teclado-3" },
     { id: "teclado-4", tipo: "teclado", nombre: "Teclado 4", sub: "acordes", icono: "🎹", def: "teclado-4" },
     { id: "ambiente-1", tipo: "ambiente", nombre: "Ambiente", sub: "base grave", icono: "🌊", def: "ambiente-1" },

@@ -310,3 +310,10 @@ kbd { font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   .cascada-cab .marcador { margin-left: 0; width: 100%; }
 }
 .cascada-cab .campo select { flex: none; }
+
+/* ---------- piano en carriles (solo las notas de tu parte, en la fila A) ---------- */
+.piano.en-carriles { gap: 6px; height: clamp(150px, 22vh, 210px); }
+.piano.en-carriles .tecla { border-radius: 0 0 12px 12px; border-right: 0; }
+.piano.en-carriles .tecla .nom { font-size: 20px; margin-bottom: 10px; }
+.piano.en-carriles .tecla .pc { font-size: 20px; min-width: 34px; padding: 6px 8px; margin-bottom: 14px; }
+@media (max-width: 560px) { .piano.en-carriles .tecla .nom { font-size: 16px; } .piano.en-carriles .tecla .pc { font-size: 16px; min-width: 28px; padding: 5px; } }
