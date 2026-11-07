@@ -91,7 +91,7 @@ window.PARTITURA = {
       tocan: ["guitarra", "bateria", "teclado-1", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-4"],
       instrucciones: {
         todos: "Entran los platillos y la distorsión en los teclados medios.",
-        teclados: "Sube la DISTORSIÓN (≈ 60 %) y déjala así.",
+        teclados: "Sube la DISTORSIÓN (≈ 35 %) y déjala así.",
         "teclado-3": "Bajo todavía limpio.",
         guitarra: "Arriba alternas Do y Mi♭ (ver tu pista MIDI). Al final de esta parte callas.",
         "teclado-2": "Silencio. Entras en 0:40 con el Fa agudo.",
@@ -174,7 +174,7 @@ window.PARTITURA = {
       tocan: ["guitarra", "bateria", "teclado-1", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-4"],
       instrucciones: {
         todos: "Ahora los acordes duran DOS compases. La melodía sigue igual.",
-        teclados: "Distorsión ≈ 60 %. Acordes de dos compases.",
+        teclados: "Distorsión ≈ 35 %. Acordes de dos compases.",
         bateria: "CON PLATILLOS (E).",
         ambiente: "Ambiente y luces hacia el rojo.",
       },
@@ -227,7 +227,7 @@ window.PARTITURA = {
       tocan: ["teclado-1", "teclado-2", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-3", "ambiente-4"],
       instrucciones: {
         todos: "Sale la batería. Queda B♭m7 (el bajo baja a La♭ un momento).",
-        "teclado-3": "Distorsión baja (≈ 20 %): más limpio.",
+        "teclado-3": "Distorsión baja (≈ 10 %): más limpio.",
         bateria: "Silencio desde aquí.",
       },
     },
@@ -276,32 +276,32 @@ window.PARTITURA = {
   // Los ambientes siguen su guía X/Y (guiaXY): X = distorsión, Y = intensidad.
   efectos: [
     { desde: "0:00",    todos: { reverb: 0.6 } },
-    { desde: "0:03.69", bateria: { vol: [0.63, 0.98], reverb: 0.35, drive: 0.08 } },                              // la batería entra de a poco
-    { desde: "0:18.46", teclados: { dist: 0, filtro: 0.44, reverb: 0.4 }, "teclado-3": { vol: 1.6, dist: 0.05, filtro: 0.32 },
-                        guitarra: { fuzz: 0.15, tono: 0.38, reverb: 0.45 }, bateria: { vol: 0.98, reverb: 0.3, drive: 0.12 } },
-    { desde: "0:33.23", teclados: { dist: [0.3, 0.6], filtro: 0.52, reverb: 0.4 }, "teclado-3": { vol: 1.6, dist: 0.1, filtro: 0.36 },
-                        guitarra: { fuzz: 0.27, tono: 0.41, reverb: 0.45 }, bateria: { vol: 1.09, reverb: 0.28, drive: 0.2 } },
-    { desde: "0:40.62", teclados: { dist: 0.6, filtro: 0.56, reverb: 0.4 }, "teclado-2": { dist: 0.15, filtro: 0.6, reverb: 0.65 },
-                        "teclado-3": { vol: 1.6, dist: 0.25, filtro: 0.36 }, bateria: { vol: 1.09, reverb: 0.28, drive: 0.2 } },
-    { desde: "1:02.77", teclados: { dist: 0.5, filtro: 0.48, reverb: 0.45 }, "teclado-1": { filtro: 0.4 },
-                        "teclado-3": { vol: 1.6, dist: 0.25, filtro: 0.36 }, bateria: { vol: 0.98, reverb: 0.3, drive: 0.15 } },
-    { desde: "1:10.15", teclados: { dist: [0.5, 0.65], filtro: [0.48, 0.58], reverb: 0.4 }, "teclado-3": { vol: 1.6, dist: 0.3, filtro: 0.4 },
-                        bateria: { vol: 1.09, reverb: 0.28, drive: 0.22 } },
-    { desde: "1:17.54", teclados: { dist: 0, filtro: 0.4, reverb: 0.5 }, guitarra: { fuzz: 0.09, tono: 0.46, reverb: 0.55 },   // todo limpio: el solo
-                        bateria: { vol: 0.86, reverb: 0.35, drive: 0.05 } },
-    { desde: "1:26.77", teclados: { dist: [0, 0.45], filtro: [0.4, 0.64], reverb: 0.45 }, guitarra: { fuzz: [0.09, 0.3], tono: 0.45 }, // subida al muro
-                        bateria: { vol: [0.86, 1.15], reverb: 0.3, drive: [0.05, 0.25] } },
-    { desde: "1:32.31", teclados: { dist: 0.65, filtro: 0.62, reverb: 0.4 }, "teclado-3": { vol: 1.6, dist: 0.35, filtro: 0.44 },
-                        guitarra: { vol: 0.85, fuzz: 0.39, tono: 0.45, reverb: 0.5 }, bateria: { vol: 1.15, reverb: 0.25, drive: 0.3 } },
-    { desde: "1:47.08", teclados: { dist: 0.75, filtro: 0.7, reverb: 0.42 }, "teclado-3": { vol: 1.6, dist: 0.4, filtro: 0.48 },              // clímax
-                        guitarra: { vol: 0.85, fuzz: 0.48, tono: 0.49, reverb: 0.55 }, bateria: { vol: 1.15, reverb: 0.25, drive: 0.38 } },
-    { desde: "2:01.85", teclados: { dist: 0.6, filtro: 0.58, reverb: 0.45 }, "teclado-3": { vol: 1.6, dist: 0.3, filtro: 0.4 },
-                        guitarra: { vol: 0.85, fuzz: [0.39, 0.3], tono: 0.45, reverb: 0.55 }, bateria: { vol: 1.06, reverb: 0.28, drive: 0.25 } },
-    { desde: "2:16.62", teclados: { dist: [0.6, 0.35], filtro: [0.58, 0.44], reverb: 0.5, vol: [1, 0.6] }, "teclado-2": { reverb: 0.75 }, // se desvanece
-                        bateria: { vol: [1.03, 0.69], reverb: 0.32, drive: [0.25, 0.1] } },
-    { desde: "2:31.38", teclados: { dist: 0.3, filtro: 0.4, reverb: 0.55, vol: 0.6 }, "teclado-3": { dist: 0.2, vol: 0.75 }, "teclado-4": { vol: 0.65 } },
-    { desde: "2:48.00", teclados: { dist: [0.2, 0.05], filtro: [0.4, 0.24], reverb: [0.5, 0.8], vol: [0.6, 0] },                   // resuelve y muere
-                        guitarra: { fuzz: 0.18, tono: 0.38, reverb: [0.6, 0.85], vol: [0.9, 0] } },
+    { desde: "0:03.69", bateria: { vol: [0.63, 0.98], reverb: 0.35, drive: 0.05 } },                              // la batería entra de a poco
+    { desde: "0:18.46", teclados: { dist: 0, filtro: 0.44, reverb: 0.4 }, "teclado-3": { vol: 1.6, dist: 0.03, filtro: 0.32 },
+                        guitarra: { fuzz: 0.09, tono: 0.38, reverb: 0.45 }, bateria: { vol: 0.98, reverb: 0.3, drive: 0.07 } },
+    { desde: "0:33.23", teclados: { dist: [0.18, 0.36], filtro: 0.52, reverb: 0.4 }, "teclado-3": { vol: 1.6, dist: 0.06, filtro: 0.36 },
+                        guitarra: { fuzz: 0.16, tono: 0.41, reverb: 0.45 }, bateria: { vol: 1.09, reverb: 0.28, drive: 0.12 } },
+    { desde: "0:40.62", teclados: { dist: 0.36, filtro: 0.56, reverb: 0.4 }, "teclado-2": { dist: 0.09, filtro: 0.6, reverb: 0.65 },
+                        "teclado-3": { vol: 1.6, dist: 0.15, filtro: 0.36 }, bateria: { vol: 1.09, reverb: 0.28, drive: 0.12 } },
+    { desde: "1:02.77", teclados: { dist: 0.3, filtro: 0.48, reverb: 0.45 }, "teclado-1": { filtro: 0.4 },
+                        "teclado-3": { vol: 1.6, dist: 0.15, filtro: 0.36 }, bateria: { vol: 0.98, reverb: 0.3, drive: 0.09 } },
+    { desde: "1:10.15", teclados: { dist: [0.3, 0.39], filtro: [0.48, 0.58], reverb: 0.4 }, "teclado-3": { vol: 1.6, dist: 0.18, filtro: 0.4 },
+                        bateria: { vol: 1.09, reverb: 0.28, drive: 0.13 } },
+    { desde: "1:17.54", teclados: { dist: 0, filtro: 0.4, reverb: 0.5 }, guitarra: { fuzz: 0.05, tono: 0.46, reverb: 0.55 },   // todo limpio: el solo
+                        bateria: { vol: 0.86, reverb: 0.35, drive: 0.03 } },
+    { desde: "1:26.77", teclados: { dist: [0, 0.27], filtro: [0.4, 0.64], reverb: 0.45 }, guitarra: { fuzz: [0.05, 0.18], tono: 0.45 }, // subida al muro
+                        bateria: { vol: [0.86, 1.15], reverb: 0.3, drive: [0.03, 0.15] } },
+    { desde: "1:32.31", teclados: { dist: 0.39, filtro: 0.62, reverb: 0.4 }, "teclado-3": { vol: 1.6, dist: 0.21, filtro: 0.44 },
+                        guitarra: { vol: 0.85, fuzz: 0.23, tono: 0.45, reverb: 0.5 }, bateria: { vol: 1.15, reverb: 0.25, drive: 0.18 } },
+    { desde: "1:47.08", teclados: { dist: 0.45, filtro: 0.7, reverb: 0.42 }, "teclado-3": { vol: 1.6, dist: 0.24, filtro: 0.48 },              // clímax
+                        guitarra: { vol: 0.85, fuzz: 0.29, tono: 0.49, reverb: 0.55 }, bateria: { vol: 1.15, reverb: 0.25, drive: 0.23 } },
+    { desde: "2:01.85", teclados: { dist: 0.36, filtro: 0.58, reverb: 0.45 }, "teclado-3": { vol: 1.6, dist: 0.18, filtro: 0.4 },
+                        guitarra: { vol: 0.85, fuzz: [0.23, 0.18], tono: 0.45, reverb: 0.55 }, bateria: { vol: 1.06, reverb: 0.28, drive: 0.15 } },
+    { desde: "2:16.62", teclados: { dist: [0.36, 0.21], filtro: [0.58, 0.44], reverb: 0.5, vol: [1, 0.6] }, "teclado-2": { reverb: 0.75 }, // se desvanece
+                        bateria: { vol: [1.03, 0.69], reverb: 0.32, drive: [0.15, 0.06] } },
+    { desde: "2:31.38", teclados: { dist: 0.18, filtro: 0.4, reverb: 0.55, vol: 0.6 }, "teclado-3": { dist: 0.12, vol: 0.75 }, "teclado-4": { vol: 0.65 } },
+    { desde: "2:48.00", teclados: { dist: [0.12, 0.03], filtro: [0.4, 0.24], reverb: [0.5, 0.8], vol: [0.6, 0] },                   // resuelve y muere
+                        guitarra: { fuzz: 0.11, tono: 0.38, reverb: [0.6, 0.85], vol: [0.9, 0] } },
   ],
 
   // Pistas MIDI del arreglo (carpeta midi/). Están a 130 BPM y empiezan en 0:00, así que calzan con el reloj.
