@@ -329,3 +329,4 @@ kbd { font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 .glis-ventana .explica { margin: 0; }
 .glis-ventana .campo:not(.corto) { flex-direction: column; align-items: stretch; }
 .glis-ventana .campo:not(.corto) select { flex: none; width: 100%; }
+.sonido-fijo { display: inline-flex; align-items: center; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--borde); background: var(--panel2); font-weight: 600; font-size: 14px; }

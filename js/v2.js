@@ -453,7 +453,7 @@
     caja.innerHTML = "";
     const opciones = el(`<div class="paso">
       <div class="paso-cab"><span class="n">1</span><b>Sonido</b><button class="btn btn-ayuda" data-r="ayuda" title="Cómo funciona el teclado">? Cómo funciona</button></div>
-      <div class="fila"><label class="campo"><select data-r="son" aria-label="Sonido"></select></label>
+      <div class="fila"><span class="sonido-fijo" title="El sonido de todos los teclados">🎛️ Square Woof · FL Studio</span>
         <div class="grupo-oct"><button class="btn" data-r="oct-" title="Bajar una octava (←)">− oct</button><span data-r="oct"></span><button class="btn" data-r="oct+" title="Subir una octava (→)">+ oct</button></div></div>
     </div>`);
     const toques = el(`<div class="paso">
@@ -492,25 +492,22 @@
     const r = (x, raiz = caja) => $(`[data-r="${x}"]`, raiz);
 
     // sonido
-    const sel = r("son");
-    sel.add(new Option("Partitura (FL Studio)", "fl"));
-    (P.catalogo || []).forEach(c => sel.add(new Option(c.nombre, c.id)));
-    sel.add(new Option("Sintetizado", "sint"));
-    async function ponerSonido(v) {
-      sel.value = v; guardar("v2:son:" + id, v);
+    // Sonido: todos los teclados usan Square Woof (FL Studio); de sus dos muestras se elige la más cercana a tu registro.
+    // Su volumen se iguala con el del sample que tenía antes cada teclado (Square Woof suena más fuerte).
+    const SONIDO_TECLADOS = "square-woof";
+    let ajusteVol = 1;
+    async function ponerSonido() {
       try {
-        if (v === "fl" && defFL) { const s = await cargarSonido(defFL.archivo); k.buffer = s.buffer; bucle = s.bucle; k.base = defFL.base; return; }
-        const c = (P.catalogo || []).find(x => x.id === v);
-        if (c) {
-          const centro = (inicio + fin) / 2 - desplaz;
-          const mu = c.muestras.slice().sort((a, b) => Math.abs(a.real - centro) - Math.abs(b.real - centro))[0];
-          const s = await cargarSonido(mu.archivo); k.buffer = s.buffer; bucle = s.bucle; k.base = mu.real + desplaz; return;
-        }
+        const c = (P.catalogo || []).find(x => x.id === SONIDO_TECLADOS);
+        const centro = (inicio + fin) / 2 - desplaz;
+        const mu = c.muestras.slice().sort((a, b) => Math.abs(a.real - centro) - Math.abs(b.real - centro))[0];
+        const s = await cargarSonido(mu.archivo);
+        if (defFL) { try { ajusteVol = lim(rmsDe((await cargarSonido(defFL.archivo)).buffer) / rmsDe(s.buffer), 0.3, 2); } catch (e) { ajusteVol = 1; } }
+        k.buffer = s.buffer; bucle = s.bucle; k.base = mu.real + desplaz; return;
       } catch (e) { console.warn("sonido:", e.message); }
-      k.buffer = null; bucle = null;
+      k.buffer = null; bucle = null; ajusteVol = 1;   // sin la muestra, el sintetizador del teclado
     }
-    sel.onchange = async () => { const auto = toque === "auto"; soltarTodo(); await ponerSonido(sel.value); if (auto) { toque = "auto"; sostenerAcorde(true); } };
-    await ponerSonido(leer("v2:son:" + id, defFL ? "fl" : "sint"));
+    await ponerSonido();
 
     // voces
     function crearVoz(m, vel, t) {
@@ -519,7 +516,7 @@
       s.buffer = k.buffer; s.playbackRate.value = Math.pow(2, (m - k.base) / 12);
       if (bucle) { s.loop = true; s.loopStart = bucle[0]; s.loopEnd = bucle[1]; }
       g.connect(k.filtro); s.connect(g);
-      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vel, t + 0.008);
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vel * ajusteVol, t + 0.008);
       s.start(t);
       return { g, fuentes: [s], rel: 0.45 };
     }
@@ -665,6 +662,7 @@
       const auto = toque === "auto"; soltarTodo();
       const o = lim(octavas + Math.sign(d), -3, 3); if (o === octavas || lo0 + 12 * o < 12 || hi0 + 12 * o > 108) return;
       octavas = o; inicio = lo0 + 12 * o; fin = hi0 + 12 * o; guardar("v2:octd:" + id, o); dibujarPiano();
+      ponerSonido();   // la muestra de Square Woof más cercana al registro nuevo
       if (auto) { toque = "auto"; sostenerAcorde(true); }
     }
     r("modo", glis).onchange = e => { modo = e.target.value; guardar("v2:modo:" + id, modo); pintarOpciones(); };
@@ -1033,10 +1031,11 @@
   /* ============================== acompañamiento: la orquesta ============================== */
   // Para ensayar: esta laptop toca las pistas MIDI del arreglo. Se elige qué partes suenan y con qué sample.
   const PARTES_ORQ = [
-    { id: "teclado-1", tipo: "teclado", nombre: "Teclado 1", sub: "arpegio, notas graves", icono: "🎹", def: "teclado-1" },
-    { id: "teclado-2", tipo: "teclado", nombre: "Teclado 2", sub: "arpegio agudo y pedal", icono: "🎹", def: "teclado-2" },
-    { id: "teclado-3", tipo: "teclado", nombre: "Teclado 3", sub: "el bajo", icono: "🎹", def: "teclado-3" },
-    { id: "teclado-4", tipo: "teclado", nombre: "Teclado 4", sub: "acordes", icono: "🎹", def: "teclado-4" },
+    // def: el sample de FL con que se iguala el volumen; son: el sonido (los teclados, siempre Square Woof)
+    { id: "teclado-1", tipo: "teclado", nombre: "Teclado 1", sub: "arpegio, notas graves", icono: "🎹", def: "teclado-1", son: "square-woof" },
+    { id: "teclado-2", tipo: "teclado", nombre: "Teclado 2", sub: "arpegio agudo y pedal", icono: "🎹", def: "teclado-2", son: "square-woof" },
+    { id: "teclado-3", tipo: "teclado", nombre: "Teclado 3", sub: "el bajo", icono: "🎹", def: "teclado-3", son: "square-woof" },
+    { id: "teclado-4", tipo: "teclado", nombre: "Teclado 4", sub: "acordes", icono: "🎹", def: "teclado-4", son: "square-woof" },
     { id: "ambiente-1", tipo: "ambiente", nombre: "Ambiente", sub: "base grave", icono: "🌊", def: "ambiente-1" },
     { id: "bateria", tipo: "bateria", nombre: "Batería", sub: "", icono: "🥁", def: "fl" },
     { id: "guitarra", tipo: "guitarra", nombre: "Guitarra", sub: "melodía", icono: "🎸", def: "gtr" },
@@ -1053,7 +1052,9 @@
       d("ambiente-1", "Ambiente drone · FL"), d("ambiente-3", "Ambiente brillo · FL"), d("ambiente-4", "Ambiente pulso · FL"), d("ambiente-2", "Ambiente ruido · FL"),
     ].filter(Boolean);
   })();
+  const sonPropio = def => def.son || def.def;   // el sonido de la partitura de cada parte
   function opcionesDe(tipo) {
+    if (tipo === "teclado") return [["square-woof", "Square Woof · FL"]];
     if (tipo === "bateria") return [["fl", "Batería · FL Studio"], ["sint", "Batería sintetizada"], ["808", "Base 808 distorsionada"]];
     const ms = MUESTRAS.map(m => [m.id, m.nombre]);
     if (tipo === "guitarra") return [["gtr", "Guitarra eléctrica · FL"], ["gtr-sint", "Guitarra sintetizada"], ...ms.filter(([v]) => v !== "gtr-nota"), ["sint", "Sintetizado"]];
@@ -1142,7 +1143,7 @@
       if (propio && propio.archivo) { try { ref = rmsDe((await cargarMuestraOrq(propio.archivo)).buffer); } catch (e) {} }
       else if (def.tipo === "guitarra") ref = 0.6 * ref;
       const ajuste = lim(ref / rmsDe(s.buffer), 0.25, 4);
-      parte.octavas = son === def.def ? 0 : octavasPara(mu.real, med) / 12;   // con su propio sample, la parte suena como siempre
+      parte.octavas = son === def.def || def.tipo === "teclado" ? 0 : octavasPara(mu.real, med) / 12;   // los teclados suenan en su registro   // con su propio sample, la parte suena como siempre
       const sube = parte.octavas * 12;
       alNota = (n, at) => vozMuestra(inst, s, mu.real, n.m + sube, n.v * ajuste * volNota(def.id, n.m), at, n.d);
     }
@@ -1168,7 +1169,7 @@
     const avisar = () => oyentes.forEach(f => f());
     const guardarConf = () => guardar("v2:orq", conf);
     const suena = id => id === propio ? propioSuena : conf.on[id] !== false;
-    const sonDe = def => conf.son[def.id] || def.def;
+    const sonDe = def => def.tipo === "teclado" ? "square-woof" : conf.son[def.id] || def.def;
 
     async function sincronizar() {
       const v = ++version;
@@ -1220,7 +1221,7 @@
         <button class="chip" data-r="otros" title="Todos menos tu rol">Todos menos yo</button></div>
       <div class="fila orq-atajos"><span class="muted small">Sonidos de todos:</span>
         <button class="chip" data-r="son-fl" title="Cada instrumento con su sample de la partitura, hecho en FL Studio">🎛️ FL Studio (los tuyos)</button>
-        <button class="chip" data-r="son-sint" title="Cada instrumento con el sonido sintetizado en el navegador">🧪 Sintetizados en el navegador</button></div>
+        <button class="chip" data-r="son-sint" title="Batería, ambiente y guitarra con el sonido sintetizado en el navegador (los teclados siguen con Square Woof)">🧪 Sintetizados en el navegador</button></div>
       <ul class="orq-lista"></ul>
     </div>`);
     const r = x => $(`[data-r="${x}"]`, caja), lista = $(".orq-lista", caja), filas = {};
@@ -1231,7 +1232,8 @@
         <select aria-label="Sample de ${esc(def.nombre)}"></select>
         <span class="orq-nota muted small"></span></li>`);
       const sel = $("select", li);
-      opcionesDe(def.tipo).forEach(([v, n]) => sel.add(new Option(n + (v === def.def ? " (de la partitura)" : ""), v)));
+      opcionesDe(def.tipo).forEach(([v, n]) => sel.add(new Option(n + (v === sonPropio(def) && def.tipo !== "teclado" ? " (de la partitura)" : ""), v)));
+      if (def.tipo === "teclado") sel.disabled = true;
       $("input", li).onchange = e => orq.ponerSuena(def.id, e.target.checked);
       sel.onchange = () => orq.ponerSonido(def.id, sel.value);
       lista.appendChild(li); filas[def.id] = li;
@@ -1243,7 +1245,7 @@
     r("otros").onclick = () => orq.ponerVarias(todos.filter(id => id !== orq.propio));
     // todos los instrumentos a la vez: los samples de FL Studio (los de la partitura) o los sintetizados
     const SINT = { bateria: "sint", guitarra: "gtr-sint" };
-    r("son-fl").onclick = () => orq.ponerSonidos(Object.fromEntries(orq.PARTES.map(d => [d.id, d.def])));
+    r("son-fl").onclick = () => orq.ponerSonidos(Object.fromEntries(orq.PARTES.map(d => [d.id, sonPropio(d)])));
     r("son-sint").onclick = () => orq.ponerSonidos(Object.fromEntries(orq.PARTES.map(d => [d.id, SINT[d.tipo] || "sint"])));
     r("on").onclick = () => orq.encender(!orq.activa);
     r("vol").value = orq.conf.vol;
@@ -1253,8 +1255,8 @@
       b.textContent = orq.activa ? "⏸ Detener la orquesta" : "▶ Escuchar la orquesta"; b.classList.toggle("on", orq.activa);
       r("volv").textContent = Math.round(orq.conf.vol * 100) + " %";
       const sons = orq.PARTES.map(d => orq.sonDe(d));
-      r("son-fl").classList.toggle("on", orq.PARTES.every((d, i) => sons[i] === d.def));
-      r("son-sint").classList.toggle("on", orq.PARTES.every((d, i) => sons[i] === (SINT[d.tipo] || "sint")));
+      r("son-fl").classList.toggle("on", orq.PARTES.every((d, i) => sons[i] === sonPropio(d)));
+      r("son-sint").classList.toggle("on", orq.PARTES.every((d, i) => d.tipo === "teclado" || sons[i] === (SINT[d.tipo] || "sint")));
       orq.PARTES.forEach(def => {
         const li = filas[def.id], si = orq.suena(def.id), p = orq.parte(def.id), tuyo = def.id === orq.propio;
         $("input", li).checked = si; $("select", li).value = orq.sonDe(def);
