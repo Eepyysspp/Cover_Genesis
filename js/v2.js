@@ -85,7 +85,6 @@
     { id: "teclado-3", titulo: "Teclado 3", sub: "Bajo/medio · el bajo", icono: "🎹" },
     { id: "teclado-4", titulo: "Teclado 4", sub: "Bajo/medio · acordes", icono: "🎹" },
     { id: "guitarra", titulo: "Teclado líder", sub: "La melodía · Square Woof", icono: "🎹" },
-    { id: "bateria", titulo: "Batería", sub: "Kit de FL o base 808", icono: "🥁" },
     { id: "ambiente-1", titulo: "Ambiente", sub: "Base grave · colores", icono: "🌊" },
     { id: "director", titulo: "Cronómetro", sub: "Reloj grande y control", icono: "⏱️" },
     { id: "ambiente-2", titulo: "Ambiente extra · Ruido", sub: "Opcional", icono: "🌫️", extra: true },
@@ -839,118 +838,6 @@
     };
   }
 
-  /* ============================== batería ============================== */
-  async function crearBateria(perfil, caja) {
-    const b = new Bateria(), pista = await pistaDe("bateria");
-    await cargarBateria(b);
-    let base = null, patron = leer("v2:patron", null), seguirMidi = leer("v2:batmidi", false), kit = leer("v2:kit", "muestras");
-    caja.innerHTML = "";
-    const fila = el(`<div class="fila opciones"><label class="campo">Sonido <select data-r="kit">
-        <option value="muestras">Batería (FL Studio)</option><option value="sintetizado">Batería sintetizada</option><option value="808">808 · base distorsionada</option></select></label></div>`);
-    const cajaKit = el(`<div class="kit">
-      <div class="pads"></div>
-      <div class="fila patrones"><span class="muted">Ritmo:</span></div>
-      <p class="muted small">Los ritmos siguen el cronómetro. 🤖 <b>Pista MIDI</b> toca sola la batería del arreglo (con redobles y crash).</p>
-    </div>`);
-    const cajaBase = el(`<div class="base808" hidden>
-      <div class="fila opciones"><button class="btn grande" data-r="on">Encender</button>
-        <label class="campo">Ataque <select data-r="ataque"></select></label></div>
-      <p class="muted small">Un 808 largo y saturado que sigue la nota grave de cada acorde: es la base de la pieza. X = distorsión, Y = intensidad.</p>
-    </div>`);
-    const fx = el(`<div class="efectos"></div>`);
-    caja.append(fila, cajaKit, cajaBase, fx);
-    const selKit = $("[data-r=kit]", fila);
-    // pads
-    const pads = $(".pads", cajaKit), mapaPad = {};
-    PADS.forEach(p => {
-      const d = el(`<button class="pad" data-pad="${p.id}"><span>${esc(p.nombre)}</span><kbd>${p.tecla.toUpperCase()}</kbd></button>`);
-      d.addEventListener("pointerdown", e => { e.preventDefault(); b.tocar(p.id); });
-      pads.appendChild(d); mapaPad[p.id] = d;
-    });
-    b.alGolpe = pad => { const d = mapaPad[pad === "tomgrave" || pad === "tommedio" || pad === "tomagudo" ? "tom" : pad]; if (d) { d.classList.remove("golpe"); void d.offsetWidth; d.classList.add("golpe"); } };
-    // ritmos
-    const filaPat = $(".patrones", cajaKit);
-    const NOMBRES = [[null, "Ninguno"], ["pulso", "Pulso"], ["sinplatillos", "Sin platillos"], ["platillos", "Con platillos"], ["muro", "Muro"], ["midi", "🤖 Pista MIDI"]];
-    const bPat = {};
-    NOMBRES.forEach(([v, n]) => { const x = el(`<button class="chip">${n}</button>`); x.onclick = () => ponerPatron(v); filaPat.appendChild(x); bPat[v] = x; });
-    function ponerPatron(v) {
-      seguirMidi = v === "midi"; patron = seguirMidi ? null : v; guardar("v2:patron", patron); guardar("v2:batmidi", seguirMidi);
-      Object.entries(bPat).forEach(([k, x]) => x.classList.toggle("on", seguirMidi ? k === "midi" : String(k) === String(v)));
-    }
-    ponerPatron(seguirMidi ? "midi" : patron);
-    const tocarMidi = programador(pista, (n, at) => b.tocar(window.MIDI.padDeNota(n.m), at, n.v));
-    // base 808
-    const xy = crearXY(perfil, { alMover: (x, y) => { if (base) { base.p.x = x; base.p.y = y; base.aplicar(); } } });
-    cajaBase.appendChild(xy.caja);
-    const selAt = $("[data-r=ataque]", cajaBase), bOn = $("[data-r=on]", cajaBase);
-    ATAQUES_808.forEach(([v, n]) => selAt.add(new Option(n, v)));
-    function crearBase() {
-      if (base) return base;
-      base = new Base808(); base.p.ataque = leer("v2:ataque808", "acorde"); selAt.value = base.p.ataque;
-      xy.poner(base.p.x, base.p.y); return base;
-    }
-    selAt.onchange = () => { crearBase().p.ataque = selAt.value; guardar("v2:ataque808", selAt.value); };
-    const pintarBase = () => { bOn.textContent = base && base.encendido ? "Apagar" : "Encender"; bOn.classList.toggle("on", !!(base && base.encendido)); };
-    const alternarBase = () => { const x = crearBase(); if (x.encendido) x.apagar(); else x.encender(acordeEn(tObra(R.ahora())).nombre); pintarBase(); };
-    bOn.onclick = () => { xy.ponerAuto(false); alternarBase(); };
-    function ponerKit(v) {
-      kit = v; selKit.value = v; guardar("v2:kit", v);
-      const es808 = v === "808"; cajaKit.hidden = es808; cajaBase.hidden = !es808;
-      if (es808) { crearBase(); pintarBase(); } else { b.ponerKit(v); if (base) { base.apagar(); pintarBase(); } }
-    }
-    selKit.onchange = () => ponerKit(selKit.value);
-    ponerKit(kit);
-    // efectos
-    const auto = efectosAuto(perfil, b, { vol: "vol", reverb: "reverb", drive: "drive" }, () => ds.forEach(d => d.mostrar()));
-    const ds = [deslizador("Volumen", b, "vol", auto, { max: 1.5 }), deslizador("Reverb", b, "reverb", auto), deslizador("Saturación", b, "drive", auto)];
-    fx.append(botonAuto(auto, ds).b, ...ds);
-    // teclas
-    const alBajar = e => {
-      if (escribiendo(e) || e.repeat) return;
-      const c = e.key.toLowerCase();
-      if (kit === "808") {
-        if (e.code === "Space") { e.preventDefault(); xy.ponerAuto(false); alternarBase(); }
-        else if (c === "g") xy.ponerAuto(!xy.auto);
-        else if (/^Arrow/.test(e.key)) { e.preventDefault(); const d = { ArrowUp: [0, 0.05], ArrowDown: [0, -0.05], ArrowRight: [0.05, 0], ArrowLeft: [-0.05, 0] }[e.key]; xy.flecha(...d); }
-        return;
-      }
-      const p = PADS.find(p => p.tecla === c); if (p) { b.tocar(p.id); return; }
-      const atajo = { q: "pulso", w: "sinplatillos", e: "platillos", r: "muro", m: "midi", 0: null }[c];
-      if (atajo !== undefined) ponerPatron(atajo);
-    };
-    document.addEventListener("keydown", alBajar);
-    // secuenciador: semicorcheas del cronómetro
-    const PASO = 60 / P.bpm / 4;
-    let ultimoPaso = null, secPrevia = null;
-    return {
-      ayuda: "A S D F G H pads · Q W E R ritmos · M pista MIDI · 0 ninguno",
-      cuadro(t, dt, corriendo) {
-        auto.cuadro(t);
-        if (kit === "808") {
-          const g = xy.cuadro(t, dt, base && base.encendido, acordeEn(tObra(t)).color);
-          if (base) { base.seguir(t, corriendo && t >= 0 && t < DURACION); }
-          if (xy.auto && g && base) { if (g.y >= 0.03 && !base.encendido) alternarBase(); else if (g.y < 0.03 && base.encendido && xy.y < 0.03) alternarBase(); }
-          return;
-        }
-        if (seguirMidi) { tocarMidi(t, corriendo); return; }
-        tocarMidi(0, false);
-        if (!corriendo || !patron || t < 0 || t >= DURACION) { ultimoPaso = null; return; }
-        const hasta = Math.floor((t + 0.12) / PASO);
-        if (ultimoPaso == null || hasta - ultimoPaso > 8 || hasta < ultimoPaso) ultimoPaso = Math.floor(t / PASO) - 1;
-        for (let k = ultimoPaso + 1; k <= hasta; k++) {
-          const tp = k * PASO; if (tp < t - 0.02) continue;
-          const sec = seccionEn(tObra(tp)), at = enAudio(tp);
-          if (sec.idx !== secPrevia && Math.abs(tp - sec.ini) < PASO / 2 && patron !== "pulso") b.tocar("crash", at, 0.95);
-          secPrevia = sec.idx;
-          const pat = PATRONES[patron];
-          for (const pad in pat) { const v = VEL_ACENTO[pat[pad][k % 16]]; if (v) b.tocar(pad, at + (Math.random() - 0.5) * 0.006, v); }
-        }
-        ultimoPaso = hasta;
-      },
-      destruir() { if (base) base.apagar(); document.removeEventListener("keydown", alBajar); },
-    };
-  }
-
   /* ============================== cronómetro (director) ============================== */
   async function crearDirector(perfil, caja) {
     caja.innerHTML = "";
@@ -1270,7 +1157,7 @@
     colAhora.append(ahoraUI.caja, crearBarraReloj(id === "director"));
     if (actual && actual.destruir) actual.destruir();
     orquesta().rol(id);
-    const fab = id === "director" ? crearDirector : id === "bateria" ? crearBateria : id.startsWith("ambiente") ? crearAmbiente : crearTeclado;
+    const fab = id === "director" ? crearDirector : id.startsWith("ambiente") ? crearAmbiente : crearTeclado;
     actual = await fab(perfil, inst);
     $("#ayuda").textContent = actual.ayuda || "";
   }
