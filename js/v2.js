@@ -86,10 +86,8 @@
     { id: "teclado-4", titulo: "Teclado 4", sub: "Bajo/medio · acordes", icono: "🎹" },
     { id: "guitarra", titulo: "Teclado líder", sub: "La melodía · Square Woof", icono: "🎹" },
     { id: "ambiente-1", titulo: "Ambiente", sub: "Base grave · colores", icono: "🌊" },
+    { id: "ambiente-3", titulo: "Ambiente brillo", sub: "Agudo · brillo", icono: "✨" },
     { id: "director", titulo: "Cronómetro", sub: "Reloj grande y control", icono: "⏱️" },
-    { id: "ambiente-2", titulo: "Ambiente extra · Ruido", sub: "Opcional", icono: "🌫️", extra: true },
-    { id: "ambiente-3", titulo: "Ambiente extra · Brillo", sub: "Opcional", icono: "✨", extra: true },
-    { id: "ambiente-4", titulo: "Ambiente extra · Pulso", sub: "Opcional", icono: "💠", extra: true },
   ];
   const DIRECTOR = { id: "director", grupo: "todos", tipo: "director", nombre: "Cronómetro" };
 
@@ -888,7 +886,7 @@
       d("teclado-1", "Teclado medio · FL"), d("teclado-2", "Teclado agudo · FL"), d("teclado-3", "Bajo · FL"), d("teclado-4", "Bajo/medio 2 · FL"),
       ...(P.catalogo || []).map(c => ({ id: c.id, nombre: c.nombre.replace(" (FL)", "") + " · FL", muestras: c.muestras })),
       g && { id: "gtr-nota", nombre: "Guitarra (una nota, sin rasgueo) · FL", archivo: g.archivo, real: g.base },
-      d("ambiente-1", "Ambiente drone · FL"), d("ambiente-3", "Ambiente brillo · FL"), d("ambiente-4", "Ambiente pulso · FL"), d("ambiente-2", "Ambiente ruido · FL"),
+      d("ambiente-1", "Ambiente drone · FL"), d("ambiente-3", "Ambiente brillo · FL"),
     ].filter(Boolean);
   })();
   const sonPropio = def => def.son || def.def;   // el sonido de la partitura de cada parte
@@ -1098,7 +1096,7 @@
   /* ============================== aplicación ============================== */
   const pantallaInicio = $("#inicio"), escenario = $("#escenario");
   function dibujarInicio() {
-    const grilla = $(".roles", pantallaInicio), extras = $(".roles-extra", pantallaInicio);
+    const grilla = $(".roles", pantallaInicio), extras = $(".roles-extra", pantallaInicio) || grilla;
     ROLES.forEach(r => {
       const b = el(`<button class="rol ${r.id === "director" ? "director" : ""}"><span class="ico">${r.icono}</span><b>${esc(r.titulo)}</b><small>${esc(r.sub)}</small></button>`);
       b.onclick = () => entrar(r.id);
