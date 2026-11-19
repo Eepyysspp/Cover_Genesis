@@ -53,12 +53,8 @@
           <li>${tecla("t-sig")}<span><b>Círculo punteado:</b> nota del acorde que viene (aparece unos segundos antes del cambio).</span></li>
           <li>${tecla("t-on")}<span><b>Rosado:</b> la tecla que estás tocando.</span></li>
         </ul></section>
-      <section><h3>2 · Tres formas de tocar</h3>
-        <dl>
-          <dt>🎹 Normal</dt><dd>Suena mientras mantienes apretado, como un piano.</dd>
-          <dt>📌 Notas fijas</dt><dd>Un toque enciende la nota y otro la apaga. Armas un acorde y quedan sonando mientras mueves los efectos.</dd>
-          <dt>🎶 Acorde automático</dt><dd>Suena el acorde de la partitura y cambia solo. Lo más fácil para empezar: encima puedes improvisar.</dd>
-        </dl></section>
+      <section><h3>2 · Cómo suena</h3>
+        <p>Cada nota suena <b>mientras mantienes apretada</b> su tecla, como un piano, y se apaga al soltar. <b>✋ Soltar todo</b> (o <kbd>Esc</kbd>) apaga todo de una vez.</p></section>
       <section><h3>3 · Cuando cambia el acorde: glissando</h3>
         <p>Las notas que siguen sonando en el cambio <b>se deslizan solas</b> y llegan justo con el acorde nuevo. Así no hace falta seguir el tempo al soltar las notas. Sobre el piano verás adónde irá cada nota (por ejemplo, <i>A♭4 → G♭4</i>).</p>
         <p>Con el botón <b>🎚️ Cambio de acorde</b> (junto a "Soltar todo") eliges si van a la nota del acorde más cercana, si se mueven todas juntas (conservan la disonancia) o si se quedan quietas, y cuánto dura el deslizamiento.</p></section>
@@ -72,7 +68,7 @@
           <p>El piano tiene <b>una tecla ancha por nota, todas en la fila A</b> (A S D F G H J K L Ñ): las notas que pide tu parte y, para completar hasta 10, otras de la escala de la obra (Re♭ mayor), un poco más apagadas, para improvisar. Las notas que caen solo llegan a tus notas.</p>
           <div class="oct-pc"><div class="fila-teclas blancas">${"ASDFGHJKLÑ".split("").map(c => `<kbd>${c}</kbd>`).join("")}</div></div>
           <p class="muted small">De izquierda a derecha, de la nota más grave a la más aguda. Cada tecla del piano muestra su nota y su letra. Los números no tocan notas.</p>
-          <p><kbd>←</kbd> <kbd>→</kbd> bajar o subir octava · <kbd>8</kbd> normal · <kbd>9</kbd> notas fijas · <kbd>0</kbd> acorde automático · <kbd>Esc</kbd> soltar todo · <kbd>?</kbd> esta ayuda</p>
+          <p><kbd>←</kbd> <kbd>→</kbd> bajar o subir octava · <kbd>Esc</kbd> soltar todo · <kbd>?</kbd> esta ayuda</p>
         </div></section>
     </div>`), { clase: "ancha" });
   }
@@ -436,11 +432,9 @@
     const teclaDe = new Map();   // e.code → nota MIDI del piano visible
     let bucle = null;
     const voces = new Map();   // tecla → { v, m0, actual, fija }
-    // Cómo tocar: "normal" (suena mientras aprietas), "fijas" (un toque enciende, otro apaga), "auto" (suena el acorde de la partitura)
-    let toque = leer("v2:toque:" + id, leer("v2:mantener:" + id, false) ? "fijas" : "normal");
-    if (toque === "auto") toque = "normal";
-    let mantener = toque === "fijas", modo = leer("v2:modo:" + id, "cercana"), deslizT = leer("v2:desliz:" + id, 0.5);
-    let acordeFijo = false;
+    // Cada nota suena mientras mantienes apretada su tecla (no hay notas fijas ni acorde automático)
+    const mantener = false;
+    let modo = leer("v2:modo:" + id, "cercana"), deslizT = leer("v2:desliz:" + id, 0.5);
 
     caja.innerHTML = "";
     const opciones = el(`<div class="paso">
@@ -449,14 +443,10 @@
         <div class="grupo-oct"><button class="btn" data-r="oct-" title="Bajar una octava (←)">− oct</button><span data-r="oct"></span><button class="btn" data-r="oct+" title="Subir una octava (→)">+ oct</button></div></div>
     </div>`);
     const toques = el(`<div class="paso">
-      <div class="paso-cab"><span class="n">2</span><b>Cómo tocar</b></div>
-      <div class="fila"><div class="segmentado modos" role="radiogroup" aria-label="Cómo tocar">
-          <button data-v="normal" role="radio">🎹 Normal <kbd>8</kbd></button>
-          <button data-v="fijas" role="radio">📌 Notas fijas <kbd>9</kbd></button>
-          <button data-v="auto" role="radio">🎶 Acorde automático <kbd>0</kbd></button></div>
-        <button class="btn" data-r="soltar" title="Apaga todas las notas que suenan">✋ Soltar todo <kbd>Esc</kbd></button>
+      <div class="paso-cab"><span class="n">2</span><b>Tocar</b></div>
+      <div class="fila"><button class="btn" data-r="soltar" title="Apaga todas las notas que suenan">✋ Soltar todo <kbd>Esc</kbd></button>
         <button class="btn btn-glis" data-r="glis" title="Qué hacen las notas que siguen sonando cuando cambia el acorde"></button></div>
-      <p class="explica" data-r="explica"></p>
+      <p class="explica">La nota suena <b>mientras mantienes apretada</b> la tecla (mouse, dedo o teclado de la computadora) y se apaga al soltar.</p>
     </div>`);
     const estado = el(`<div class="estado-tec" aria-live="polite"></div>`);
     const piano = el(`<div class="piano" role="group" aria-label="Teclado"></div>`);
@@ -521,7 +511,7 @@
       const x = voces.get(m); if (!x) return;
       Motor.soltar(x.v.g, Motor.t, x.v.rel, x.v.fuentes); voces.delete(m); pintarTeclas();
     }
-    function soltarTodo() { [...voces.keys()].forEach(off); acordeFijo = false; if (toque === "auto") toque = "normal"; pintarOpciones(); }
+    function soltarTodo() { [...voces.keys()].forEach(off); pintarOpciones(); }
     // Glissando: se mueve el "detune" de cada fuente (en centésimas) desde donde está hasta la nota nueva
     function deslizar(x, destino, t0, dur) {
       const cents = (destino - x.m0) * 100;
@@ -552,25 +542,6 @@
       const dur = deslizT, t0 = Math.max(Motor.t, tAudio - dur);   // llega justo con el acorde nuevo
       destinos(lista, viejo, nuevo).forEach((d, i) => deslizar(lista[i], d, t0, Math.max(0.03, tAudio - t0)));
       setTimeout(pintarTeclas, Math.max(0, (tAudio - Motor.t) * 1000));
-    }
-    function sostenerAcorde(si) {
-      [...voces.entries()].filter(([, x]) => x.fija).forEach(([m]) => off(m));
-      acordeFijo = si;
-      if (si) {
-        const nombre = acordeEn(tObra(R.ahora())).nombre, a = parseAcorde(nombre);
-        // cada nota del acorde, en la tecla visible más cercana al centro del piano
-        const centro = (inicio + fin) / 2, cerca = pc => { let m = Math.round(centro - 6); while (((m % 12) + 12) % 12 !== pc) m++; return m; };
-        let ms = a ? [...new Set(a.intervalos.map(i => cerca((a.raiz + i) % 12)))] : [];
-        const carr = enCarriles();
-        if (carr && a) {
-          const tn = a.intervalos.map(i => (a.raiz + i) % 12); ms = carr.filter(m => tn.includes(m % 12));
-          // el bajo: la raíz más grave y su quinta (si está en el teclado)
-          if (perfil.preset === "bajo") { const r0 = carr.find(m => m % 12 === a.raiz); ms = r0 == null ? ms.slice(0, 1) : [r0, ...carr.filter(m => m === r0 + 7)]; }
-        }
-        if (perfil.preset === "bajo" && a && !carr) { let r0 = inicio; while (r0 % 12 !== a.raiz) r0++; ms = r0 + 7 <= fin ? [r0, r0 + 7] : r0 - 5 >= inicio ? [r0 - 5, r0] : [r0]; }
-        ms.sort((x, y) => x - y).forEach(m => on(m, true));
-      }
-      pintarOpciones();
     }
 
     // teclas
@@ -627,35 +598,17 @@
       });
       caja.style.setProperty("--color", ac.color || "#7c9cff");
     }
-    const EXPLICA = {
-      normal: "La nota suena <b>mientras mantienes apretada</b> la tecla (mouse, dedo o teclado de la computadora) y se apaga al soltar.",
-      fijas: "<b>Un toque enciende</b> la nota y queda sonando; <b>otro toque la apaga</b>. Arma un acorde nota por nota y deja las manos libres para los efectos.",
-      auto: "Suena <b>solo el acorde de la partitura</b> y se desliza al siguiente en cada cambio. Encima puedes tocar otras notas (suenan mientras aprietas).",
-    };
     function pintarOpciones() {
-      toques.querySelectorAll("[data-v]").forEach(b => { const si = b.dataset.v === toque; b.classList.toggle("on", si); b.setAttribute("aria-checked", si); });
-      r("explica", toques).innerHTML = EXPLICA[toque];
       r("modo", glis).value = modo; r("desliz", glis).value = deslizT; r("deslizv", glis).textContent = deslizT.toFixed(2).replace(".", ",") + " s";
       r("glis", toques).textContent = `🎚️ Cambio de acorde: ${{ cercana: "se deslizan", paralelo: "se mueven juntas", quieto: "quietas" }[modo]} · ${deslizT.toFixed(2).replace(".", ",")} s`;
     }
-    function ponerToque(v) {
-      if (v === toque && v !== "auto") return;
-      const antes = toque; toque = v;
-      if (antes === "auto" || v === "auto") sostenerAcorde(v === "auto");
-      mantener = v === "fijas";
-      if (v !== "fijas") [...voces.entries()].filter(([, x]) => !x.fija).forEach(([m]) => off(m));   // las notas fijas de antes se apagan
-      if (v !== "auto") guardar("v2:toque:" + id, v);
-      pintarOpciones();
-    }
-    toques.querySelectorAll("[data-v]").forEach(b => { b.onclick = () => ponerToque(b.dataset.v); });
     r("soltar", toques).onclick = () => soltarTodo();
     r("oct-", opciones).onclick = () => mover(-12); r("oct+", opciones).onclick = () => mover(12);
     function mover(d) {
-      const auto = toque === "auto"; soltarTodo();
+      soltarTodo();
       const o = lim(octavas + Math.sign(d), -3, 3); if (o === octavas || lo0 + 12 * o < 12 || hi0 + 12 * o > 108) return;
       octavas = o; inicio = lo0 + 12 * o; fin = hi0 + 12 * o; guardar("v2:octd:" + id, o); dibujarPiano();
       ponerSonido();   // la muestra de Square Woof más cercana al registro nuevo
-      if (auto) { toque = "auto"; sostenerAcorde(true); }
     }
     r("modo", glis).onchange = e => { modo = e.target.value; guardar("v2:modo:" + id, modo); pintarOpciones(); };
     r("glis", toques).onclick = () => abrirVentana("🎚️ Cuando cambia el acorde", glis, { alCerrar: () => glis.remove() });
@@ -697,9 +650,6 @@
       if (escribiendo(e) || e.repeat || e.ctrlKey || e.metaKey) return;
       if (e.key === "ArrowLeft" || e.key === "ArrowDown") { e.preventDefault(); return mover(-12); }
       if (e.key === "ArrowRight" || e.key === "ArrowUp") { e.preventDefault(); return mover(12); }
-      if (e.code === "Digit8") { ponerToque("normal"); return; }
-      if (e.code === "Digit9") { ponerToque(toque === "fijas" ? "normal" : "fijas"); return; }
-      if (e.code === "Digit0") { ponerToque(toque === "auto" ? "normal" : "auto"); return; }
       if (e.key === "Escape") { soltarTodo(); return; }
       if (e.key === "?") { ayudaTeclado(); return; }
       const m = teclaDe.get(e.code); if (m == null || e.altKey) return;
@@ -717,7 +667,7 @@
     // cada cuadro: glissando a tiempo con el cambio de acorde, guía MIDI y marcas
     let acordeActual = acordeEn(tObra(R.ahora())).nombre, agendado = null;
     return {
-      ayuda: "A–Ñ teclas blancas · Q–O negras · ← → octava · 8 normal · 9 notas fijas · 0 acorde automático · Esc soltar todo · ? ayuda",
+      ayuda: "A–Ñ teclas blancas · Q–O negras · ← → octava · Esc soltar todo · ? ayuda",
       cuadro(t, dt, corriendo) {
         auto.cuadro(t);
         const tc = tObra(t), ac = acordeEn(tc);
