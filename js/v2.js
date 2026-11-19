@@ -84,9 +84,9 @@
     { id: "teclado-2", titulo: "Teclado 2", sub: "Arpegio · notas agudas y pedal", icono: "🎹" },
     { id: "teclado-3", titulo: "Teclado 3", sub: "Bajo/medio · el bajo", icono: "🎹" },
     { id: "teclado-4", titulo: "Teclado 4", sub: "Bajo/medio · acordes", icono: "🎹" },
+    { id: "guitarra", titulo: "Teclado líder", sub: "La melodía · Square Woof", icono: "🎹" },
     { id: "bateria", titulo: "Batería", sub: "Kit de FL o base 808", icono: "🥁" },
     { id: "ambiente-1", titulo: "Ambiente", sub: "Base grave · colores", icono: "🌊" },
-    { id: "guitarra", titulo: "Guitarra", sub: "Opcional · automática o real", icono: "🎸" },
     { id: "director", titulo: "Cronómetro", sub: "Reloj grande y control", icono: "⏱️" },
     { id: "ambiente-2", titulo: "Ambiente extra · Ruido", sub: "Opcional", icono: "🌫️", extra: true },
     { id: "ambiente-3", titulo: "Ambiente extra · Brillo", sub: "Opcional", icono: "✨", extra: true },
@@ -432,8 +432,10 @@
     return [lo, hi];
   }
   async function crearTeclado(perfil, caja) {
-    const id = perfil.id, k = new Teclado(perfil.preset), pista = await pistaDe(id);
-    const defFL = P.sonidos && P.sonidos[id];
+    // el "Teclado líder" usa el perfil de la guitarra (id "guitarra"): toca la melodía con preset lead
+    const id = perfil.id, k = new Teclado(perfil.preset || "lead"), pista = await pistaDe(id);
+    const defFL0 = P.sonidos && P.sonidos[id];
+    const defFL = defFL0 && !defFL0.archivo && defFL0.nota ? defFL0.nota : defFL0;   // la guitarra guarda su sample en .nota
     const desplaz = defFL && defFL.real != null ? defFL.base - defFL.real : 0;   // los teclados bajos se tocan una octava arriba de cómo suenan
     // con carriles, el piano son solo las notas de tu parte, una por tecla en la fila A S D F…
     const requeridas = pista ? [...new Set(pista.notas.map(n => n.m + desplaz))].sort((a, b) => a - b) : [];
@@ -693,7 +695,7 @@
     }
 
     // efectos
-    const auto = efectosAuto(perfil, k, { dist: "dist", filtro: "filtro", reverb: "reverb", vol: "vol" }, () => ds.forEach(d => d.mostrar()));
+    const auto = efectosAuto(perfil, k, mapaEfectosTeclado(perfil), () => ds.forEach(d => d.mostrar()));
     const ds = [deslizador("Distorsión", k, "dist", auto), deslizador("Brillo", k, "filtro", auto), deslizador("Reverb", k, "reverb", auto),
       deslizador("Volumen", k, "vol", auto, { max: 1.5 })];
     const ba = botonAuto(auto, ds);
@@ -949,48 +951,6 @@
     };
   }
 
-  /* ============================== guitarra (opcional) ============================== */
-  async function crearGuitarraRol(perfil, caja) {
-    const gtr = new Guitarra(), pista = await pistaDe("guitarra"), def = P.sonidos && P.sonidos.guitarra && P.sonidos.guitarra.nota;
-    if (def) { try { gtr.buffer = await Motor.cargarURL(def.archivo); gtr.base = def.base; } catch (e) { console.warn(e.message); } }
-    let modo = leer("v2:gtrmodo", "auto"), vista = null;
-    caja.innerHTML = "";
-    const fila = el(`<div class="fila opciones"><div class="segmentado">
-      <button data-v="auto">🤖 Automática</button><button data-v="real">🎸 Guitarrista real</button></div></div>`);
-    const cajaAuto = el(`<div class="g-auto"><p class="grande-txt">La melodía de la guitarra suena sola desde esta laptop, con los sonidos de FL Studio.</p>
-      <p class="muted small">Si hay guitarrista, cambia a <b>Guitarrista real</b>: esta laptop calla y muestra la partitura.</p></div>`);
-    const cajaReal = el(`<div class="g-real" hidden><p class="muted small">Tu parte en partitura y tablatura; el compás marcado sigue al cronómetro.
-      <a href="guitarra.html" target="_blank" rel="noopener">Abrir entera e imprimir ↗</a></p><div class="scroller"><div class="hoja"></div></div></div>`);
-    const fx = el(`<div class="efectos"></div>`);
-    caja.append(fila, cajaAuto, cajaReal, fx);
-    const auto = efectosAuto(perfil, gtr, { fuzz: "fuzz", tono: "tono", reverb: "reverb", vol: "vol" }, () => ds.forEach(d => d.mostrar()));
-    const ds = [deslizador("Fuzz", gtr, "fuzz", auto), deslizador("Tono", gtr, "tono", auto), deslizador("Reverb", gtr, "reverb", auto), deslizador("Volumen", gtr, "vol", auto, { max: 1.5 })];
-    fx.append(botonAuto(auto, ds).b, ...ds);
-    // notas que empiezan juntas se tocan juntas (rasgueo)
-    let grupo = null;
-    const tocar = programador(pista, (n, at) => {
-      if (grupo && Math.abs(grupo.at - at) < 0.012) { grupo.ms.push(n.m); return; }
-      grupo = { at, ms: [n.m], v: n.v, d: n.d };
-      const g = grupo; setTimeout(() => gtr.tocarNotas(g.ms, { vel: g.v, t: g.at, dur: g.d }), 0);
-    });
-    function ponerModo(v) {
-      modo = v; guardar("v2:gtrmodo", v);
-      fila.querySelectorAll("[data-v]").forEach(x => x.classList.toggle("on", x.dataset.v === v));
-      cajaAuto.hidden = v !== "auto"; cajaReal.hidden = v !== "real"; fx.hidden = v !== "auto";
-      if (v === "real") { gtr.apagar(); if (!vista && window.VistaGuitarra) window.VistaGuitarra.crear($(".hoja", cajaReal), { horizontal: true, escala: 0.85, scroller: $(".scroller", cajaReal) }).then(x => { vista = x; }).catch(e => console.warn(e)); }
-    }
-    fila.querySelectorAll("[data-v]").forEach(x => { x.onclick = () => ponerModo(x.dataset.v); });
-    ponerModo(modo);
-    return {
-      ayuda: "",
-      cuadro(t, dt, corriendo) {
-        if (modo === "auto") { auto.cuadro(t); tocar(t, corriendo); }
-        else { tocar(0, false); if (vista) vista.seguir(tObra(t)); }
-      },
-      destruir() { gtr.apagar(); },
-    };
-  }
-
   /* ============================== cronómetro (director) ============================== */
   async function crearDirector(perfil, caja) {
     caja.innerHTML = "";
@@ -1038,7 +998,7 @@
     { id: "teclado-4", tipo: "teclado", nombre: "Teclado 4", sub: "acordes", icono: "🎹", def: "teclado-4", son: "square-woof" },
     { id: "ambiente-1", tipo: "ambiente", nombre: "Ambiente", sub: "base grave", icono: "🌊", def: "ambiente-1" },
     { id: "bateria", tipo: "bateria", nombre: "Batería", sub: "", icono: "🥁", def: "fl" },
-    { id: "guitarra", tipo: "guitarra", nombre: "Guitarra", sub: "melodía", icono: "🎸", def: "gtr" },
+    { id: "guitarra", tipo: "teclado", nombre: "Teclado líder", sub: "la melodía", icono: "🎹", def: "gtr-nota", son: "square-woof" },
   ];
   const BASE_ORQ = ["bateria", "teclado-3", "ambiente-1"];
   // Samples con altura (los de FL Studio). real = la nota MIDI que suena de verdad.
@@ -1093,6 +1053,9 @@
     Motor.liberar(g, t + Math.max(0.04, dur), 0.5, [f]);
   }
   const MAPA_TEC = { dist: "dist", filtro: "filtro", reverb: "reverb", vol: "vol" };
+  // el teclado líder sigue la fila "guitarra" de la tabla de efectos: fuzz → distorsión, tono → brillo
+  const MAPA_LIDER = { dist: "fuzz", filtro: "tono", reverb: "reverb", vol: "vol" };
+  function mapaEfectosTeclado(perfil) { return perfil.id === "guitarra" ? MAPA_LIDER : MAPA_TEC; }
   const grupoGuitarra = gtr => { let g = null; return (n, at) => { if (g && Math.abs(g.at - at) < 0.012) { g.ms.push(n.m); return; } g = { at, ms: [n.m], v: n.v, d: n.d }; const gg = g; setTimeout(() => gtr.tocarNotas(gg.ms, { vel: gg.v, t: gg.at, dur: gg.d }), 0); }; };
 
   // Crea una parte de la orquesta con el sonido elegido → { inst, efx, prog, cuadro?, destruir, octavas }
@@ -1135,7 +1098,8 @@
       // un sample de FL: se toca con la cadena de efectos de un teclado
       const mu0 = MUESTRAS.find(m => m.id === son) || MUESTRAS[0], med = mediana(pista.notas);
       const mu = mu0.muestras ? mu0.muestras.slice().sort((a, b) => Math.abs(a.real - med) - Math.abs(b.real - med))[0] : mu0;
-      inst = new Teclado(def.tipo === "ambiente" ? "pad" : def.tipo === "guitarra" ? "lead" : perfil.preset);
+      inst = new Teclado(def.tipo === "ambiente" ? "pad" : def.tipo === "guitarra" ? "lead" : perfil.preset || "lead");
+      if (def.id === "guitarra") mapa = MAPA_LIDER;
       const s = await cargarMuestraOrq(mu.archivo);
       // igualar el volumen con el sample que la parte usa normalmente
       const propio = MUESTRAS.find(m => m.id === def.def);
@@ -1221,7 +1185,7 @@
         <button class="chip" data-r="otros" title="Todos menos tu rol">Todos menos yo</button></div>
       <div class="fila orq-atajos"><span class="muted small">Sonidos de todos:</span>
         <button class="chip" data-r="son-fl" title="Cada instrumento con su sample de la partitura, hecho en FL Studio">🎛️ FL Studio (los tuyos)</button>
-        <button class="chip" data-r="son-sint" title="Batería, ambiente y guitarra con el sonido sintetizado en el navegador (los teclados siguen con Square Woof)">🧪 Sintetizados en el navegador</button></div>
+        <button class="chip" data-r="son-sint" title="Batería y ambiente con el sonido sintetizado en el navegador (los teclados siguen con Square Woof)">🧪 Sintetizados en el navegador</button></div>
       <ul class="orq-lista"></ul>
     </div>`);
     const r = x => $(`[data-r="${x}"]`, caja), lista = $(".orq-lista", caja), filas = {};
@@ -1306,7 +1270,7 @@
     colAhora.append(ahoraUI.caja, crearBarraReloj(id === "director"));
     if (actual && actual.destruir) actual.destruir();
     orquesta().rol(id);
-    const fab = id === "director" ? crearDirector : id === "bateria" ? crearBateria : id === "guitarra" ? crearGuitarraRol : id.startsWith("ambiente") ? crearAmbiente : crearTeclado;
+    const fab = id === "director" ? crearDirector : id === "bateria" ? crearBateria : id.startsWith("ambiente") ? crearAmbiente : crearTeclado;
     actual = await fab(perfil, inst);
     $("#ayuda").textContent = actual.ayuda || "";
   }

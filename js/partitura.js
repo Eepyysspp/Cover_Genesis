@@ -193,7 +193,7 @@ window.PARTITURA = {
         "teclado-2": "Arpegio con el teclado 1: tus notas son las agudas: La♭, Si♭, Do y Re♭.",
         "teclado-1": "Arpegio con el teclado 2: tus notas son las graves: Re♭, Fa y Sol♭.",
         todos: "Clímax.",
-        guitarra: "Variante de la melodía con Fa agudo. En 1:54 haz un pequeño desfase: atrásate un poco. Fuzz alto.",
+        guitarra: "Variante de la melodía con Fa agudo. En 1:54 haz un pequeño desfase: atrásate un poco. Distorsión alta.",
         bateria: "CON PLATILLOS (E), o MURO (R) si quieres más.",
         ambiente: "Rojo al máximo. Destellos con la batería.",
       },
