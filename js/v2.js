@@ -2,7 +2,7 @@
    Reutiliza la partitura (js/partitura.js), los sonidos de FL Studio (sonidos/fl/), las pistas MIDI y el motor de
    audio (js/audio.js). El reloj está en js/v2_reloj.js (en red con servidor.py, o local). */
 (function () {
-  const { Motor, Guitarra, Bateria, Base808, ATAQUES_808, Teclado, Ambiente, PADS, PATRONES, VEL_ACENTO } = window.Audio2;
+  const { Motor, Teclado, Ambiente } = window.Audio2;
   const { P, PERFILES, DURACION, SECCIONES, SEG_POR_COMPAS, fmt, seccionEn, acordeEn, toca, proximoCambio, instrucciones,
     efectosEn, guiaXYEn, parseAcorde, guardar, leer } = window.G;
   const R = window.RelojV2;
@@ -116,13 +116,6 @@
       for (let i = 0; i < xf; i++) { const k = i / xf, j = fin - xf + i; b[j] = a[j] * Math.cos(k * Math.PI / 2) + a[ini - xf + i] * Math.sin(k * Math.PI / 2); }
     }
     return { buffer: nuevo, bucle: [ini / sr, fin / sr] };
-  }
-  async function cargarBateria(b) {
-    const defs = (P.sonidos && P.sonidos.bateria) || {};
-    await Promise.all(Object.entries(defs).map(async ([pad, def]) => {
-      try { b.samples[pad] = def.capas ? await Motor.cargarPad(def) : await Motor.cargarURL(typeof def === "string" ? def : def.archivo); }
-      catch (e) { console.warn("batería: sin", pad, e.message); }
-    }));
   }
   let pistasProm = null;
   const pistas = () => (pistasProm = pistasProm || window.MIDI.pistasDeLaObra());
@@ -747,7 +740,7 @@
     };
   }
 
-  /* ============================== recuadro X/Y (ambiente y base 808) ============================== */
+  /* ============================== recuadro X/Y (ambiente) ============================== */
   function crearXY(perfil, { alMover, etiquetas = ["limpio", "distorsión", "intenso ↑"] }) {
     const caja = el(`<div class="xy-caja">
       <div class="xy" tabindex="0"><span class="et a">${etiquetas[0]}</span><span class="et b">${etiquetas[1]}</span><span class="et c">${etiquetas[2]}</span>
@@ -884,10 +877,9 @@
     { id: "teclado-3", tipo: "teclado", nombre: "Teclado 3", sub: "el bajo", icono: "🎹", def: "teclado-3", son: "square-woof" },
     { id: "teclado-4", tipo: "teclado", nombre: "Teclado 4", sub: "acordes", icono: "🎹", def: "teclado-4", son: "square-woof" },
     { id: "ambiente-1", tipo: "ambiente", nombre: "Ambiente", sub: "base grave", icono: "🌊", def: "ambiente-1" },
-    { id: "bateria", tipo: "bateria", nombre: "Batería", sub: "", icono: "🥁", def: "fl" },
     { id: "guitarra", tipo: "teclado", nombre: "Teclado líder", sub: "la melodía", icono: "🎹", def: "gtr-nota", son: "square-woof" },
   ];
-  const BASE_ORQ = ["bateria", "teclado-3", "ambiente-1"];
+  const BASE_ORQ = ["teclado-3", "ambiente-1"];
   // Samples con altura (los de FL Studio). real = la nota MIDI que suena de verdad.
   const MUESTRAS = (() => {
     const s = P.sonidos || {}, d = (k, nombre) => s[k] && { id: k, nombre, archivo: s[k].archivo, real: s[k].real != null ? s[k].real : s[k].base };
@@ -902,9 +894,7 @@
   const sonPropio = def => def.son || def.def;   // el sonido de la partitura de cada parte
   function opcionesDe(tipo) {
     if (tipo === "teclado") return [["square-woof", "Square Woof · FL"]];
-    if (tipo === "bateria") return [["fl", "Batería · FL Studio"], ["sint", "Batería sintetizada"], ["808", "Base 808 distorsionada"]];
     const ms = MUESTRAS.map(m => [m.id, m.nombre]);
-    if (tipo === "guitarra") return [["gtr", "Guitarra eléctrica · FL"], ["gtr-sint", "Guitarra sintetizada"], ...ms.filter(([v]) => v !== "gtr-nota"), ["sint", "Sintetizado"]];
     return [...ms, ["sint", tipo === "ambiente" ? "Sintetizado (drone suave)" : "Sintetizado"]];
   }
   // Volumen de cada sample (para que al cambiarlo la parte no suba ni baje de golpe)
@@ -943,7 +933,6 @@
   // el teclado líder sigue la fila "guitarra" de la tabla de efectos: fuzz → distorsión, tono → brillo
   const MAPA_LIDER = { dist: "fuzz", filtro: "tono", reverb: "reverb", vol: "vol" };
   function mapaEfectosTeclado(perfil) { return perfil.id === "guitarra" ? MAPA_LIDER : MAPA_TEC; }
-  const grupoGuitarra = gtr => { let g = null; return (n, at) => { if (g && Math.abs(g.at - at) < 0.012) { g.ms.push(n.m); return; } g = { at, ms: [n.m], v: n.v, d: n.d }; const gg = g; setTimeout(() => gtr.tocarNotas(gg.ms, { vel: gg.v, t: gg.at, dur: gg.d }), 0); }; };
 
   // Crea una parte de la orquesta con el sonido elegido → { inst, efx, prog, cuadro?, destruir, octavas }
   async function crearParteOrq(def, son, escala) {
@@ -952,32 +941,7 @@
     const parte = { id: def.id, son, golpe: 0, octavas: 0 };
     const aviso = f => (n, at) => { parte.golpe = performance.now() + Math.max(0, at - Motor.t) * 1000; f(n, at); };
     let inst, alNota, mapa = MAPA_TEC;
-    if (def.tipo === "bateria" && son === "808") {
-      inst = new Base808(); mapa = {}; let ultimo = 0;
-      parte.cuadro = (t, corriendo) => {
-        const tc = tObra(t);
-        if (performance.now() - ultimo > 150) {
-          ultimo = performance.now();
-          const g = guiaXYEn(tc, perfil);
-          if (g) { inst.p.x = g.x; inst.p.y = Math.max(0.15, g.y); inst.aplicar(); }
-          const debe = corriendo && t >= 0 && t < DURACION && (!g || g.y >= 0.03);
-          if (debe && !inst.encendido) { inst.encender(acordeEn(tc).nombre); parte.golpe = performance.now(); }
-          else if (!debe && inst.encendido) inst.apagar();
-          if (inst.encendido) parte.golpe = performance.now();
-        }
-        inst.seguir(t, corriendo && t >= 0 && t < DURACION);
-      };
-      parte.destruir = () => { inst.apagar(); try { inst.o1.stop(Motor.t + 0.6); inst.o2.stop(Motor.t + 0.6); } catch (e) {} };
-    } else if (def.tipo === "bateria") {
-      inst = new Bateria();
-      if (son === "fl") await cargarBateria(inst); else inst.ponerKit("sintetizado");
-      alNota = (n, at) => inst.tocar(window.MIDI.padDeNota(n.m), at, n.v);
-      mapa = { vol: "vol", reverb: "reverb", drive: "drive" };
-    } else if (def.tipo === "guitarra" && (son === "gtr" || son === "gtr-sint")) {
-      inst = new Guitarra(); const d = P.sonidos.guitarra && P.sonidos.guitarra.nota;
-      if (son === "gtr" && d) { try { inst.buffer = await Motor.cargarURL(d.archivo); inst.base = d.base; } catch (e) { console.warn(e.message); } }
-      alNota = grupoGuitarra(inst); mapa = { fuzz: "fuzz", tono: "tono", reverb: "reverb", vol: "vol" };
-    } else if (son === "sint" && def.tipo === "ambiente") {
+    if (son === "sint" && def.tipo === "ambiente") {
       inst = new Ambiente("drone"); alNota = (n, at) => inst.nota(n.m, n.v, at, n.d); mapa = {};
     } else if (son === "sint") {
       inst = new Teclado(def.tipo === "guitarra" ? "lead" : perfil.preset); alNota = (n, at) => inst.nota(n.m, n.v * volNota(def.id, n.m), at, n.d);
@@ -1068,11 +1032,11 @@
         <label class="desliz"><span>Volumen</span><input type="range" min="0" max="1.2" step="0.01" data-r="vol"><b data-r="volv"></b></label></div>
       <div class="fila orq-atajos"><span class="muted small">Elegir:</span>
         <button class="chip" data-r="todos">Todos</button><button class="chip" data-r="ninguno">Ninguno</button>
-        <button class="chip" data-r="base" title="Batería, Teclado 3 (bajo) y Ambiente">Solo la base</button>
+        <button class="chip" data-r="base" title="Teclado 3 (el bajo) y Ambiente">Solo la base</button>
         <button class="chip" data-r="otros" title="Todos menos tu rol">Todos menos yo</button></div>
       <div class="fila orq-atajos"><span class="muted small">Sonidos de todos:</span>
         <button class="chip" data-r="son-fl" title="Cada instrumento con su sample de la partitura, hecho en FL Studio">🎛️ FL Studio (los tuyos)</button>
-        <button class="chip" data-r="son-sint" title="Batería y ambiente con el sonido sintetizado en el navegador (los teclados siguen con Square Woof)">🧪 Sintetizados en el navegador</button></div>
+        <button class="chip" data-r="son-sint" title="El ambiente con el sonido sintetizado en el navegador (los teclados siguen con Square Woof)">🧪 Sintetizados en el navegador</button></div>
       <ul class="orq-lista"></ul>
     </div>`);
     const r = x => $(`[data-r="${x}"]`, caja), lista = $(".orq-lista", caja), filas = {};
@@ -1095,7 +1059,7 @@
     r("base").onclick = () => orq.ponerVarias(BASE_ORQ);
     r("otros").onclick = () => orq.ponerVarias(todos.filter(id => id !== orq.propio));
     // todos los instrumentos a la vez: los samples de FL Studio (los de la partitura) o los sintetizados
-    const SINT = { bateria: "sint", guitarra: "gtr-sint" };
+    const SINT = {};
     r("son-fl").onclick = () => orq.ponerSonidos(Object.fromEntries(orq.PARTES.map(d => [d.id, sonPropio(d)])));
     r("son-sint").onclick = () => orq.ponerSonidos(Object.fromEntries(orq.PARTES.map(d => [d.id, SINT[d.tipo] || "sint"])));
     r("on").onclick = () => orq.encender(!orq.activa);
