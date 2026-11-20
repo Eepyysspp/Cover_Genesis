@@ -23,7 +23,7 @@ window.PARTITURA = {
   artista: "Robin Callaway",
   album: "i saw an angel in the mirror (2024)",
   formato: "Orquesta de laptops + guitarra",
-  duracion: "2:55",
+  duracion: "7:37.85",
   bpm: 130,
   compas: 4,
   compasesPorAcorde: 1,
@@ -42,7 +42,7 @@ window.PARTITURA = {
   // (compás n = (n − 1) × 1,846 s) y "tocan" dice quién tiene notas en su pista en ese tramo.
   // Si cambias una pista MIDI, revisa aquí quién toca.
   secciones: [
-    // ============================== INTRO ==============================
+    // ============================== PRIMERA MITAD: INTRO · DESARROLLO · OUTRO ==============================
     {
       nombre: "Intro · Distorsión ambiente",
       inicio: "0:00",                      // compases 1–2
@@ -113,7 +113,6 @@ window.PARTITURA = {
         bateria: "CON PLATILLOS (E).",
       },
     },
-    // ============================== DESARROLLO ==============================
     {
       nombre: "Desarrollo · Sin platillos",
       inicio: "1:02.77",                   // compases 35–38
@@ -198,7 +197,6 @@ window.PARTITURA = {
         ambiente: "Rojo al máximo. Destellos con la batería.",
       },
     },
-    // ============================== OUTRO ==============================
     {
       nombre: "Outro · Medios",
       inicio: "2:01.85",                   // compases 67–74
@@ -214,44 +212,256 @@ window.PARTITURA = {
     },
     {
       nombre: "Outro · Dos líneas",
-      inicio: "2:16.62",                   // compases 75–82
+      inicio: "2:16.62",    // compases 75–82
       acordes: ["Bbm7", "Gbmaj7"], compasesPorAcorde: 2,
       colores: ["#5b247a", "#3a1c71"],
       tocan: ["bateria", "teclado-1", "teclado-2", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-3", "ambiente-4"],
       instrucciones: {
-        todos: "Sale la melodía, vuelve el pedal en Fa. Las líneas bajas empiezan a bajar de volumen.",
-        "teclado-2": "PEDAL F otra vez (hasta 2:48) y, encima, tus notas del arpegio.",
-        guitarra: "Silencio. Vuelves solo para el final (2:48).",
+        todos: "Sale la melodía, vuelve el pedal en Fa. Las líneas bajas bajan de volumen.",
+        "teclado-2": "PEDAL F otra vez (tu tecla más aguda) y, encima, tus notas del arpegio.",
+        guitarra: "Silencio.",
         "ambiente-3": "PEDAL F otra vez.",
         "ambiente-principal": "Empieza a desvanecerse poco a poco.",
         teclados: "Baja el volumen de a poco.",
       },
     },
+    // ============================== ESPEJO: OUTRO 2 · DESARROLLO 2 (al revés) ==============================
     {
-      nombre: "Outro · Sin batería",
-      inicio: "2:31.38",                   // compases 83–91
+      nombre: "Outro · Dos líneas 2",
+      inicio: "2:31.38",    // compases 83–90
+      acordes: ["Bbm7", "Gbmaj7"], compasesPorAcorde: 2,
+      colores: ["#5b247a", "#3a1c71"],
+      tocan: ["bateria", "teclado-1", "teclado-2", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-3", "ambiente-4"],
+      instrucciones: {
+        todos: "La obra vuelve sobre sus pasos: sigue el pedal en Fa y las líneas bajas VUELVEN A SUBIR de volumen.",
+        "teclado-2": "PEDAL F (tu tecla más aguda) y, encima, tus notas del arpegio.",
+        guitarra: "Silencio.",
+        "ambiente-3": "PEDAL F.",
+        "ambiente-principal": "Vuelve a crecer poco a poco.",
+        teclados: "Sube el volumen de a poco.",
+      },
+    },
+    {
+      nombre: "Outro · Medios 2",
+      inicio: "2:46.15",    // compases 91–98
+      acordes: ["Bbm7", "Gbmaj7"], compasesPorAcorde: 2,
+      colores: ["#c0392b", "#9b2c6f"],
+      tocan: ["guitarra", "bateria", "teclado-1", "teclado-2", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-4"],
+      instrucciones: {
+        "teclado-2": "Arpegio con el teclado 1: tus notas son las agudas: La♭, Si♭, Do y Re♭.",
+        "teclado-1": "Arpegio con el teclado 2: tus notas son las graves: Re♭, Fa y Sol♭.",
+        todos: "Siguen todos; vuelve la melodía con Fa.",
+        bateria: "CON PLATILLOS (E).",
+      },
+    },
+    {
+      nombre: "Desarrollo 2 · Teclados altos",
+      inicio: "3:00.92",    // compases 99–106
+      acordes: ["Bbm7", "Gbmaj7"], compasesPorAcorde: 2,
+      colores: ["#ff4e50", "#ff7a3c"],
+      tocan: ["guitarra", "bateria", "teclado-1", "teclado-2", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-4"],
+      instrucciones: {
+        "teclado-2": "Arpegio con el teclado 1: tus notas son las agudas: La♭, Si♭, Do y Re♭.",
+        "teclado-1": "Arpegio con el teclado 2: tus notas son las graves: Re♭, Fa y Sol♭.",
+        todos: "Clímax otra vez.",
+        guitarra: "Variante de la melodía con Fa agudo. Distorsión alta.",
+        bateria: "CON PLATILLOS (E), o MURO (R) si quieres más.",
+        ambiente: "Rojo al máximo.",
+      },
+    },
+    {
+      nombre: "Desarrollo 2 · Muro",
+      inicio: "3:15.69",    // compases 107–114
+      acordes: ["Bbm7", "Gbmaj7"], compasesPorAcorde: 2,
+      colores: ["#b0245e", "#c0392b"],
+      tocan: ["guitarra", "bateria", "teclado-1", "teclado-2", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-4"],
+      instrucciones: {
+        "teclado-2": "Arpegio con el teclado 1: tus notas son las agudas: La♭, Si♭, Do y Re♭.",
+        "teclado-1": "Arpegio con el teclado 2: tus notas son las graves: Re♭, Fa y Sol♭.",
+        todos: "Muro: acordes de DOS compases.",
+        teclados: "Distorsión ≈ 20 %.",
+        bateria: "CON PLATILLOS (E).",
+        ambiente: "Ambiente y luces todavía en rojo.",
+      },
+    },
+    {
+      nombre: "Desarrollo 2 · Bisagra en Sol♭",
+      inicio: "3:30.46",    // compases 115–117
+      acordes: ["Gbmaj7"], compasesPorAcorde: 4,
+      colores: ["#6a3fb0"],
+      tocan: ["guitarra", "bateria", "teclado-1", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-4"],
+      instrucciones: {
+        "teclado-2": "Silencio: en esta parte solo toca el teclado 1.",
+        todos: "G♭ se alarga TRES compases: el muro se desarma y la distorsión baja.",
+        guitarra: "Sostén el Do agudo.",
+      },
+    },
+    {
+      nombre: "Desarrollo 2 · Limpio",
+      inicio: "3:36.00",    // compases 118–122
+      acordes: ["Bbm7", "Gbmaj7"],
+      colores: ["#3b3f8f", "#2c4a9a"],
+      tocan: ["guitarra", "bateria", "teclado-1", "teclado-2", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-4"],
+      instrucciones: {
+        todos: "Todo SIN distorsión. La melodía otra vez (solo).",
+        teclados: "Distorsión a 0.",
+        guitarra: "SOLO: la melodía, A♭–D♭–C…",
+        "teclado-2": "Sigue el arpegio con el teclado 1: La♭ y Do.",
+        bateria: "SIN PLATILLOS (W).",
+        "ambiente-3": "Silencio.",
+      },
+    },
+    {
+      nombre: "Desarrollo 2 · Platillos",
+      inicio: "3:45.23",    // compases 123–126
+      acordes: ["Bbm7", "Gbmaj7"],
+      colores: ["#7a1f7c", "#6b2a8a"],
+      tocan: ["bateria", "teclado-1", "teclado-2", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-3", "ambiente-4"],
+      instrucciones: {
+        bateria: "CON PLATILLOS (E).",
+        ambiente: "Baja la intensidad (Y) de a poco.",
+        "teclado-2": "Vuelve el Fa agudo largo (pedal).",
+        guitarra: "Silencio.",
+        teclados: "La distorsión baja de a poco.",
+      },
+    },
+    {
+      nombre: "Desarrollo 2 · Sin platillos",
+      inicio: "3:52.62",    // compases 127–130
+      acordes: ["Bbm7", "Gbmaj7"],
+      colores: ["#5b247a", "#4a206e"],
+      tocan: ["bateria", "teclado-1", "teclado-2", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-3", "ambiente-4"],
+      instrucciones: {
+        todos: "Sin platillos. El arpegio medio en notas largas. Después viene la improvisación.",
+        bateria: "SIN PLATILLOS (W).",
+        "teclado-1": "Notas largas: Fa sobre B♭m7, Sol♭ sobre G♭.",
+        "teclado-2": "Sigue el Fa agudo.",
+        guitarra: "Silencio.",
+      },
+    },
+    // ============================== IMPROVISACIÓN ==============================
+    {
+      nombre: "Improvisación",
+      inicio: "4:00.00",    // compases 131–195 (2:00)
+      libre: true,                          // sin notas que caen: cada uno improvisa
+      acordes: ["Bbm7", "Gbmaj7"], compasesPorAcorde: 2,
+      colores: ["#6b2a8a", "#b0245e"],
+      tocan: ["guitarra", "teclado-1", "teclado-2", "teclado-3", "teclado-4", "ambiente-1", "ambiente-3"],
+      instrucciones: {
+        todos: "IMPROVISACIÓN (2 min): B♭m7 ↔ G♭maj7, dos compases cada uno. No caen notas: toca libre con tus teclas (las del acorde suenan seguras). Escucha y deja espacio.",
+        "teclado-3": "Puedes sostener la raíz (Si♭ / Sol♭) como base o improvisar en lo grave.",
+        "teclado-4": "Puedes sostener los acordes o improvisar sobre ellos.",
+        ambiente: "Los efectos suben y bajan solos, entre el desarrollo y el outro: sigue la guía X/Y.",
+      },
+    },
+    // ============================== INTRO 2 (al revés) ==============================
+    {
+      nombre: "Intro 2 · Pedal F",
+      inicio: "6:00.00",    // compases 196–207
+      acordes: ["Bbm7", "Gbmaj7"],
+      colores: ["#4b2ca0", "#3a1c71"],
+      tocan: ["bateria", "teclado-1", "teclado-2", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-3", "ambiente-4"],
+      instrucciones: {
+        todos: "Intro al revés: pedal agudo en Fa sobre los dos acordes.",
+        "teclado-2": "PEDAL F: mantén el Fa agudo (tu tecla más aguda) y con la otra mano sigue tus notas del arpegio.",
+        "ambiente-3": "PEDAL F: Fa agudo sostenido.",
+        guitarra: "Silencio.",
+        bateria: "CON PLATILLOS (E).",
+      },
+    },
+    {
+      nombre: "Intro 2 · Platillos y distorsión",
+      inicio: "6:22.15",    // compases 208–211
+      acordes: ["Bbm7", "Gbmaj7"],
+      colores: ["#2a2f8f", "#3a2f9a"],
+      tocan: ["guitarra", "bateria", "teclado-1", "teclado-2", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-4"],
+      instrucciones: {
+        "teclado-1": "Sigue el arpegio con el teclado 2: tus notas son las graves: Re♭, Fa y Sol♭.",
+        "teclado-2": "Sigue el arpegio con el teclado 1: tus notas son las agudas: La♭, Si♭, Do y Re♭.",
+        todos: "Vuelve la melodía; la distorsión de los teclados medios baja de a poco.",
+        teclados: "Baja la DISTORSIÓN hasta casi limpio.",
+        "teclado-3": "Bajo limpio.",
+        guitarra: "Arriba alternas Do y Mi♭ (ver tu pista MIDI).",
+        bateria: "CON PLATILLOS (E).",
+      },
+    },
+    {
+      nombre: "Intro 2 · Guitarra y teclados",
+      inicio: "6:29.54",    // compases 212–219
+      acordes: ["Bbm7", "Gbmaj7"],
+      colores: ["#1d2b64", "#23307a"],
+      tocan: ["guitarra", "bateria", "teclado-1", "teclado-2", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-4"],
+      instrucciones: {
+        todos: "Todo limpio: un acorde por compás, B♭m7 ↔ G♭maj7. Al final de esta parte salen la melodía y los teclados.",
+        guitarra: "Melodía: A♭–D♭–C… (ver tu pista MIDI).",
+        "teclado-1": "Arpegio A MEDIAS con el teclado 2: tú tocas el Fa (y el Re♭ largo sobre G♭).",
+        "teclado-2": "Arpegio A MEDIAS con el teclado 1: entre sus Fa tocas el Si♭ y el La♭.",
+        "teclado-3": "Raíz del acorde, una nota por compás (Si♭ / Sol♭).",
+        "teclado-4": "Colchón: los acordes completos, una vez por compás.",
+        bateria: "SIN PLATILLOS (W).",
+      },
+    },
+    {
+      nombre: "Intro 2 · Ritmo",
+      inicio: "6:44.31",    // compases 220–227
+      acordes: ["Db"], compasesPorAcorde: 4,
+      colores: ["#101a4a"],
+      tocan: ["bateria", "ambiente-1", "ambiente-2"],
+      instrucciones: {
+        todos: "Salen los teclados: queda el drone en Re♭.",
+        bateria: "SIN PLATILLOS (W): bombo y caja.",
+        ambiente: "Drone en Re♭. Colores azules oscuros.",
+      },
+    },
+    {
+      nombre: "Intro 2 · Distorsión ambiente",
+      inicio: "6:59.08",    // compases 228–229
+      acordes: ["Gbmaj7"], compasesPorAcorde: 2,
+      colores: ["#0b1026"],
+      tocan: ["ambiente-1", "ambiente-2"],
+      instrucciones: {
+        todos: "Solo ambiente, casi limpio. Después vuelven los teclados para el desenlace.",
+        "ambiente-principal": "Colchón de G♭ sobre Si♭ grave. Baja la distorsión (X).",
+      },
+    },
+    // ============================== DESENLACE ==============================
+    {
+      nombre: "Desenlace · Sin batería",
+      inicio: "7:02.77",    // compases 230–238
       acordes: ["Bbm7"], compasesPorAcorde: 1,
       colores: ["#23307a"],
       tocan: ["teclado-1", "teclado-2", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-3", "ambiente-4"],
       instrucciones: {
+        todos: "Desenlace: vuelven los teclados sobre B♭m7, suave (el bajo baja a La♭ un momento).",
         "teclado-2": "Mantén el Fa agudo y sigue tus notas del arpegio (las agudas).",
-        todos: "Sale la batería. Queda B♭m7 (el bajo baja a La♭ un momento).",
         "teclado-3": "Distorsión muy baja (≈ 5 %): más limpio.",
-        bateria: "Silencio desde aquí.",
+        bateria: "Silencio.",
       },
     },
     {
-      nombre: "Outro · Resolución en Re♭",
-      inicio: "2:48.00",                   // compases 92–95
-      acordes: ["Db"], compasesPorAcorde: 4,
+      nombre: "Desenlace · Hacia Re♭",
+      inicio: "7:19.38",    // compases 239–240
+      acordes: ["Gbmaj7"], compasesPorAcorde: 2,
+      colores: ["#2c2a6e"],
+      tocan: ["teclado-1", "teclado-2", "teclado-3", "teclado-4", "ambiente-1"],
+      instrucciones: {
+        todos: "G♭maj7 dos compases: la cadencia suave que lleva al final.",
+        "teclado-2": "Suelta el Fa agudo: una nota (Si♭) y silencio.",
+        "teclado-1": "Sol♭ largo.",
+      },
+    },
+    {
+      nombre: "Desenlace · Resolución en Re♭",
+      inicio: "7:23.08",    // compases 241–248
+      acordes: ["Db"], compasesPorAcorde: 8,
       colores: ["#0b1026"],
       tocan: ["guitarra", "teclado-1", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-4"],
       instrucciones: {
         "teclado-1": "Re♭ largo: la resolución es tuya.",
-        todos: "Resuelve en Re♭ y deja morir.",
-        guitarra: "Últimas notas: Re♭–Mi♭–Re♭.",
+        todos: "Resuelve en Re♭, LENTO (8 compases), y deja morir.",
+        guitarra: "Últimas notas, lentas: Re♭–Mi♭–Re♭.",
         "teclado-2": "Silencio.",
-        "ambiente-3": "Silencio. Las luces se apagan hacia 2:55.",
+        "ambiente-3": "Silencio. Las luces se apagan hacia el final.",
       },
     },
   ],
@@ -273,8 +483,16 @@ window.PARTITURA = {
     { t: "2:11.62", perfiles: ["guitarra"], texto: "En 5 s: silencio" },
     { t: "2:11.62", perfiles: ["teclado-2", "ambiente-3"], texto: "En 5 s: vuelve el pedal F" },
     { t: "2:16.62", perfiles: ["ambiente-principal"], texto: "Empieza a desvanecer" },
-    { t: "2:26.38", perfiles: ["bateria"], texto: "En 5 s: la batería sale" },
-    { t: "2:43.00", perfiles: ["todos"], texto: "En 5 s: resolución en Re♭" },
+    { t: "2:26.38", perfiles: ["todos"], texto: "En 5 s: la obra vuelve hacia atrás (Dos líneas 2)" },
+    { t: "3:31.00", perfiles: ["teclados"], texto: "En 5 s: quita la distorsión" },
+    { t: "3:40.23", perfiles: ["teclado-2", "ambiente-3"], texto: "En 5 s: vuelve el Fa agudo largo" },
+    { t: "3:55.00", perfiles: ["todos"], texto: "En 5 s: IMPROVISACIÓN (2 min)" },
+    { t: "5:55.00", perfiles: ["todos"], texto: "En 5 s: Intro 2" },
+    { t: "5:55.00", perfiles: ["teclado-2", "ambiente-3"], texto: "En 5 s: Fa agudo largo (pedal F)" },
+    { t: "6:39.31", perfiles: ["teclados"], texto: "En 5 s: salen los teclados" },
+    { t: "6:57.77", perfiles: ["todos"], texto: "En 5 s: desenlace" },
+    { t: "7:14.38", perfiles: ["teclado-2"], texto: "En 5 s: suelta el Fa agudo" },
+    { t: "7:18.08", perfiles: ["todos"], texto: "En 5 s: resolución en Re♭ (lenta)" },
   ],
 
   // Efectos automáticos: cómo suena cada instrumento en cada parte. Se aplican solos en "Practicar con la orquesta"
@@ -309,9 +527,31 @@ window.PARTITURA = {
                         guitarra: { vol: 0.85, fuzz: [0.14, 0.11], tono: 0.42, reverb: 0.55 }, bateria: { vol: 1.06, reverb: 0.28, drive: 0.09 } },
     { desde: "2:16.62", teclados: { dist: [0.22, 0.13], filtro: [0.49, 0.42], reverb: 0.5, vol: [1, 0.6] }, "teclado-2": { reverb: 0.75 }, // se desvanece
                         bateria: { vol: [1.03, 0.69], reverb: 0.32, drive: [0.09, 0.04] } },
-    { desde: "2:31.38", teclados: { dist: 0.11, filtro: 0.4, reverb: 0.55, vol: 0.6 }, "teclado-3": { dist: 0.07, vol: 0.75 }, "teclado-4": { vol: 0.65 } },
-    { desde: "2:48.00", teclados: { dist: [0.07, 0.02], filtro: [0.4, 0.24], reverb: [0.5, 0.8], vol: [0.6, 0] },                   // resuelve y muere
-                        guitarra: { fuzz: 0.07, tono: 0.38, reverb: [0.6, 0.85], vol: [0.9, 0] } },
+    { desde: "2:31.38", teclados: { dist: [0.13, 0.22], filtro: [0.42, 0.49], reverb: 0.5, vol: [0.6, 1] }, "teclado-2": { reverb: 0.75 }, bateria: { vol: [0.69, 1.03], reverb: 0.32, drive: [0.04, 0.09] } },   // Dos líneas 2: vuelve a subir
+    { desde: "2:46.15", teclados: { dist: 0.22, filtro: 0.49, reverb: 0.45 }, "teclado-3": { vol: 1.6, dist: 0.11, filtro: 0.4 }, guitarra: { vol: 0.85, fuzz: [0.11, 0.14], tono: 0.42, reverb: 0.55 }, bateria: { vol: 1.06, reverb: 0.28, drive: 0.09 } },   // Medios 2
+    { desde: "3:00.92", teclados: { dist: 0.27, filtro: 0.55, reverb: 0.42 }, "teclado-3": { vol: 1.6, dist: 0.14, filtro: 0.44 }, guitarra: { vol: 0.85, fuzz: 0.17, tono: 0.43, reverb: 0.55 }, bateria: { vol: 1.15, reverb: 0.25, drive: 0.14 } },   // Desarrollo 2 · Teclados altos (clímax)
+    { desde: "3:15.69", teclados: { dist: 0.23, filtro: 0.51, reverb: 0.4 }, "teclado-3": { vol: 1.6, dist: 0.13, filtro: 0.42 }, guitarra: { vol: 0.85, fuzz: 0.14, tono: 0.42, reverb: 0.5 }, bateria: { vol: 1.15, reverb: 0.25, drive: 0.11 } },   // Muro 2
+    { desde: "3:30.46", teclados: { dist: [0.16, 0], filtro: [0.52, 0.4], reverb: 0.45 }, guitarra: { fuzz: [0.11, 0.03], tono: 0.42 }, bateria: { vol: [1.15, 0.86], reverb: 0.3, drive: [0.09, 0.02] } },   // Bisagra 2: baja desde el muro
+    { desde: "3:36.00", teclados: { dist: 0, filtro: 0.4, reverb: 0.5 }, guitarra: { fuzz: 0.03, tono: 0.42, reverb: 0.55 }, bateria: { vol: 0.86, reverb: 0.35, drive: 0.02 } },   // Limpio 2
+    { desde: "3:45.23", teclados: { dist: [0.23, 0.18], filtro: [0.49, 0.44], reverb: 0.4 }, "teclado-3": { vol: 1.6, dist: 0.11, filtro: 0.4 }, bateria: { vol: 1.09, reverb: 0.28, drive: 0.08 } },   // Platillos 2
+    { desde: "3:52.62", teclados: { dist: 0.18, filtro: 0.44, reverb: 0.45 }, "teclado-1": { filtro: 0.4 }, "teclado-3": { vol: 1.6, dist: 0.09, filtro: 0.36 }, bateria: { vol: 0.98, reverb: 0.3, drive: 0.05 } },   // Sin platillos 2
+    { desde: "4:00.00", teclados: { dist: [0.23, 0.13], filtro: [0.51, 0.42], reverb: [0.4, 0.5], vol: [1, 0.75] }, "teclado-2": { reverb: [0.4, 0.75] }, "teclado-3": { vol: [1.6, 1.3], dist: [0.13, 0.09], filtro: [0.42, 0.4] }, guitarra: { vol: 0.85, fuzz: [0.14, 0.08], tono: [0.42, 0.4], reverb: [0.5, 0.6] } },   // improvisación: del desarrollo al outro y de vuelta
+    { desde: "4:14.77", teclados: { dist: [0.13, 0.23], filtro: [0.42, 0.51], reverb: [0.5, 0.4], vol: [0.75, 1] }, "teclado-2": { reverb: [0.75, 0.4] }, "teclado-3": { vol: [1.3, 1.6], dist: [0.09, 0.13], filtro: [0.4, 0.42] }, guitarra: { vol: 0.85, fuzz: [0.08, 0.14], tono: [0.4, 0.42], reverb: [0.6, 0.5] } },
+    { desde: "4:29.54", teclados: { dist: [0.23, 0.13], filtro: [0.51, 0.42], reverb: [0.4, 0.5], vol: [1, 0.75] }, "teclado-2": { reverb: [0.4, 0.75] }, "teclado-3": { vol: [1.6, 1.3], dist: [0.13, 0.09], filtro: [0.42, 0.4] }, guitarra: { vol: 0.85, fuzz: [0.14, 0.08], tono: [0.42, 0.4], reverb: [0.5, 0.6] } },
+    { desde: "4:44.31", teclados: { dist: [0.13, 0.23], filtro: [0.42, 0.51], reverb: [0.5, 0.4], vol: [0.75, 1] }, "teclado-2": { reverb: [0.75, 0.4] }, "teclado-3": { vol: [1.3, 1.6], dist: [0.09, 0.13], filtro: [0.4, 0.42] }, guitarra: { vol: 0.85, fuzz: [0.08, 0.14], tono: [0.4, 0.42], reverb: [0.6, 0.5] } },
+    { desde: "4:59.08", teclados: { dist: [0.23, 0.13], filtro: [0.51, 0.42], reverb: [0.4, 0.5], vol: [1, 0.75] }, "teclado-2": { reverb: [0.4, 0.75] }, "teclado-3": { vol: [1.6, 1.3], dist: [0.13, 0.09], filtro: [0.42, 0.4] }, guitarra: { vol: 0.85, fuzz: [0.14, 0.08], tono: [0.42, 0.4], reverb: [0.5, 0.6] } },
+    { desde: "5:13.85", teclados: { dist: [0.13, 0.23], filtro: [0.42, 0.51], reverb: [0.5, 0.4], vol: [0.75, 1] }, "teclado-2": { reverb: [0.75, 0.4] }, "teclado-3": { vol: [1.3, 1.6], dist: [0.09, 0.13], filtro: [0.4, 0.42] }, guitarra: { vol: 0.85, fuzz: [0.08, 0.14], tono: [0.4, 0.42], reverb: [0.6, 0.5] } },
+    { desde: "5:28.62", teclados: { dist: [0.23, 0.13], filtro: [0.51, 0.42], reverb: [0.4, 0.5], vol: [1, 0.75] }, "teclado-2": { reverb: [0.4, 0.75] }, "teclado-3": { vol: [1.6, 1.3], dist: [0.13, 0.09], filtro: [0.42, 0.4] }, guitarra: { vol: 0.85, fuzz: [0.14, 0.08], tono: [0.42, 0.4], reverb: [0.5, 0.6] } },
+    { desde: "5:43.38", teclados: { dist: [0.13, 0.23], filtro: [0.42, 0.51], reverb: [0.5, 0.4], vol: [0.75, 1] }, "teclado-2": { reverb: [0.75, 0.4] }, "teclado-3": { vol: [1.3, 1.6], dist: [0.09, 0.13], filtro: [0.4, 0.42] }, guitarra: { vol: 0.85, fuzz: [0.08, 0.14], tono: [0.4, 0.42], reverb: [0.6, 0.5] } },
+    { desde: "6:00.00", teclados: { dist: 0.22, filtro: 0.48, reverb: 0.4 }, "teclado-2": { dist: 0.05, filtro: 0.5, reverb: 0.65 }, "teclado-3": { vol: 1.6, dist: 0.09, filtro: 0.36 }, bateria: { vol: 1.09, reverb: 0.28, drive: 0.07 } },   // Intro 2 · Pedal F
+    { desde: "6:22.15", teclados: { dist: [0.22, 0.11], filtro: 0.46, reverb: 0.4 }, "teclado-3": { vol: 1.6, dist: 0.04, filtro: 0.36 }, guitarra: { fuzz: 0.1, tono: 0.4, reverb: 0.45 }, bateria: { vol: 1.09, reverb: 0.28, drive: 0.07 } },   // Platillos y distorsión 2: la distorsión baja
+    { desde: "6:29.54", teclados: { dist: 0, filtro: 0.42, reverb: 0.4 }, "teclado-3": { vol: 1.6, dist: 0.02, filtro: 0.32 }, guitarra: { fuzz: 0.05, tono: 0.38, reverb: 0.45 }, bateria: { vol: 0.98, reverb: 0.3, drive: 0.04 } },   // Guitarra y teclados 2
+    { desde: "6:44.31", bateria: { vol: [0.98, 0.63], reverb: 0.35, drive: 0.03 } },   // Ritmo 2
+    { desde: "6:59.08", todos: { reverb: 0.6 } },   // Distorsión ambiente 2
+    { desde: "7:02.77", teclados: { dist: 0.11, filtro: 0.4, reverb: 0.55, vol: 0.6 }, "teclado-3": { dist: 0.07, vol: 0.75 }, "teclado-4": { vol: 0.65 } },   // desenlace: vuelven los teclados, suaves
+    { desde: "7:19.38", teclados: { dist: [0.11, 0.07], filtro: [0.4, 0.36], reverb: [0.55, 0.62], vol: 0.6 }, "teclado-3": { dist: 0.05, vol: 0.75 }, "teclado-4": { vol: 0.65 } },   // G♭maj7: cadencia plagal
+    { desde: "7:23.08", teclados: { dist: [0.06, 0.03], filtro: [0.36, 0.32], reverb: [0.62, 0.75], vol: [0.6, 0.42] }, "teclado-3": { dist: 0.04, vol: [0.75, 0.5] }, "teclado-4": { vol: [0.65, 0.45] }, guitarra: { fuzz: 0.04, tono: 0.38, reverb: [0.65, 0.78], vol: [0.85, 0.6] } },   // Re♭: se apaga despacio…
+    { desde: "7:30.46", teclados: { dist: [0.03, 0], filtro: [0.32, 0.24], reverb: [0.75, 0.9], vol: [0.42, 0] }, "teclado-3": { dist: 0.02, vol: [0.5, 0] }, "teclado-4": { vol: [0.45, 0] }, guitarra: { fuzz: 0.02, tono: [0.38, 0.34], reverb: [0.78, 0.9], vol: [0.6, 0] } },   // …y muere
   ],
 
   // Pistas MIDI del arreglo (carpeta midi/). Están a 130 BPM y empiezan en 0:00, así que calzan con el reloj.
@@ -350,56 +590,144 @@ window.PARTITURA = {
   // Las notas que suenan las pone la pista MIDI del perfil (midi.porPerfil).
   // Se busca la clave más específica: ambiente-1 … ambiente-4, luego ambiente-principal / ambiente-extra.
   guiaXY: {
-    // Batería en modo "808 · base distorsionada": X = distorsión, Y = intensidad. Sigue las entradas de la batería
-    // (calla en 0:00–0:03 y desde 2:31) y crece como ella: intro de a poco, limpio en el solo, muro y clímax rojos.
-    bateria: [
-      ["0:00",    0.10, 0.00],   // silencio: solo ambiente
+    // X = distorsión, Y = intensidad. La segunda mitad es el espejo de la primera (Outro 2 y Desarrollo 2 = compases 35–82 al revés;
+    // Intro 2 = compases 1–34 al revés). En la improvisación va y viene entre el desarrollo y el outro; el desenlace se apaga despacio.
+    "bateria": [
+      ["0:00.00", 0.10, 0.00],
       ["0:03.60", 0.10, 0.00],
-      ["0:03.69", 0.12, 0.30],   // entra con la batería, suave…
-      ["0:18.46", 0.25, 0.55],   // …y crece durante la intro
-      ["0:33.23", 0.45, 0.65],   // platillos y distorsión
-      ["1:02.77", 0.35, 0.55],   // desarrollo sin platillos
+      ["0:03.69", 0.12, 0.30],
+      ["0:18.46", 0.25, 0.55],
+      ["0:33.23", 0.45, 0.65],
+      ["1:02.77", 0.35, 0.55],
       ["1:10.15", 0.50, 0.65],
       ["1:17.04", 0.55, 0.68],
-      ["1:17.54", 0.05, 0.38],   // solo limpio: casi sin distorsión
-      ["1:26.77", 0.08, 0.42],   // bisagra: sube hacia el muro
-      ["1:32.31", 0.75, 0.85],   // muro
-      ["1:47.08", 0.92, 0.95],   // clímax
-      ["2:01.85", 0.70, 0.80],   // outro
-      ["2:16.62", 0.55, 0.70],   // se va apagando con la batería
+      ["1:17.54", 0.05, 0.38],
+      ["1:26.77", 0.08, 0.42],
+      ["1:32.31", 0.75, 0.85],
+      ["1:47.08", 0.92, 0.95],
+      ["2:01.85", 0.70, 0.80],
+      ["2:16.62", 0.55, 0.70],
       ["2:31.28", 0.30, 0.30],
-      ["2:31.38", 0.30, 0.00],   // la batería sale: silencio hasta el final
+      ["2:31.37", 0.30, 0.02],
+      ["2:31.38", 0.30, 0.02],
+      ["2:31.39", 0.30, 0.00],
+      ["2:31.49", 0.30, 0.30],
+      ["2:46.15", 0.55, 0.70],
+      ["3:00.92", 0.70, 0.80],
+      ["3:15.69", 0.92, 0.95],
+      ["3:30.46", 0.75, 0.85],
+      ["3:36.00", 0.08, 0.42],
+      ["3:45.23", 0.05, 0.38],
+      ["3:45.73", 0.55, 0.68],
+      ["3:52.62", 0.50, 0.65],
+      ["3:59.99", 0.35, 0.55],
+      ["3:60.00", 0.35, 0.55],
+      ["4:00.00", 0.75, 0.85],
+      ["4:14.77", 0.55, 0.70],
+      ["4:29.54", 0.75, 0.85],
+      ["4:44.31", 0.55, 0.70],
+      ["4:59.08", 0.75, 0.85],
+      ["5:13.85", 0.55, 0.70],
+      ["5:28.62", 0.75, 0.85],
+      ["5:43.38", 0.55, 0.70],
+      ["5:58.15", 0.75, 0.85],
+      ["5:59.99", 0.75, 0.85],
+      ["6:00.00", 0.35, 0.55],
+      ["6:29.54", 0.45, 0.65],
+      ["6:44.31", 0.25, 0.55],
+      ["6:59.08", 0.12, 0.30],
+      ["6:59.17", 0.10, 0.00],
+      ["7:02.76", 0.10, 0.00],
+      ["7:02.77", 0.30, 0.00],
+      ["7:37.85", 0.30, 0.00],
     ],
     "ambiente-principal": [
-      ["0:00",    0.05, 0.40],   // entra limpio
-      ["0:18.46", 0.30, 0.50],   // entran guitarra y teclados
-      ["0:33.23", 0.45, 0.60],   // platillos y distorsión
-      ["1:02.77", 0.45, 0.55],   // desarrollo: sigue la línea permanente
-      ["1:10.15", 0.55, 0.70],   // sube la intensidad, hacia el violeta
+      ["0:00.00", 0.05, 0.40],
+      ["0:18.46", 0.30, 0.50],
+      ["0:33.23", 0.45, 0.60],
+      ["1:02.77", 0.45, 0.55],
+      ["1:10.15", 0.55, 0.70],
       ["1:17.04", 0.60, 0.75],
-      ["1:17.54", 0.15, 0.45],   // limpio: sin distorsión
+      ["1:17.54", 0.15, 0.45],
       ["1:31.81", 0.20, 0.50],
-      ["1:32.31", 0.65, 0.80],   // muro: hacia el rojo
-      ["1:47.08", 0.85, 0.95],   // clímax: rojo al máximo
-      ["2:01.85", 0.70, 0.80],   // outro
-      ["2:16.62", 0.55, 0.65],   // empieza a desvanecerse…
-      ["2:48.00", 0.25, 0.30],   // …resolución en Re♭
-      ["2:55",    0.10, 0.00],   // se apaga
+      ["1:32.31", 0.65, 0.80],
+      ["1:47.08", 0.85, 0.95],
+      ["2:01.85", 0.70, 0.80],
+      ["2:16.62", 0.55, 0.65],
+      ["2:31.37", 0.41, 0.49],
+      ["2:31.38", 0.41, 0.49],
+      ["2:46.15", 0.55, 0.65],
+      ["3:00.92", 0.70, 0.80],
+      ["3:15.69", 0.85, 0.95],
+      ["3:30.46", 0.65, 0.80],
+      ["3:30.96", 0.20, 0.50],
+      ["3:45.23", 0.15, 0.45],
+      ["3:45.73", 0.60, 0.75],
+      ["3:52.62", 0.55, 0.70],
+      ["3:59.99", 0.45, 0.55],
+      ["3:60.00", 0.45, 0.55],
+      ["4:00.00", 0.65, 0.80],
+      ["4:14.77", 0.55, 0.65],
+      ["4:29.54", 0.65, 0.80],
+      ["4:44.31", 0.55, 0.65],
+      ["4:59.08", 0.65, 0.80],
+      ["5:13.85", 0.55, 0.65],
+      ["5:28.62", 0.65, 0.80],
+      ["5:43.38", 0.55, 0.65],
+      ["5:58.15", 0.65, 0.80],
+      ["5:59.99", 0.65, 0.80],
+      ["6:00.00", 0.45, 0.55],
+      ["6:29.54", 0.45, 0.60],
+      ["6:44.31", 0.30, 0.50],
+      ["7:02.76", 0.05, 0.40],
+      ["7:02.77", 0.40, 0.48],
+      ["7:19.38", 0.33, 0.40],
+      ["7:23.08", 0.25, 0.30],
+      ["7:30.46", 0.18, 0.18],
+      ["7:37.85", 0.08, 0.00],
     ],
     "ambiente-extra": [
-      ["0:00",    0.10, 0.20],   // ruido y textura muy suaves
+      ["0:00.00", 0.10, 0.20],
       ["0:18.46", 0.25, 0.35],
       ["0:33.23", 0.40, 0.50],
-      ["1:10.15", 0.50, 0.65],   // hacia el violeta
+      ["1:10.15", 0.50, 0.65],
       ["1:17.04", 0.55, 0.70],
-      ["1:17.54", 0.15, 0.35],   // limpio
+      ["1:17.54", 0.15, 0.35],
       ["1:31.81", 0.20, 0.40],
-      ["1:32.31", 0.65, 0.75],   // muro
-      ["1:47.08", 0.85, 0.90],   // clímax
+      ["1:32.31", 0.65, 0.75],
+      ["1:47.08", 0.85, 0.90],
       ["2:01.85", 0.60, 0.70],
-      ["2:16.62", 0.45, 0.85],   // ambiente MARCADO, limpio y claro
-      ["2:48.00", 0.25, 0.40],
-      ["2:55",    0.10, 0.00],   // se apaga
+      ["2:16.62", 0.45, 0.85],
+      ["2:31.37", 0.36, 0.64],
+      ["2:31.38", 0.36, 0.64],
+      ["2:46.15", 0.45, 0.85],
+      ["3:00.92", 0.60, 0.70],
+      ["3:15.69", 0.85, 0.90],
+      ["3:30.46", 0.65, 0.75],
+      ["3:30.96", 0.20, 0.40],
+      ["3:45.23", 0.15, 0.35],
+      ["3:45.73", 0.55, 0.70],
+      ["3:52.62", 0.50, 0.65],
+      ["3:59.99", 0.48, 0.62],
+      ["4:00.00", 0.65, 0.75],
+      ["4:14.77", 0.45, 0.85],
+      ["4:29.54", 0.65, 0.75],
+      ["4:44.31", 0.45, 0.85],
+      ["4:59.08", 0.65, 0.75],
+      ["5:13.85", 0.45, 0.85],
+      ["5:28.62", 0.65, 0.75],
+      ["5:43.38", 0.45, 0.85],
+      ["5:58.15", 0.65, 0.75],
+      ["5:59.99", 0.65, 0.75],
+      ["6:00.00", 0.48, 0.62],
+      ["6:29.54", 0.40, 0.50],
+      ["6:44.31", 0.25, 0.35],
+      ["7:02.76", 0.10, 0.20],
+      ["7:02.77", 0.36, 0.64],
+      ["7:19.38", 0.30, 0.50],
+      ["7:23.08", 0.25, 0.40],
+      ["7:30.46", 0.18, 0.22],
+      ["7:37.85", 0.08, 0.00],
     ],
   },
 

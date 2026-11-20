@@ -64,7 +64,7 @@
     const inicioAcorde = s.ini + k * dur;
     let siguiente;
     const tSig = inicioAcorde + dur;
-    if (tSig >= s.fin) { const sn = SECCIONES[s.idx + 1]; siguiente = sn ? sn.acordes[0] : null; }
+    if (tSig >= s.fin - 0.05) { const sn = SECCIONES[s.idx + 1]; siguiente = sn ? sn.acordes[0] : null; }   // los inicios van redondeados a centésimas
     else siguiente = s.acordes[(i + 1) % s.acordes.length];
     return { seccion: s, idx: i, nombre: s.acordes[i], siguiente, falta: tSig - t, color: s.colores[i % s.colores.length] };
   }

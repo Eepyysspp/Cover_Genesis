@@ -266,6 +266,9 @@
   // Las notas de la pista MIDI de tu parte caen hacia el piano; cuando lo tocan, hay que tocarlas.
   // piano: el elemento con las teclas (.tecla[data-m]); mapear(m) lleva una nota de la pista a una tecla visible.
   const VENTANAS = { perfecto: 0.07, bien: 0.16 };
+  // Secciones libres (partitura → libre: true): ahí no caen notas, cada uno improvisa
+  const LIBRES = SECCIONES.filter(s => s.libre).map(s => [s.ini, s.fin]);
+  const enLibre = t => LIBRES.some(([a, b]) => t >= a && t < b);
   const VELOCIDADES = [[4, "Lenta"], [2.6, "Normal"], [1.7, "Rápida"]];
   function crearCascada(pista, piano, mapear) {
     const caja = el(`<div class="cascada">
@@ -312,14 +315,14 @@
       if (!activo) return;
       let mejorI = -1, mejorD = Infinity;
       for (let i = lb(notas, tc - VENTANAS.bien, n => n.t); i < notas.length && notas[i].t <= tc + VENTANAS.bien; i++) {
-        if (juicio.has(i) || mapear(notas[i].m) !== m) continue;
+        if (juicio.has(i) || enLibre(notas[i].t) || mapear(notas[i].m) !== m) continue;
         const d = Math.abs(notas[i].t - tc); if (d < mejorD) { mejorD = d; mejorI = i; }
       }
       if (mejorI < 0) return;
       const tipo = mejorD <= VENTANAS.perfecto ? "perfecto" : "bien", tN = notas[mejorI].t;
       // las notas que caen juntas en la misma tecla (la misma nota en dos octavas) se cuentan con un solo toque
       for (let i = lb(notas, tN - 0.03, n => n.t); i < notas.length && notas[i].t <= tN + 0.03; i++) {
-        if (juicio.has(i) || mapear(notas[i].m) !== m) continue;
+        if (juicio.has(i) || enLibre(notas[i].t) || mapear(notas[i].m) !== m) continue;
         juicio.set(i, { tipo, t: tc }); cuenta[tipo]++; racha++;
       }
       mejor = Math.max(mejor, racha);
@@ -344,7 +347,7 @@
       if (!corriendo) desdeT = Infinity;
       corriaAntes = corriendo;
       if (corriendo) for (let i = lb(notas, Math.max(desdeT, tc - VENTANAS.bien - 1), n => n.t); i < notas.length && notas[i].t < tc - VENTANAS.bien; i++) {
-        if (!juicio.has(i)) { juicio.set(i, { tipo: "fallo", t: tc }); cuenta.fallo++; racha = 0; avisar(mapear(notas[i].m), "Fallo", "#ffb44d"); }
+        if (!juicio.has(i) && !enLibre(notas[i].t)) { juicio.set(i, { tipo: "fallo", t: tc }); cuenta.fallo++; racha = 0; avisar(mapear(notas[i].m), "Fallo", "#ffb44d"); }
       }
       pintarMarcador();
       const W = ancho, H = alto, porSeg = H / mirar;
@@ -366,7 +369,7 @@
       // notas
       const desde = lb(notas, tc - durMax - 0.5, n => n.t);
       for (let i = desde; i < notas.length && notas[i].t <= tc + mirar; i++) {
-        const n = notas[i]; if (n.t + n.d < tc - 0.3) continue;
+        const n = notas[i]; if (n.t + n.d < tc - 0.3 || enLibre(n.t)) continue;
         const c = cols.get(mapear(n.m)); if (!c) continue;
         const yIni = H - (n.t - tc) * porSeg, h = Math.max(8, n.d * porSeg), j = juicio.get(i);
         const suena = n.t <= tc && tc < n.t + n.d;
@@ -380,6 +383,18 @@
       g.textAlign = "center"; g.textBaseline = "alphabetic"; g.font = "800 13px system-ui, sans-serif";
       cols.forEach(c => { if (!c.letra) return; g.fillStyle = c.negra ? "rgba(185,139,255,.55)" : "rgba(242,239,248,.42)"; g.fillText(c.letra, c.x + c.w / 2, H - (c.negra ? 26 : 9)); });
       g.textAlign = "start"; g.textBaseline = "bottom";
+      // secciones libres: una franja "IMPROVISA" en vez de notas
+      LIBRES.forEach(([a, b]) => {
+        if (b < tc || a > tc + mirar) return;
+        const y0 = H - (Math.min(b, tc + mirar) - tc) * porSeg, y1 = H - (Math.max(a, tc) - tc) * porSeg;
+        g.fillStyle = "rgba(124,156,255,.10)"; g.fillRect(0, y0, W, y1 - y0);
+        g.textAlign = "center"; g.textBaseline = "middle"; g.fillStyle = "rgba(242,239,248,.9)"; g.font = "800 22px system-ui, sans-serif";
+        const yc = (y0 + y1) / 2, falta = b - Math.max(a, tc);
+        g.fillText("IMPROVISA", W / 2, yc - 12);
+        g.font = "600 13px system-ui, sans-serif"; g.fillStyle = "rgba(242,239,248,.7)";
+        g.fillText(tc >= a ? `libre con tus teclas · quedan ${fmt(falta)}` : `en ${Math.ceil(a - tc)} s`, W / 2, yc + 14);
+        g.textAlign = "start"; g.textBaseline = "bottom";
+      });
       // la línea donde se toca (el borde del piano)
       g.fillStyle = "rgba(255,107,154,.9)"; g.fillRect(0, H - 3, W, 3);
       // avisos: Perfecto / Bien / Fallo
@@ -679,7 +694,7 @@
         }
         if (ac.nombre === acordeActual && agendado != null && agendado / 20 < tc - 0.5) agendado = null;
         // guía: notas de tu pista MIDI que suenan ahora, llevadas a la octava visible
-        guia = pista ? window.MIDI.sonando(pista, tc).map(n => mapear(n.m)) : [];
+        guia = pista && !enLibre(tc) ? window.MIDI.sonando(pista, tc).map(n => mapear(n.m)) : [];
         if (cascada) cascada.dibujar(tc, corriendo && t >= 0 && t < DURACION);
         sigTonos = ac.falta < 2.2 && ac.siguiente ? tonosDe(ac.siguiente) : [];
         pintarTeclas(); pintarEstado(ac);
