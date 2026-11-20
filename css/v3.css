@@ -1,8 +1,8 @@
 /* Genesis · v2 — interfaz simple para tocar en escenario */
 :root {
-  --fondo: #06171b; --panel: #0b2a31; --panel2: #10363f; --borde: rgba(255,255,255,.09);
-  --texto: #eef6f7; --muted: #8fa8ad; --acento: #0e5664; --acento-vivo: #2ba3b5; --acento2: #7c9cff;
-  /* color de la versión 3: #0e5664 (fondos de botones, teclas apretadas); --acento-vivo = el mismo tono más claro para textos, bordes y brillos */ --ok: #5be3a1; --mal: #ffb44d;
+  --fondo: #0b0a12; --panel: #15131f; --panel2: #1d1a2b; --borde: rgba(255,255,255,.09);
+  --texto: #f2eff8; --muted: #9a95ad; --acento: #0e5664; --acento-vivo: #2ba3b5; --acento2: #7c9cff;
+  /* acento de la versión 3: #0e5664 (botones, teclas apretadas); --acento-vivo = el mismo tono más claro para textos, bordes y brillos */ --ok: #5be3a1; --mal: #ffb44d;
   --radio: 16px; --color: #7c9cff;
   color-scheme: dark;
 }
@@ -28,7 +28,7 @@ select { background: var(--panel2); border: 1px solid var(--borde); border-radiu
 select option { color: #111; background: #fff; }
 
 /* cabecera */
-.cabecera { display: flex; align-items: center; gap: 14px; padding: 12px 20px; border-bottom: 1px solid var(--borde); position: sticky; top: 0; background: rgba(6,23,27,.92); backdrop-filter: blur(8px); z-index: 20; }
+.cabecera { display: flex; align-items: center; gap: 14px; padding: 12px 20px; border-bottom: 1px solid var(--borde); position: sticky; top: 0; background: rgba(11,10,18,.92); backdrop-filter: blur(8px); z-index: 20; }
 .marca { font-weight: 800; font-size: 19px; letter-spacing: .02em; display: flex; align-items: center; gap: 8px; }
 .marca small { color: var(--acento-vivo); font-weight: 700; }
 .punto-vivo { width: 10px; height: 10px; border-radius: 50%; background: var(--acento-vivo); box-shadow: 0 0 12px var(--acento-vivo); }
@@ -338,7 +338,7 @@ kbd { font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 .enlace-v1 { cursor: pointer; }
 /* cuenta regresiva al iniciar en red */
 .cuenta-atras { position: fixed; inset: 0; z-index: 50; display: grid; place-content: center; justify-items: center; gap: 4px;
-  background: rgba(6,23,27,.72); backdrop-filter: blur(3px); pointer-events: none; }
+  background: rgba(11,10,18,.72); backdrop-filter: blur(3px); pointer-events: none; }
 .cuenta-atras[hidden] { display: none; }
 .cuenta-atras small { color: var(--muted); font-size: 18px; letter-spacing: .04em; }
 .cuenta-atras b { font-size: clamp(110px, 22vw, 220px); line-height: 1; color: var(--acento-vivo); text-shadow: 0 0 40px rgba(43,163,181,.45);
