@@ -14,12 +14,7 @@ a { color: var(--acento2); }
 h1 { font-size: clamp(28px, 5vw, 40px); margin: 0 0 6px; letter-spacing: -.01em; }
 .intro { margin: 0 0 22px; max-width: 70ch; }
 .tarjeta { display: block; background: var(--panel); border: 1px solid var(--borde); border-radius: 16px; padding: 20px; color: inherit; text-decoration: none; }
-.tarjeta.v3 { --v3: #0e5664; --v3-vivo: #2ba3b5; border-color: rgba(43,163,181,.55); background: linear-gradient(160deg, rgba(14,86,100,.45), transparent 55%), var(--panel); }
-.tarjeta.v3 .num { color: var(--v3-vivo); background: rgba(14,86,100,.5); }
-.tarjeta.v3 .insignia { background: var(--v3); color: #fff; }
-.tarjeta.v3 .btn:hover { border-color: var(--v3-vivo); }
-.tarjeta.v3 .btn.fuerte { background: var(--v3); border-color: var(--v3-vivo); color: #fff; }
-.tarjeta.v3 .ayuda summary { color: var(--v3-vivo); }
+.tarjeta.v3 { border-color: rgba(255,107,154,.45); background: linear-gradient(160deg, rgba(255,107,154,.08), transparent 45%), var(--panel); }
 .tit { display: flex; gap: 14px; align-items: flex-start; }
 .tit h2 { margin: 0; font-size: 20px; }
 .tit p { margin: 2px 0 0; }
