@@ -72,6 +72,7 @@
           <div class="oct-pc"><div class="fila-teclas blancas">${"ASDFGHJKLÑ".split("").map(c => `<kbd>${c}</kbd>`).join("")}</div></div>
           <p class="muted small">De izquierda a derecha, de la nota más grave a la más aguda. Cada tecla del piano muestra su nota y su letra. Los números no tocan notas.</p>
           <p><kbd>←</kbd> <kbd>→</kbd> bajar o subir octava · <kbd>Esc</kbd> soltar todo · <kbd>?</kbd> esta ayuda</p>
+          <p class="muted small">¿Tienes un teclado MIDI USB? Conéctalo y toca: cada nota suena tal cual (arriba aparece «🎹 MIDI» con su nombre).</p>
         </div></section>
     </div>`), { clase: "ancha" });
   }
@@ -653,7 +654,8 @@
     }
     return {
       midi,
-      ayuda: "A–Ñ teclas blancas · Q–O negras · ← → octava · Esc soltar todo · ? ayuda · o un teclado MIDI USB",
+      ayuda: (carriles0 ? "Teclas A S D F G H J K L Ñ: tus notas, de grave a aguda" : "A–Ñ teclas blancas · Q–O negras")
+        + " · ← → octava · Esc soltar todo · ? ayuda · también puedes tocar con un teclado MIDI USB",
       cuadro(t, dt, corriendo) {
         auto.cuadro(t);
         const tc = tObra(t), ac = acordeEn(tc);
