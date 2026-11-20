@@ -357,3 +357,5 @@ kbd { font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 .ajustes > summary:hover { background: var(--panel2); }
 .ajustes-cuerpo { display: flex; flex-direction: column; gap: 14px; padding: 4px 14px 16px; border-top: 1px solid var(--borde); padding-top: 14px; }
 .ajustes > summary:focus:not(:focus-visible) { outline: none; }
+.campo.en-linea { flex-wrap: nowrap; }
+.campo.en-linea select { flex: 0 0 auto; }
