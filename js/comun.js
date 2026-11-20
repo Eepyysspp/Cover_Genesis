@@ -17,7 +17,7 @@
     { id: "teclado-3", grupo: "teclados", sub: "teclados-bajos", tipo: "teclado", preset: "bajo", nombre: "Teclado bajo/medio 1", icono: "🎹",
       desc: "Línea grave: la raíz de cada acorde (pista Bajo)." },
     { id: "teclado-4", grupo: "teclados", sub: "teclados-bajos", tipo: "teclado", preset: "pad", nombre: "Teclado bajo/medio 2", icono: "🎹",
-      desc: "Colchón: los acordes completos (pista Pad)." },
+      desc: "Voz interior a la par del bajo: Fa / Sol♭, una nota por compás (de la pista Pad)." },
     { id: "ambiente-1", grupo: "ambiente", sub: "ambiente-principal", tipo: "ambiente", preset: "drone", nombre: "Ambiente · Teclados bajos permanentes", icono: "🌊",
       desc: "La 1.ª línea grave que nunca se detiene. Controla la distorsión (X), el volumen (Y) y los colores." },
     { id: "ambiente-2", grupo: "ambiente", sub: "ambiente-extra", opcional: true, tipo: "ambiente", preset: "viento", nombre: "Ambiente extra · Ruido", icono: "🌫️",
@@ -101,7 +101,7 @@
   // Cada entrada vale desde su tiempo hasta la siguiente. Un valor [a, b] va de a hasta b a lo largo de ese tramo.
   // Se combinan de lo general a lo particular (todos → grupo → subgrupo → perfil): la clave más específica gana por parámetro.
   const EFECTOS = (P.efectos || []).map(e => Object.assign({}, e, { seg: aSeg(e.desde) })).sort((a, b) => a.seg - b.seg);
-  function efectosEn(t, perfil) {
+  function efectosCrudos(t, perfil) {
     let i = -1; for (let k = 0; k < EFECTOS.length; k++) if (t >= EFECTOS[k].seg) i = k;
     if (i < 0) return {};
     const e = EFECTOS[i], fin = i + 1 < EFECTOS.length ? EFECTOS[i + 1].seg : DURACION;
@@ -110,10 +110,40 @@
     claves(perfil).forEach(k => { const v = e[k]; if (v && typeof v === "object") for (const p in v) out[p] = Array.isArray(v[p]) ? v[p][0] + (v[p][1] - v[p][0]) * f : v[p]; });
     return out;
   }
-  // Guía X/Y de los ambientes en t (X = distorsión, Y = intensidad), la misma que dibuja su página
+  // Transiciones progresivas: cada valor es el promedio de la tabla en una ventana de 4 compases centrada en t
+  // (empieza 2 compases antes del cambio y termina 2 después). Cerca del inicio y del final la ventana se achica,
+  // así el fade final sí llega a 0. "base" (opcional) = valor del instrumento cuando la tabla no dice nada (vol → 1).
+  const VENTANA = 4 * SEG_POR_COMPAS, MUESTRAS_V = 17;
+  function suavizar(t, f) {
+    const h = Math.max(0, Math.min(VENTANA / 2, t, DURACION - t)), out = [];
+    for (let k = 0; k < MUESTRAS_V; k++) {
+      const u = (k / (MUESTRAS_V - 1)) * 2 - 1, w = 1 - Math.abs(u) * 0.5;   // pesa un poco más el centro
+      out.push([f(t + u * h), w]);
+    }
+    return out;
+  }
+  function efectosEn(t, perfil, base) {
+    const ms = suavizar(t, x => efectosCrudos(x, perfil)), sum = {}, pes = {};
+    ms.forEach(([e]) => { for (const p in e) sum[p] = 0, pes[p] = 0; });
+    ms.forEach(([e, w]) => { for (const p in sum) {
+      const v = e[p] != null ? e[p] : p === "vol" ? 1 : base && base[p] != null ? base[p] : null;
+      if (v != null) { sum[p] += v * w; pes[p] += w; }
+    } });
+    const out = {}; for (const p in sum) if (pes[p] > 0) out[p] = sum[p] / pes[p];
+    return out;
+  }
+  // Guía X/Y de los ambientes en t (X = distorsión, Y = intensidad), la misma que dibuja su página (también suavizada)
   function guiaXYEn(t, perfil) {
+    const ms = suavizar(Math.min(Math.max(t, 0), DURACION), x => guiaXYCruda(x, perfil));
+    if (!ms[0][0]) return null;
+    let x = 0, y = 0, w = 0; ms.forEach(([g, p]) => { x += g.x * p; y += g.y * p; w += p; });
+    return { x: x / w, y: y / w };
+  }
+  const guiasCache = new Map();
+  function guiaXYCruda(t, perfil) {
     const fuente = ["id", "sub", "grupo"].map(k => perfil[k]).find(k => k && P.guiaXY && P.guiaXY[k]);
-    const ps = fuente ? P.guiaXY[fuente].map(([tt, x, y]) => ({ t: aSeg(tt), x, y })).sort((a, b) => a.t - b.t) : [];
+    if (!guiasCache.has(fuente)) guiasCache.set(fuente, fuente ? P.guiaXY[fuente].map(([tt, x, y]) => ({ t: aSeg(tt), x, y })).sort((a, b) => a.t - b.t) : []);
+    const ps = guiasCache.get(fuente);
     if (!ps.length) return null;
     if (t <= ps[0].t) return ps[0];
     for (let i = 1; i < ps.length; i++) if (t < ps[i].t) { const a = ps[i - 1], b = ps[i], k = (t - a.t) / (b.t - a.t); return { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k }; }

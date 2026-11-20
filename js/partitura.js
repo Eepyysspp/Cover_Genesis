@@ -23,7 +23,7 @@ window.PARTITURA = {
   artista: "Robin Callaway",
   album: "i saw an angel in the mirror (2024)",
   formato: "Orquesta de laptops + guitarra",
-  duracion: "7:37.85",
+  duracion: "6:36.92",
   bpm: 130,
   compas: 4,
   compasesPorAcorde: 1,
@@ -78,7 +78,7 @@ window.PARTITURA = {
         "teclado-1": "Arpegio en negras A MEDIAS con el teclado 2: tú tocas el Fa (y el Re♭ largo sobre G♭); el teclado 2 toca el Si♭ y el La♭ entre medio.",
         "teclado-2": "Arpegio en negras A MEDIAS con el teclado 1: entre sus Fa tocas el Si♭ y el La♭ (F–B♭–F–A♭).",
         "teclado-3": "Raíz del acorde, una nota por compás (Si♭ / Sol♭).",
-        "teclado-4": "Colchón: los acordes completos, una vez por compás.",
+        "teclado-4": "Voz interior, a la par del bajo: una nota por compás (Fa sobre B♭m7, Sol♭ sobre G♭).",
         bateria: "SIN PLATILLOS (W).",
         "ambiente-4": "Pulso suave sobre la línea media.",
       },
@@ -342,22 +342,22 @@ window.PARTITURA = {
     // ============================== IMPROVISACIÓN ==============================
     {
       nombre: "Improvisación",
-      inicio: "4:00.00",    // compases 131–195 (2:00)
+      inicio: "4:00.00",    // compases 131–162 (1:00)
       libre: true,                          // sin notas que caen: cada uno improvisa
       acordes: ["Bbm7", "Gbmaj7"], compasesPorAcorde: 2,
       colores: ["#6b2a8a", "#b0245e"],
       tocan: ["guitarra", "teclado-1", "teclado-2", "teclado-3", "teclado-4", "ambiente-1", "ambiente-3"],
       instrucciones: {
-        todos: "IMPROVISACIÓN (2 min): B♭m7 ↔ G♭maj7, dos compases cada uno. No caen notas: toca libre con tus teclas (las del acorde suenan seguras). Escucha y deja espacio.",
+        todos: "IMPROVISACIÓN (1 min): B♭m7 ↔ G♭maj7, dos compases cada uno. No caen notas: toca libre con tus teclas (las del acorde suenan seguras). Escucha y deja espacio.",
         "teclado-3": "Puedes sostener la raíz (Si♭ / Sol♭) como base o improvisar en lo grave.",
-        "teclado-4": "Puedes sostener los acordes o improvisar sobre ellos.",
+        "teclado-4": "Puedes sostener la voz interior (Fa / Sol♭) junto al bajo o improvisar en el registro medio.",
         ambiente: "Los efectos suben y bajan solos, entre el desarrollo y el outro: sigue la guía X/Y.",
       },
     },
     // ============================== INTRO 2 (al revés) ==============================
     {
       nombre: "Intro 2 · Pedal F",
-      inicio: "6:00.00",    // compases 196–207
+      inicio: "4:59.08",    // compases 163–174
       acordes: ["Bbm7", "Gbmaj7"],
       colores: ["#4b2ca0", "#3a1c71"],
       tocan: ["bateria", "teclado-1", "teclado-2", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-3", "ambiente-4"],
@@ -371,7 +371,7 @@ window.PARTITURA = {
     },
     {
       nombre: "Intro 2 · Platillos y distorsión",
-      inicio: "6:22.15",    // compases 208–211
+      inicio: "5:21.23",    // compases 175–178
       acordes: ["Bbm7", "Gbmaj7"],
       colores: ["#2a2f8f", "#3a2f9a"],
       tocan: ["guitarra", "bateria", "teclado-1", "teclado-2", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-4"],
@@ -387,7 +387,7 @@ window.PARTITURA = {
     },
     {
       nombre: "Intro 2 · Guitarra y teclados",
-      inicio: "6:29.54",    // compases 212–219
+      inicio: "5:28.62",    // compases 179–186
       acordes: ["Bbm7", "Gbmaj7"],
       colores: ["#1d2b64", "#23307a"],
       tocan: ["guitarra", "bateria", "teclado-1", "teclado-2", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-4"],
@@ -397,13 +397,13 @@ window.PARTITURA = {
         "teclado-1": "Arpegio A MEDIAS con el teclado 2: tú tocas el Fa (y el Re♭ largo sobre G♭).",
         "teclado-2": "Arpegio A MEDIAS con el teclado 1: entre sus Fa tocas el Si♭ y el La♭.",
         "teclado-3": "Raíz del acorde, una nota por compás (Si♭ / Sol♭).",
-        "teclado-4": "Colchón: los acordes completos, una vez por compás.",
+        "teclado-4": "Voz interior, a la par del bajo: una nota por compás (Fa sobre B♭m7, Sol♭ sobre G♭).",
         bateria: "SIN PLATILLOS (W).",
       },
     },
     {
       nombre: "Intro 2 · Ritmo",
-      inicio: "6:44.31",    // compases 220–227
+      inicio: "5:43.38",    // compases 187–194
       acordes: ["Db"], compasesPorAcorde: 4,
       colores: ["#101a4a"],
       tocan: ["bateria", "ambiente-1", "ambiente-2"],
@@ -415,7 +415,7 @@ window.PARTITURA = {
     },
     {
       nombre: "Intro 2 · Distorsión ambiente",
-      inicio: "6:59.08",    // compases 228–229
+      inicio: "5:58.15",    // compases 195–196
       acordes: ["Gbmaj7"], compasesPorAcorde: 2,
       colores: ["#0b1026"],
       tocan: ["ambiente-1", "ambiente-2"],
@@ -427,7 +427,7 @@ window.PARTITURA = {
     // ============================== DESENLACE ==============================
     {
       nombre: "Desenlace · Sin batería",
-      inicio: "7:02.77",    // compases 230–238
+      inicio: "6:01.85",    // compases 197–205
       acordes: ["Bbm7"], compasesPorAcorde: 1,
       colores: ["#23307a"],
       tocan: ["teclado-1", "teclado-2", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-3", "ambiente-4"],
@@ -440,7 +440,7 @@ window.PARTITURA = {
     },
     {
       nombre: "Desenlace · Hacia Re♭",
-      inicio: "7:19.38",    // compases 239–240
+      inicio: "6:18.46",    // compases 206–207
       acordes: ["Gbmaj7"], compasesPorAcorde: 2,
       colores: ["#2c2a6e"],
       tocan: ["teclado-1", "teclado-2", "teclado-3", "teclado-4", "ambiente-1"],
@@ -452,7 +452,7 @@ window.PARTITURA = {
     },
     {
       nombre: "Desenlace · Resolución en Re♭",
-      inicio: "7:23.08",    // compases 241–248
+      inicio: "6:22.15",    // compases 208–215
       acordes: ["Db"], compasesPorAcorde: 8,
       colores: ["#0b1026"],
       tocan: ["guitarra", "teclado-1", "teclado-3", "teclado-4", "ambiente-1", "ambiente-2", "ambiente-4"],
@@ -486,13 +486,13 @@ window.PARTITURA = {
     { t: "2:26.38", perfiles: ["todos"], texto: "En 5 s: la obra vuelve hacia atrás (Dos líneas 2)" },
     { t: "3:31.00", perfiles: ["teclados"], texto: "En 5 s: quita la distorsión" },
     { t: "3:40.23", perfiles: ["teclado-2", "ambiente-3"], texto: "En 5 s: vuelve el Fa agudo largo" },
-    { t: "3:55.00", perfiles: ["todos"], texto: "En 5 s: IMPROVISACIÓN (2 min)" },
-    { t: "5:55.00", perfiles: ["todos"], texto: "En 5 s: Intro 2" },
-    { t: "5:55.00", perfiles: ["teclado-2", "ambiente-3"], texto: "En 5 s: Fa agudo largo (pedal F)" },
-    { t: "6:39.31", perfiles: ["teclados"], texto: "En 5 s: salen los teclados" },
-    { t: "6:57.77", perfiles: ["todos"], texto: "En 5 s: desenlace" },
-    { t: "7:14.38", perfiles: ["teclado-2"], texto: "En 5 s: suelta el Fa agudo" },
-    { t: "7:18.08", perfiles: ["todos"], texto: "En 5 s: resolución en Re♭ (lenta)" },
+    { t: "3:55.00", perfiles: ["todos"], texto: "En 5 s: IMPROVISACIÓN (1 min)" },
+    { t: "4:54.08", perfiles: ["todos"], texto: "En 5 s: Intro 2" },
+    { t: "4:54.08", perfiles: ["teclado-2", "ambiente-3"], texto: "En 5 s: Fa agudo largo (pedal F)" },
+    { t: "5:38.38", perfiles: ["teclados"], texto: "En 5 s: salen los teclados" },
+    { t: "5:56.85", perfiles: ["todos"], texto: "En 5 s: desenlace" },
+    { t: "6:13.46", perfiles: ["teclado-2"], texto: "En 5 s: suelta el Fa agudo" },
+    { t: "6:17.15", perfiles: ["todos"], texto: "En 5 s: resolución en Re♭ (lenta)" },
   ],
 
   // Efectos automáticos: cómo suena cada instrumento en cada parte. Se aplican solos en "Practicar con la orquesta"
@@ -539,19 +539,15 @@ window.PARTITURA = {
     { desde: "4:14.77", teclados: { dist: [0.13, 0.23], filtro: [0.42, 0.51], reverb: [0.5, 0.4], vol: [0.75, 1] }, "teclado-2": { reverb: [0.75, 0.4] }, "teclado-3": { vol: [1.3, 1.6], dist: [0.09, 0.13], filtro: [0.4, 0.42] }, guitarra: { vol: 0.85, fuzz: [0.08, 0.14], tono: [0.4, 0.42], reverb: [0.6, 0.5] } },
     { desde: "4:29.54", teclados: { dist: [0.23, 0.13], filtro: [0.51, 0.42], reverb: [0.4, 0.5], vol: [1, 0.75] }, "teclado-2": { reverb: [0.4, 0.75] }, "teclado-3": { vol: [1.6, 1.3], dist: [0.13, 0.09], filtro: [0.42, 0.4] }, guitarra: { vol: 0.85, fuzz: [0.14, 0.08], tono: [0.42, 0.4], reverb: [0.5, 0.6] } },
     { desde: "4:44.31", teclados: { dist: [0.13, 0.23], filtro: [0.42, 0.51], reverb: [0.5, 0.4], vol: [0.75, 1] }, "teclado-2": { reverb: [0.75, 0.4] }, "teclado-3": { vol: [1.3, 1.6], dist: [0.09, 0.13], filtro: [0.4, 0.42] }, guitarra: { vol: 0.85, fuzz: [0.08, 0.14], tono: [0.4, 0.42], reverb: [0.6, 0.5] } },
-    { desde: "4:59.08", teclados: { dist: [0.23, 0.13], filtro: [0.51, 0.42], reverb: [0.4, 0.5], vol: [1, 0.75] }, "teclado-2": { reverb: [0.4, 0.75] }, "teclado-3": { vol: [1.6, 1.3], dist: [0.13, 0.09], filtro: [0.42, 0.4] }, guitarra: { vol: 0.85, fuzz: [0.14, 0.08], tono: [0.42, 0.4], reverb: [0.5, 0.6] } },
-    { desde: "5:13.85", teclados: { dist: [0.13, 0.23], filtro: [0.42, 0.51], reverb: [0.5, 0.4], vol: [0.75, 1] }, "teclado-2": { reverb: [0.75, 0.4] }, "teclado-3": { vol: [1.3, 1.6], dist: [0.09, 0.13], filtro: [0.4, 0.42] }, guitarra: { vol: 0.85, fuzz: [0.08, 0.14], tono: [0.4, 0.42], reverb: [0.6, 0.5] } },
-    { desde: "5:28.62", teclados: { dist: [0.23, 0.13], filtro: [0.51, 0.42], reverb: [0.4, 0.5], vol: [1, 0.75] }, "teclado-2": { reverb: [0.4, 0.75] }, "teclado-3": { vol: [1.6, 1.3], dist: [0.13, 0.09], filtro: [0.42, 0.4] }, guitarra: { vol: 0.85, fuzz: [0.14, 0.08], tono: [0.42, 0.4], reverb: [0.5, 0.6] } },
-    { desde: "5:43.38", teclados: { dist: [0.13, 0.23], filtro: [0.42, 0.51], reverb: [0.5, 0.4], vol: [0.75, 1] }, "teclado-2": { reverb: [0.75, 0.4] }, "teclado-3": { vol: [1.3, 1.6], dist: [0.09, 0.13], filtro: [0.4, 0.42] }, guitarra: { vol: 0.85, fuzz: [0.08, 0.14], tono: [0.4, 0.42], reverb: [0.6, 0.5] } },
-    { desde: "6:00.00", teclados: { dist: 0.22, filtro: 0.48, reverb: 0.4 }, "teclado-2": { dist: 0.05, filtro: 0.5, reverb: 0.65 }, "teclado-3": { vol: 1.6, dist: 0.09, filtro: 0.36 }, bateria: { vol: 1.09, reverb: 0.28, drive: 0.07 } },   // Intro 2 · Pedal F
-    { desde: "6:22.15", teclados: { dist: [0.22, 0.11], filtro: 0.46, reverb: 0.4 }, "teclado-3": { vol: 1.6, dist: 0.04, filtro: 0.36 }, guitarra: { fuzz: 0.1, tono: 0.4, reverb: 0.45 }, bateria: { vol: 1.09, reverb: 0.28, drive: 0.07 } },   // Platillos y distorsión 2: la distorsión baja
-    { desde: "6:29.54", teclados: { dist: 0, filtro: 0.42, reverb: 0.4 }, "teclado-3": { vol: 1.6, dist: 0.02, filtro: 0.32 }, guitarra: { fuzz: 0.05, tono: 0.38, reverb: 0.45 }, bateria: { vol: 0.98, reverb: 0.3, drive: 0.04 } },   // Guitarra y teclados 2
-    { desde: "6:44.31", bateria: { vol: [0.98, 0.63], reverb: 0.35, drive: 0.03 } },   // Ritmo 2
-    { desde: "6:59.08", todos: { reverb: 0.6 } },   // Distorsión ambiente 2
-    { desde: "7:02.77", teclados: { dist: 0.11, filtro: 0.4, reverb: 0.55, vol: 0.6 }, "teclado-3": { dist: 0.07, vol: 0.75 }, "teclado-4": { vol: 0.65 } },   // desenlace: vuelven los teclados, suaves
-    { desde: "7:19.38", teclados: { dist: [0.11, 0.07], filtro: [0.4, 0.36], reverb: [0.55, 0.62], vol: 0.6 }, "teclado-3": { dist: 0.05, vol: 0.75 }, "teclado-4": { vol: 0.65 } },   // G♭maj7: cadencia plagal
-    { desde: "7:23.08", teclados: { dist: [0.06, 0.03], filtro: [0.36, 0.32], reverb: [0.62, 0.75], vol: [0.6, 0.42] }, "teclado-3": { dist: 0.04, vol: [0.75, 0.5] }, "teclado-4": { vol: [0.65, 0.45] }, guitarra: { fuzz: 0.04, tono: 0.38, reverb: [0.65, 0.78], vol: [0.85, 0.6] } },   // Re♭: se apaga despacio…
-    { desde: "7:30.46", teclados: { dist: [0.03, 0], filtro: [0.32, 0.24], reverb: [0.75, 0.9], vol: [0.42, 0] }, "teclado-3": { dist: 0.02, vol: [0.5, 0] }, "teclado-4": { vol: [0.45, 0] }, guitarra: { fuzz: 0.02, tono: [0.38, 0.34], reverb: [0.78, 0.9], vol: [0.6, 0] } },   // …y muere
+    { desde: "4:59.08", teclados: { dist: 0.22, filtro: 0.48, reverb: 0.4 }, "teclado-2": { dist: 0.05, filtro: 0.5, reverb: 0.65 }, "teclado-3": { vol: 1.6, dist: 0.09, filtro: 0.36 }, bateria: { vol: 1.09, reverb: 0.28, drive: 0.07 } },   // Intro 2 · Pedal F
+    { desde: "5:21.23", teclados: { dist: [0.22, 0.11], filtro: 0.46, reverb: 0.4 }, "teclado-3": { vol: 1.6, dist: 0.04, filtro: 0.36 }, guitarra: { fuzz: 0.1, tono: 0.4, reverb: 0.45 }, bateria: { vol: 1.09, reverb: 0.28, drive: 0.07 } },   // Platillos y distorsión 2: la distorsión baja
+    { desde: "5:28.62", teclados: { dist: 0, filtro: 0.42, reverb: 0.4 }, "teclado-3": { vol: 1.6, dist: 0.02, filtro: 0.32 }, guitarra: { fuzz: 0.05, tono: 0.38, reverb: 0.45 }, bateria: { vol: 0.98, reverb: 0.3, drive: 0.04 } },   // Guitarra y teclados 2
+    { desde: "5:43.38", bateria: { vol: [0.98, 0.63], reverb: 0.35, drive: 0.03 } },   // Ritmo 2
+    { desde: "5:58.15", todos: { reverb: 0.6 } },   // Distorsión ambiente 2
+    { desde: "6:01.85", teclados: { dist: 0.11, filtro: 0.4, reverb: 0.55, vol: 0.6 }, "teclado-3": { dist: 0.07, vol: 0.75 }, "teclado-4": { vol: 0.65 } },   // desenlace: vuelven los teclados, suaves
+    { desde: "6:18.46", teclados: { dist: [0.11, 0.07], filtro: [0.4, 0.36], reverb: [0.55, 0.62], vol: 0.6 }, "teclado-3": { dist: 0.05, vol: 0.75 }, "teclado-4": { vol: 0.65 } },   // G♭maj7: cadencia plagal
+    { desde: "6:22.15", teclados: { dist: [0.06, 0.03], filtro: [0.36, 0.32], reverb: [0.62, 0.75], vol: [0.6, 0.42] }, "teclado-3": { dist: 0.04, vol: [0.75, 0.5] }, "teclado-4": { vol: [0.65, 0.45] }, guitarra: { fuzz: 0.04, tono: 0.38, reverb: [0.65, 0.78], vol: [0.85, 0.6] } },   // Re♭: se apaga despacio…
+    { desde: "6:29.54", teclados: { dist: [0.03, 0], filtro: [0.32, 0.24], reverb: [0.75, 0.9], vol: [0.42, 0] }, "teclado-3": { dist: 0.02, vol: [0.5, 0] }, "teclado-4": { vol: [0.45, 0] }, guitarra: { fuzz: 0.02, tono: [0.38, 0.34], reverb: [0.78, 0.9], vol: [0.6, 0] } },   // …y muere
   ],
 
   // Pistas MIDI del arreglo (carpeta midi/). Están a 130 BPM y empiezan en 0:00, así que calzan con el reloj.
@@ -580,6 +576,7 @@ window.PARTITURA = {
       "teclado-1": { pistas: ["medio"], notas: [61, 65, 66] },           // Re♭4, Fa4, Sol♭4
       "teclado-2": { pistas: ["medio", "pedal"], notas: [68, 70, 72, 73, 77],  // La♭4, Si♭4, Do5, Re♭5 y el Fa5 del pedal
                      volumen: { 77: 0.4 } },   // el Fa agudo del pedal suena largo y se come al resto: va más bajo (≈ −8 dB)
+      "teclado-4": { pistas: ["pad"], notas: [53, 54] },              // voz interior del pad: Fa3 (B♭m7) / Sol♭3 (G♭maj7), una por compás como el bajo
     },
     // midi/genesis_completo.mid tiene todas las pistas juntas (para abrirlo en un DAW o MuseScore).
   },
@@ -626,20 +623,15 @@ window.PARTITURA = {
       ["4:14.77", 0.55, 0.70],
       ["4:29.54", 0.75, 0.85],
       ["4:44.31", 0.55, 0.70],
-      ["4:59.08", 0.75, 0.85],
-      ["5:13.85", 0.55, 0.70],
-      ["5:28.62", 0.75, 0.85],
-      ["5:43.38", 0.55, 0.70],
-      ["5:58.15", 0.75, 0.85],
-      ["5:59.99", 0.75, 0.85],
-      ["6:00.00", 0.35, 0.55],
-      ["6:29.54", 0.45, 0.65],
-      ["6:44.31", 0.25, 0.55],
-      ["6:59.08", 0.12, 0.30],
-      ["6:59.17", 0.10, 0.00],
-      ["7:02.76", 0.10, 0.00],
-      ["7:02.77", 0.30, 0.00],
-      ["7:37.85", 0.30, 0.00],
+      ["4:59.07", 0.75, 0.85],
+      ["4:59.08", 0.35, 0.55],
+      ["5:28.62", 0.45, 0.65],
+      ["5:43.39", 0.25, 0.55],
+      ["5:58.16", 0.12, 0.30],
+      ["5:58.25", 0.10, 0.00],
+      ["6:01.84", 0.10, 0.00],
+      ["6:01.85", 0.30, 0.00],
+      ["6:36.92", 0.30, 0.00],
     ],
     "ambiente-principal": [
       ["0:00.00", 0.05, 0.40],
@@ -670,21 +662,16 @@ window.PARTITURA = {
       ["4:14.77", 0.55, 0.65],
       ["4:29.54", 0.65, 0.80],
       ["4:44.31", 0.55, 0.65],
-      ["4:59.08", 0.65, 0.80],
-      ["5:13.85", 0.55, 0.65],
-      ["5:28.62", 0.65, 0.80],
-      ["5:43.38", 0.55, 0.65],
-      ["5:58.15", 0.65, 0.80],
-      ["5:59.99", 0.65, 0.80],
-      ["6:00.00", 0.45, 0.55],
-      ["6:29.54", 0.45, 0.60],
-      ["6:44.31", 0.30, 0.50],
-      ["7:02.76", 0.05, 0.40],
-      ["7:02.77", 0.40, 0.48],
-      ["7:19.38", 0.33, 0.40],
-      ["7:23.08", 0.25, 0.30],
-      ["7:30.46", 0.18, 0.18],
-      ["7:37.85", 0.08, 0.00],
+      ["4:59.07", 0.65, 0.80],
+      ["4:59.08", 0.45, 0.55],
+      ["5:28.62", 0.45, 0.60],
+      ["5:43.39", 0.30, 0.50],
+      ["6:01.84", 0.05, 0.40],
+      ["6:01.85", 0.40, 0.48],
+      ["6:18.46", 0.33, 0.40],
+      ["6:22.15", 0.25, 0.30],
+      ["6:29.54", 0.18, 0.18],
+      ["6:36.92", 0.08, 0.00],
     ],
     "ambiente-extra": [
       ["0:00.00", 0.10, 0.20],
@@ -713,21 +700,16 @@ window.PARTITURA = {
       ["4:14.77", 0.45, 0.85],
       ["4:29.54", 0.65, 0.75],
       ["4:44.31", 0.45, 0.85],
-      ["4:59.08", 0.65, 0.75],
-      ["5:13.85", 0.45, 0.85],
-      ["5:28.62", 0.65, 0.75],
-      ["5:43.38", 0.45, 0.85],
-      ["5:58.15", 0.65, 0.75],
-      ["5:59.99", 0.65, 0.75],
-      ["6:00.00", 0.48, 0.62],
-      ["6:29.54", 0.40, 0.50],
-      ["6:44.31", 0.25, 0.35],
-      ["7:02.76", 0.10, 0.20],
-      ["7:02.77", 0.36, 0.64],
-      ["7:19.38", 0.30, 0.50],
-      ["7:23.08", 0.25, 0.40],
-      ["7:30.46", 0.18, 0.22],
-      ["7:37.85", 0.08, 0.00],
+      ["4:59.07", 0.65, 0.75],
+      ["4:59.08", 0.48, 0.62],
+      ["5:28.62", 0.40, 0.50],
+      ["5:43.39", 0.25, 0.35],
+      ["6:01.84", 0.10, 0.20],
+      ["6:01.85", 0.36, 0.64],
+      ["6:18.46", 0.30, 0.50],
+      ["6:22.15", 0.25, 0.40],
+      ["6:29.54", 0.18, 0.22],
+      ["6:36.92", 0.08, 0.00],
     ],
   },
 

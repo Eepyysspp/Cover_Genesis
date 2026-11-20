@@ -79,7 +79,7 @@
     { id: "teclado-1", titulo: "Teclado 1", sub: "Arpegio · notas graves", icono: "🎹" },
     { id: "teclado-2", titulo: "Teclado 2", sub: "Arpegio · notas agudas y pedal", icono: "🎹" },
     { id: "teclado-3", titulo: "Teclado 3", sub: "Bajo/medio · el bajo", icono: "🎹" },
-    { id: "teclado-4", titulo: "Teclado 4", sub: "Bajo/medio · acordes", icono: "🎹" },
+    { id: "teclado-4", titulo: "Teclado 4", sub: "Bajo/medio · voz interior", icono: "🎹" },
     { id: "guitarra", titulo: "Teclado líder", sub: "La melodía · Square Woof", icono: "🎹" },
     { id: "ambiente-1", titulo: "Ambiente", sub: "Base grave · colores", icono: "🌊" },
     { id: "ambiente-3", titulo: "Ambiente brillo", sub: "Agudo · brillo", icono: "✨" },
@@ -161,7 +161,8 @@
   /* ============================== efectos automáticos ============================== */
   // La tabla "efectos" de la partitura mueve los controles en cada parte. Si mueves un control a mano, se apaga.
   function efectosAuto(perfil, inst, mapa, alAplicar, { escala = () => 1, guardarlo = true } = {}) {
-    const base = Object.assign({}, inst.p), pintores = [];
+    const base = Object.assign({}, inst.p), pintores = [], porDefecto = {};
+    for (const k in mapa) if (k !== "vol") porDefecto[mapa[k]] = base[k];   // sin dato en la tabla = como parte el instrumento
     let activo = guardarlo ? leer("v2:efectos:" + perfil.id, true) : true, ultimo = 0;
     return {
       get activo() { return activo; },
@@ -169,7 +170,7 @@
       poner(v) { activo = v; if (guardarlo) guardar("v2:efectos:" + perfil.id, v); pintores.forEach(f => f()); },
       cuadro(t) {
         if (!activo || performance.now() - ultimo < 120) return; ultimo = performance.now();
-        const e = efectosEn(tObra(t), perfil); let cambio = false;
+        const e = efectosEn(tObra(t), perfil, porDefecto); let cambio = false;
         for (const k in mapa) {
           const v = k === "vol" ? base.vol * (e.vol != null ? e.vol : 1) * escala() : e[mapa[k]] != null ? e[mapa[k]] : base[k];
           if (v != null && Math.abs((inst.p[k] || 0) - v) > 0.004) { inst.p[k] = v; cambio = true; }
@@ -838,7 +839,7 @@
     { id: "teclado-1", tipo: "teclado", nombre: "Teclado 1", sub: "arpegio, notas graves", icono: "🎹", def: "teclado-1", son: "square-woof" },
     { id: "teclado-2", tipo: "teclado", nombre: "Teclado 2", sub: "arpegio agudo y pedal", icono: "🎹", def: "teclado-2", son: "square-woof" },
     { id: "teclado-3", tipo: "teclado", nombre: "Teclado 3", sub: "el bajo", icono: "🎹", def: "teclado-3", son: "square-woof" },
-    { id: "teclado-4", tipo: "teclado", nombre: "Teclado 4", sub: "acordes", icono: "🎹", def: "teclado-4", son: "square-woof" },
+    { id: "teclado-4", tipo: "teclado", nombre: "Teclado 4", sub: "voz interior", icono: "🎹", def: "teclado-4", son: "square-woof" },
     { id: "ambiente-1", tipo: "ambiente", nombre: "Ambiente", sub: "base grave", icono: "🌊", def: "ambiente-1" },
     { id: "guitarra", tipo: "teclado", nombre: "Teclado líder", sub: "la melodía", icono: "🎹", def: "gtr-nota", son: "square-woof" },
   ];
