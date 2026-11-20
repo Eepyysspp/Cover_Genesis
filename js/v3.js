@@ -731,19 +731,17 @@
     caja.innerHTML = "";
     const fila = el(`<div class="fila opciones"><button class="btn grande" data-r="on">Encender</button>
       <button class="chip" data-r="midi" title="Las notas siguen tu pista MIDI; si no, la raíz de cada acorde">🎼 Notas del MIDI</button>
-      <button class="chip" data-r="pantalla" title="Pantalla completa de colores para proyectar">🖥️ Colores a pantalla completa</button></div>`);
+      <button class="chip" data-r="luces" title="Abre los colores de la obra en otra ventana, para el proyector (L)">🖥️ Ventana de luces (proyector)</button></div>`);
     const xy = crearXY(perfil, { alMover: (x, y) => { a.p.x = x; a.p.y = y; a.aplicar(); } });
     const fx = el(`<div class="efectos"></div>`);
-    const colores = el(`<div class="colores" hidden><span>toca para salir</span></div>`);
-    caja.append(fila, xy.caja, fx); document.body.appendChild(colores);
+    caja.append(fila, xy.caja, fx);
     const bOn = $("[data-r=on]", fila), bMidi = $("[data-r=midi]", fila);
     let usarMidi = leer("v3:ambmidi:" + perfil.id, true);
     const pintar = () => { bOn.textContent = a.encendido ? "Apagar" : "Encender"; bOn.classList.toggle("on", a.encendido); bMidi.classList.toggle("on", usarMidi); };
     const alternar = () => { if (a.encendido) a.apagar(); else { a.afinar(acordeEn(tObra(R.ahora())).nombre, 0.01); a.encender(); } pintar(); };
     bOn.onclick = () => { xy.ponerAuto(false); alternar(); };
     bMidi.onclick = () => { usarMidi = !usarMidi; guardar("v3:ambmidi:" + perfil.id, usarMidi); if (!usarMidi) a.afinarNotas(null); pintar(); };
-    $("[data-r=pantalla]", fila).onclick = () => { colores.hidden = false; if (colores.requestFullscreen) colores.requestFullscreen().catch(() => {}); };
-    colores.onclick = () => { colores.hidden = true; if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); };
+    $("[data-r=luces]", fila).onclick = abrirLuces;
     const ds = [deslizador("Volumen", a, "vol", null), deslizador("Reverb", a, "reverb", null)];
     fx.append(...ds);
     xy.poner(a.p.x, a.p.y); pintar();
@@ -751,22 +749,37 @@
       if (escribiendo(e)) return;
       if (e.code === "Space") { e.preventDefault(); xy.ponerAuto(false); alternar(); }
       else if (e.key.toLowerCase() === "g") xy.ponerAuto(!xy.auto);
+      else if (e.key.toLowerCase() === "l") abrirLuces();
       else if (/^Arrow/.test(e.key)) { e.preventDefault(); const d = { ArrowUp: [0, 0.05], ArrowDown: [0, -0.05], ArrowRight: [0.05, 0], ArrowLeft: [-0.05, 0] }[e.key]; xy.flecha(...d); }
     };
     document.addEventListener("keydown", alBajar);
     let acorde = null;
     return {
-      ayuda: "Espacio enciende/apaga · flechas mueven X/Y · G sigue la guía",
+      ayuda: "Espacio enciende/apaga · flechas mueven X/Y · G sigue la guía · L abre la ventana de luces (proyector)",
       cuadro(t, dt) {
         const tc = tObra(t), ac = acordeEn(tc);
         if (ac.nombre !== acorde) { acorde = ac.nombre; a.afinar(acorde, 0.6); }
         if (usarMidi && pista) { const ns = window.MIDI.sonando(pista, tc).map(n => n.m); if (ns.length) a.afinarNotas(ns, 0.6); }
         const g = xy.cuadro(t, dt, a.encendido, ac.color);
         if (xy.auto && g) { if (g.y >= 0.03 && !a.encendido) alternar(); else if (g.y < 0.03 && a.encendido && xy.y < 0.03) alternar(); }
-        if (!colores.hidden) colores.style.background = `radial-gradient(circle at 50% ${(1 - xy.y) * 100}%, ${ac.color}, rgba(${Math.round(xy.x * 220)},10,${Math.round((1 - xy.x) * 120)},${0.3 + xy.y * 0.6}) 55%, #000 100%)`;
+        // la ventana de luces (luces.html) dibuja lo que manda el ambiente: color, acorde y la X/Y
+        if (canalLuces && performance.now() - ultimaLuz > 33) {
+          ultimaLuz = performance.now();
+          canalLuces.postMessage({ tipo: "luz", color: ac.color || "#7c9cff", acorde: bonito(ac.nombre), seccion: seccionEn(tc).nombre, x: xy.x, y: xy.y,
+            on: a.encendido, corriendo: R.estado.corriendo && t < DURACION && R.cuenta() <= 0, fin: t >= DURACION });
+        }
       },
-      destruir() { a.apagar(); colores.remove(); document.removeEventListener("keydown", alBajar); },
+      destruir() { a.apagar(); if (canalLuces) canalLuces.postMessage({ tipo: "luz", color: "#000000", x: 0, y: 0, on: false, corriendo: false, fin: false, acorde: "", seccion: "" }); document.removeEventListener("keydown", alBajar); },
     };
+  }
+
+  // Ventana de luces: en la app se abre en la pantalla extra (proyector) si hay una; en el navegador, como ventana aparte
+  const canalLuces = "BroadcastChannel" in window ? new BroadcastChannel("genesis-luces") : null;
+  let ultimaLuz = 0;
+  function abrirLuces() {
+    if (APP && APP.abrirLuces) return APP.abrirLuces();
+    const w = window.open("luces.html", "genesis-luces", "popup,width=960,height=540");
+    if (!w) alert("El navegador bloqueó la ventana: permite las ventanas emergentes para esta página.");
   }
 
   /* ============================== cronómetro (director) ============================== */
@@ -1123,8 +1136,11 @@
   const pantallaInicio = $("#inicio"), escenario = $("#escenario");
   function dibujarInicio() {
     const grilla = $(".roles", pantallaInicio), extras = $(".roles-extra", pantallaInicio) || grilla;
-    ROLES.forEach(r => {
-      const b = el(`<button class="rol ${r.id === "director" ? "director" : ""}"><span class="ico">${r.icono}</span><b>${esc(r.titulo)}</b><small>${esc(r.sub)}</small></button>`);
+    // en la app, el Ambiente lo toca el maestro (junto con la ventana de luces): los músicos no lo ven
+    const st = R.estado;
+    ROLES.filter(r => !(st.app === "musico" && r.id === "ambiente-1")).forEach(r => {
+      const deMaestro = st.maestro && r.id === "ambiente-1";
+      const b = el(`<button class="rol ${r.id === "director" ? "director" : ""}${deMaestro ? " maestro" : ""}"><span class="ico">${r.icono}</span><b>${esc(r.titulo)}${deMaestro ? " · maestro" : ""}</b><small>${esc(deMaestro ? "Tu rol: base grave, colores y luces del proyector" : r.sub)}</small></button>`);
       b.onclick = () => entrar(r.id);
       (r.extra ? extras : grilla).appendChild(b);
     });
@@ -1200,7 +1216,8 @@
     if (!enRed && st.app === "musico") setTimeout(async function reintentar() {   // el maestro todavía no abre la sala: se sigue intentando
       if (await R.conectar()) { $("#estadoRed").textContent = "🔗 Conectado al maestro"; $("#estadoRed").className = "chip-estado ok"; } else setTimeout(reintentar, 2000);
     }, 2000);
-    const q = new URLSearchParams(location.search).get("rol");
+    let q = new URLSearchParams(location.search).get("rol");
+    if (!q && R.estado.maestro) q = "ambiente-1";   // la laptop maestro toca el Ambiente
     if (q && ROLES.some(r => r.id === q)) {
       // el audio necesita un toque para empezar
       const ov = el(`<div class="overlay"><button class="btn grande">▶ Entrar como ${esc(ROLES.find(r => r.id === q).titulo)}</button><button class="btn" data-r="otro">Elegir otro rol</button></div>`);

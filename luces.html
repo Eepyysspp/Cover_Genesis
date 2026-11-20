@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Genesis · Luces</title>
+  <meta name="description" content="Ventana de luces de Genesis (versión 3) para proyectar: sigue los colores de la obra que manda el Ambiente.">
+  <style>
+    html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+    canvas { display: block; width: 100vw; height: 100vh; }
+    body.quieto { cursor: none; }
+    .info { position: fixed; left: 16px; bottom: 14px; font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; color: rgba(255,255,255,.55); pointer-events: none; transition: opacity .6s; }
+    .info b { color: rgba(255,255,255,.8); }
+    body.quieto .info.sola { opacity: 0; }
+  </style>
+</head>
+<body>
+<canvas></canvas>
+<div class="info" id="info"><b>Genesis · luces</b> · esperando al Ambiente… · doble clic: pantalla completa · I: mostrar/ocultar datos</div>
+<script src="js/v3_luces.js?v=202611200258"></script>
+</body>
+</html>

@@ -12,7 +12,7 @@ const { execFileSync } = require("child_process");
 const RAIZ = path.resolve(__dirname, "..");
 const WEB = path.join(__dirname, "web");
 const DIST = path.join(__dirname, "dist");
-const ARCHIVOS = ["v3.html", "css/v3.css", "js/partitura.js", "js/v3_obra.js", "js/comun.js", "js/audio.js", "js/pistas_midi.js", "js/midi.js", "js/v3_reloj.js", "js/v3.js"];
+const ARCHIVOS = ["v3.html", "luces.html", "js/v3_luces.js", "css/v3.css", "js/partitura.js", "js/v3_obra.js", "js/comun.js", "js/audio.js", "js/pistas_midi.js", "js/midi.js", "js/v3_reloj.js", "js/v3.js"];
 const CARPETAS = ["sonidos", "midi"];
 const OBJETIVOS = {
   "mac-arm64": { platform: "darwin", arch: "arm64" },

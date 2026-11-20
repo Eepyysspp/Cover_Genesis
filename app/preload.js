@@ -7,5 +7,6 @@ contextBridge.exposeInMainWorld("genesisApp", {
   unirme: (ip, puerto) => ipcRenderer.invoke("unirme", ip, puerto),
   solo: () => ipcRenderer.invoke("solo"),
   inicio: () => ipcRenderer.invoke("inicio"),
+  abrirLuces: () => ipcRenderer.invoke("abrir-luces"),
   alSalas: f => ipcRenderer.on("salas", (_e, lista) => f(lista)),
 });

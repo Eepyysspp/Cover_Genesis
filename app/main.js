@@ -3,7 +3,7 @@
    Las demás (músicos) encuentran la sala solas y siguen ese reloj; al iniciar, todas parten juntas tras una cuenta
    regresiva. Cada app sirve la página v3 desde su propia copia (web/), así que el wifi solo lleva el reloj.
    No hace falta internet: solo que todas estén en el mismo router. */
-const { app, BrowserWindow, ipcMain, powerSaveBlocker, session, Menu, shell, dialog } = require("electron");
+const { app, BrowserWindow, ipcMain, powerSaveBlocker, session, Menu, shell, dialog, screen } = require("electron");
 const http = require("http");
 const fs = require("fs");
 const os = require("os");
@@ -167,8 +167,24 @@ function crearVentana() {
     webPreferences: { preload: path.join(__dirname, "preload.js"), backgroundThrottling: false, contextIsolation: true, nodeIntegration: false },
   });
   ventana.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: "deny" }; });
-  ventana.on("closed", () => { ventana = null; });
+  ventana.on("closed", () => { ventana = null; if (luces && !luces.isDestroyed()) luces.close(); });
   irAlInicio();
+}
+// Ventana de luces (luces.html): los colores de la obra para el proyector. Si hay una segunda pantalla, se abre ahí a
+// pantalla completa; si no, como ventana normal. La alimenta la página del Ambiente (BroadcastChannel "genesis-luces").
+let luces = null;
+function abrirLuces() {
+  if (luces && !luces.isDestroyed()) { luces.show(); luces.focus(); return; }
+  const principal = screen.getPrimaryDisplay(), extra = screen.getAllDisplays().find(d => d.id !== principal.id);
+  const b = extra ? extra.bounds : { x: undefined, y: undefined, width: 960, height: 540 };
+  luces = new BrowserWindow({
+    x: b.x, y: b.y, width: extra ? b.width : 960, height: extra ? b.height : 540, fullscreen: !!extra, backgroundColor: "#000000",
+    title: "Genesis · Luces", autoHideMenuBar: true, icon: path.join(__dirname, "ui", "icono.png"),
+    webPreferences: { backgroundThrottling: false, contextIsolation: true, nodeIntegration: false },
+  });
+  luces.setMenuBarVisibility(false);
+  luces.on("closed", () => { luces = null; });
+  luces.loadURL(`http://127.0.0.1:${puerto}/luces.html`);
 }
 
 ipcMain.handle("info", () => ({ nombre: EQUIPO, ips: ips(), puerto, version: app.getVersion(), plataforma: process.platform }));
@@ -187,6 +203,7 @@ ipcMain.handle("unirme", async (_e, ip, p) => {
   return { ok: true };
 });
 ipcMain.handle("inicio", () => irAlInicio());
+ipcMain.handle("abrir-luces", () => abrirLuces());
 
 app.whenReady().then(async () => {
   // permisos: teclado MIDI (y nada más)
@@ -198,6 +215,7 @@ app.whenReady().then(async () => {
     ...(mac ? [{ role: "appMenu" }] : []),
     { label: "Genesis", submenu: [
       { label: "Volver al inicio (salir de la sala)", accelerator: "CmdOrCtrl+Shift+H", click: () => ventana && irAlInicio() },
+      { label: "Ventana de luces (proyector)", accelerator: "CmdOrCtrl+L", click: () => abrirLuces() },
       { type: "separator" }, { role: "reload", label: "Recargar" }, { role: "togglefullscreen", label: "Pantalla completa" },
       { role: "toggleDevTools", label: "Herramientas de desarrollo" },
       ...(mac ? [] : [{ type: "separator" }, { role: "quit", label: "Salir" }]),

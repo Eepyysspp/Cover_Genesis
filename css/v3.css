@@ -371,3 +371,4 @@ kbd { font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 .cuenta-atras .aviso-sonido { display: none; font-style: normal; color: var(--mal); font-weight: 700; margin-top: 8px; }
 body.sin-sonido .cuenta-atras .aviso-sonido { display: block; }
 @media (max-width: 700px) { .vol-general input { width: 70px; } }
+.rol.maestro { border-color: var(--acento); background: linear-gradient(135deg, rgba(255,107,154,.16), transparent 70%), var(--panel); }

@@ -14,6 +14,7 @@ La versión 2 tal cual, lista para tocar en conjunto. La **app Genesis** (Electr
 - **Practicar solo:** sin red, con cronómetro propio.
 - No hace falta internet: solo que todas estén en el mismo router (las redes de la universidad suelen aislar a los equipos entre sí). Cada app sirve la página v3 desde su propia copia, así que por el wifi solo viaja el reloj.
 - **Limitador** al final de la mezcla (compresor rápido + saturación suave): no hay clipping aunque suenen muchas notas.
+- **El maestro toca el Ambiente** y maneja las **luces**: al abrir la sala entra directo como Ambiente (los músicos ya no ven ese rol). Con **🖥️ Ventana de luces (proyector)** (o la tecla L, o el menú Genesis → Ventana de luces) se abre `luces.html` en otra ventana: si hay una segunda pantalla (el proyector), se abre ahí a pantalla completa. Muestra el color de cada sección, sube y baja con la intensidad (Y) de la guía del ambiente, parpadea con la distorsión (X), destella en cada cambio de acorde y se apaga cuando el ambiente se apaga o la obra termina. En el navegador también funciona (ventana emergente). Doble clic o F: pantalla completa; I: muestra los datos.
 - **Abre en silencio:** cada laptop parte con el sonido apagado y el mismo volumen general (80 %); el botón **🔇 Activar sonido** de la cabecera lo enciende, y al lado está el volumen general. Si el maestro inicia y una laptop sigue en silencio, la cuenta regresiva se lo avisa.
 - **Nivel de referencia por rol** en un solo lugar: `P.niveles` en `js/v3_obra.js` (dB; 0 = como suena ahora, −3 más suave, +3 más fuerte). Se ajusta en el ensayo con el sistema de sonido de la sala y vale para la página, la app y la orquesta de ensayo. El volumen del computador va aparte: fijarlo igual en todas las laptops.
 - **Teclado MIDI USB** para los teclados (y el teclado líder): la nota que tocas suena tal cual, con ← → para cambiar de octava. Un teclado MIDI no tiene el límite de teclas simultáneas de los teclados de notebook.
@@ -201,7 +202,8 @@ index.html        Hub de versiones (css/hub.css)
 v1.html           Versión 1: perfiles, hora común y partitura general
 tocar.html        Página de control de cada perfil (?p=guitarra, ?p=teclado-2, …)
 v2.html           Versión 2: interfaz simple (js/v2.js, js/v2_reloj.js, css/v2.css)
-v3.html           Versión 3: la 2 + red local, limitador y MIDI (js/v3.js, js/v3_reloj.js, css/v3.css)
+v3.html           Versión 3: la 2 + red local, limitador y MIDI (js/v3.js, js/v3_reloj.js, js/v3_obra.js, css/v3.css)
+luces.html        Ventana de luces de la versión 3 para el proyector (js/v3_luces.js)
 app/              App de escritorio de la versión 3 (Electron): main.js, preload.js, ui/inicio.html, construir.js
 servidor.py       Cronómetro en red para las versiones 2 y 3 en el navegador (python servidor.py)
 guitarra.html     Partitura y tablatura de la guitarra real (leer, escuchar, imprimir)
