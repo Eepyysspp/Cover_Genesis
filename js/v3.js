@@ -383,7 +383,7 @@
         const c = cols.get(mapear(n.m)); if (!c) continue;
         const yIni = H - (n.t - tc) * porSeg, h = Math.max(8, n.d * porSeg), j = juicio.get(i);
         const suena = n.t <= tc && tc < n.t + n.d;
-        g.fillStyle = j ? (j.tipo === "fallo" ? "rgba(154,149,173,.45)" : "#5be3a1") : c.negra ? "#b98bff" : "#ff6b9a";
+        g.fillStyle = j ? (j.tipo === "fallo" ? "rgba(154,149,173,.45)" : "#5be3a1") : c.negra ? "#7fb6ff" : "#2ba3b5";
         if (suena && !j) g.fillStyle = "#ffd36b";
         const pad = c.negra ? 1 : 2;
         rect(c.x + pad, yIni - h, c.w - pad * 2, h, Math.min(6, c.w / 3));
@@ -406,7 +406,7 @@
         g.textAlign = "start"; g.textBaseline = "bottom";
       });
       // la línea donde se toca (el borde del piano)
-      g.fillStyle = "rgba(255,107,154,.9)"; g.fillRect(0, H - 3, W, 3);
+      g.fillStyle = "rgba(43,163,181,.9)"; g.fillRect(0, H - 3, W, 3);
       // avisos: Perfecto / Bien / Fallo
       const ahora = performance.now();
       g.textAlign = "center"; g.font = "800 13px system-ui, sans-serif";
