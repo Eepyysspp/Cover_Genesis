@@ -3,9 +3,25 @@
 Propuesta de obra de Felipe Osorio (Tarea 1). Hub web para interpretar **“genesis”** de Robin Callaway (álbum *i saw an angel in the mirror*, 2024) con la Orquesta de Laptops UC.
 Cada integrante abre la página, elige su perfil y toca desde el navegador. No hay que instalar nada.
 
+`index.html` es el **hub de versiones**: desde ahí se elige la versión 1 (`v1.html`), la 2 (`v2.html`) o la 3 (`v3.html` y la app de escritorio).
+
+## Versión 3 (`v3.html` + app de escritorio en `app/`): tocar en red local
+
+La versión 2 tal cual, lista para tocar en conjunto. La **app Genesis** (Electron, para Mac y Windows) corre en cada laptop:
+
+- **Abrir sala (maestro):** esa laptop lleva el reloj de la obra y lo anuncia en la red (Bonjour, `_genesis._tcp`). También elige un instrumento y toca. Con **▶ Iniciar** hay una **cuenta regresiva de 3 s** y todas las laptops parten juntas: el maestro no dice "parte ya" sino "parte a la hora X", y cada laptop mide su diferencia de hora con el maestro (la medición de viaje más corto, repetida cada 10 s). En la prueba, dos laptops quedaron a ~2 ms. El botón **👥** muestra quién está conectado, con qué rol y su retardo de wifi.
+- **Unirme a una sala:** la app encuentra sola las salas del mismo router (o se escribe la IP del maestro). El cronómetro lo maneja el maestro.
+- **Practicar solo:** sin red, con cronómetro propio.
+- No hace falta internet: solo que todas estén en el mismo router (las redes de la universidad suelen aislar a los equipos entre sí). Cada app sirve la página v3 desde su propia copia, así que por el wifi solo viaja el reloj.
+- **Limitador** al final de la mezcla (compresor rápido + saturación suave): no hay clipping aunque suenen muchas notas.
+- **Teclado MIDI USB** para los teclados (y el teclado líder): la nota que tocas suena tal cual, con ← → para cambiar de octava. Un teclado MIDI no tiene el límite de teclas simultáneas de los teclados de notebook.
+- En el navegador (`v3.html`), sin la app, cada laptop tiene su propio cronómetro; con `python servidor.py` funciona en red como la versión 2 (con cuenta regresiva y sala).
+
+**Armar la app:** en `app/`, `npm install` y `node construir.js` → `dist/Genesis-mac-arm64.zip`, `Genesis-mac-x64.zip` y `Genesis-windows-x64.zip` (para probar: `npm start`). Las descargas del hub apuntan a la última *release* de GitHub con esos nombres. La app no está firmada por Apple: la primera vez, en cada Mac, *Ajustes del Sistema → Privacidad y seguridad → Abrir igualmente*; en Apple Silicon, si dice que está dañada, una vez en Terminal: `xattr -cr /Applications/Genesis.app && codesign --force --deep -s - /Applications/Genesis.app`.
+
 ## Versión 2 (`v2.html`): interfaz simple
 
-Una interfaz hecha desde cero a partir del feedback del ensayo. Usa la misma partitura, los mismos sonidos de FL Studio y las mismas pistas MIDI que la versión 1, que sigue disponible en `index.html`.
+Una interfaz hecha desde cero a partir del feedback del ensayo. Usa la misma partitura, los mismos sonidos de FL Studio y las mismas pistas MIDI que la versión 1, que sigue disponible en `v1.html`.
 
 - **Una pantalla por rol.** A la izquierda, lo esencial: si tocas o no, cuánto falta para entrar, la sección, el acorde de ahora y el que viene. A la derecha, el instrumento.
 - **Teclados para improvisar.** Se puede tocar cualquier nota.
@@ -58,7 +74,7 @@ Los teclados tienen control de **distorsión**. Guitarra y batería tienen botó
 
 ## Cómo se usa en un ensayo
 
-1. Abre `index.html`, o la página publicada en GitHub Pages.
+1. Abre `v1.html` (o el hub `index.html` → Versión 1), o la página publicada en GitHub Pages.
 2. *(Opcional)* Elige una **hora de inicio común**. Todas las laptops parten a esa hora usando su propio reloj, así que conviene que los relojes estén sincronizados con internet (en Windows/macOS lo están por defecto).
 3. Cada integrante elige su perfil y presiona **Activar audio y entrar**.
 4. Sin hora común, cualquiera puede usar **▶ Iniciar ahora**. Para practicar, usa **Ir a sección** o haz clic en la línea de tiempo.
@@ -174,15 +190,18 @@ Si agregas o cambias un `.mid`, decláralo en `midi.pistas` de la partitura y co
 3. Queda publicado en `https://eepyysspp.github.io/Cover_Genesis/`.
 
 El sitio es HTML, CSS y JavaScript puros. No necesita compilarse, y el archivo `.nojekyll` evita que GitHub lo procese.
-Para probarlo en tu computador, abre `index.html` en Chrome. Para cargar sonidos desde `sonidos/` mediante la partitura hace falta un servidor local, por ejemplo `python -m http.server`.
+Para probarlo en tu computador, abre `index.html` (el hub) en Chrome. Para cargar sonidos desde `sonidos/` mediante la partitura hace falta un servidor local, por ejemplo `python -m http.server`.
 
 ## Estructura
 
 ```
-index.html        Hub: perfiles, hora común y partitura general
+index.html        Hub de versiones (css/hub.css)
+v1.html           Versión 1: perfiles, hora común y partitura general
 tocar.html        Página de control de cada perfil (?p=guitarra, ?p=teclado-2, …)
 v2.html           Versión 2: interfaz simple (js/v2.js, js/v2_reloj.js, css/v2.css)
-servidor.py       Cronómetro en red para la versión 2 (python servidor.py)
+v3.html           Versión 3: la 2 + red local, limitador y MIDI (js/v3.js, js/v3_reloj.js, css/v3.css)
+app/              App de escritorio de la versión 3 (Electron): main.js, preload.js, ui/inicio.html, construir.js
+servidor.py       Cronómetro en red para las versiones 2 y 3 en el navegador (python servidor.py)
 guitarra.html     Partitura y tablatura de la guitarra real (leer, escuchar, imprimir)
 js/partitura.js   ← la obra: tempo, secciones, acordes, colores, instrucciones
 js/comun.js       Perfiles, tiempos y acordes

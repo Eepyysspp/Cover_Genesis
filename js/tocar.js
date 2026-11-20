@@ -5,7 +5,7 @@
   const $ = id => document.getElementById(id);
   const params = new URLSearchParams(location.search);
   const perfil = PERFILES.find(p => p.id === params.get("p"));
-  if (!perfil) { location.href = "index.html"; return; }
+  if (!perfil) { location.href = "v1.html"; return; }
 
   document.title = `${perfil.nombre} · ${P.titulo}`;
   $("perfilNombre").textContent = perfil.icono + " " + perfil.nombre;

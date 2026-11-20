@@ -1,4 +1,4 @@
-"""Cronómetro en red para Genesis (versión 2).
+"""Cronómetro en red para Genesis (versiones 2 y 3).
 
 Una laptop (la del director) corre este programa. Sirve la página y lleva el reloj de la obra: todas las laptops
 conectadas a la misma red (wifi o router, no hace falta internet) abren la dirección que se muestra al partir, y
@@ -24,7 +24,10 @@ CARPETA = os.path.dirname(os.path.abspath(__file__))
 
 candado = threading.Lock()
 # t0: hora del servidor (ms) en que la obra estaría en 0:00 · pos: segundo de la obra mientras está detenida
-estado = {"corriendo": False, "t0": 0.0, "pos": 0.0, "version": 0}
+# empieza: hora del servidor (ms) en que parte la obra tras la cuenta regresiva (versión 3; None = ya partió)
+estado = {"corriendo": False, "t0": 0.0, "pos": 0.0, "version": 0, "empieza": None}
+# laptops conectadas (versión 3): id → {nombre, rol, rtt, visto}
+sala = {}
 
 
 def ahora_ms():
@@ -34,28 +37,49 @@ def ahora_ms():
 def foto():
     with candado:
         e = dict(estado)
+        n = ahora_ms()
+        e["sala"] = [{k: v for k, v in c.items() if k != "visto"} for c in sala.values() if n - c["visto"] < 3000]
     e["ms"] = ahora_ms()
     e["servidor"] = "genesis"
     return e
 
 
-def aplicar(accion, t):
+def anotar(consulta):
+    """Un GET de una laptop de la versión 3 trae ?id=…&rol=…&nombre=…&rtt=…: así el maestro ve quién está."""
+    from urllib.parse import parse_qs
+    q = {k: v[0] for k, v in parse_qs(consulta).items()}
+    if not q.get("id"):
+        return
+    try:
+        rtt = float(q["rtt"]) if q.get("rtt") else None
+    except ValueError:
+        rtt = None
+    with candado:
+        sala[q["id"]] = {"nombre": q.get("nombre", ""), "rol": q.get("rol", ""), "rtt": rtt, "visto": ahora_ms()}
+
+
+def aplicar(accion, t, cuenta=0.0):
+    """cuenta (versión 3): segundos de cuenta regresiva antes de partir, para que todas las laptops partan juntas."""
     with candado:
         n = ahora_ms()
-        actual = (n - estado["t0"]) / 1000.0 if estado["corriendo"] else estado["pos"]
+        if estado["corriendo"]:
+            actual = estado["pos"] if estado["empieza"] and n < estado["empieza"] else (n - estado["t0"]) / 1000.0
+        else:
+            actual = estado["pos"]
+        espera = max(0.0, min(10.0, cuenta)) * 1000.0
         if accion == "iniciar":
             desde = actual if t is None else t
-            estado.update(corriendo=True, t0=n - desde * 1000.0)
+            estado.update(corriendo=True, pos=desde, t0=n + espera - desde * 1000.0, empieza=(n + espera) if espera else None)
         elif accion == "pausar":
-            estado.update(corriendo=False, pos=actual)
+            estado.update(corriendo=False, pos=actual, empieza=None)
         elif accion == "ir":
             t = 0.0 if t is None else t
             if estado["corriendo"]:
-                estado["t0"] = n - t * 1000.0
+                estado.update(pos=t, t0=n + espera - t * 1000.0, empieza=(n + espera) if espera else None)
             else:
                 estado["pos"] = t
         elif accion == "detener":
-            estado.update(corriendo=False, pos=0.0)
+            estado.update(corriendo=False, pos=0.0, empieza=None)
         estado["version"] += 1
 
 
@@ -86,6 +110,16 @@ class Manejador(SimpleHTTPRequestHandler):
     def log_message(self, formato, *args):   # solo se anotan los cambios del reloj
         pass
 
+    def end_headers(self):
+        self.send_header("Access-Control-Allow-Origin", "*")   # la app de escritorio (v3) pregunta desde su propia página
+        super().end_headers()
+
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.end_headers()
+
     def responder(self, datos, codigo=200):
         cuerpo = json.dumps(datos).encode()
         self.send_response(codigo)
@@ -98,6 +132,8 @@ class Manejador(SimpleHTTPRequestHandler):
     def do_GET(self):
         ruta = self.path.split("?")[0]
         if ruta.endswith("/api/reloj"):
+            if "?" in self.path:
+                anotar(self.path.split("?", 1)[1])
             return self.responder(foto())
         if ruta.endswith("/api/hora"):
             return self.responder({"ms": ahora_ms()})
@@ -115,7 +151,7 @@ class Manejador(SimpleHTTPRequestHandler):
             if accion not in ("iniciar", "pausar", "ir", "detener"):
                 return self.responder({"error": "acción desconocida"}, 400)
             t = datos.get("t")
-            aplicar(accion, None if t is None else float(t))
+            aplicar(accion, None if t is None else float(t), float(datos.get("cuenta") or 0))
             e = foto()
             seg = (e["ms"] - e["t0"]) / 1000.0 if e["corriendo"] else e["pos"]
             print(f"  reloj: {accion:8s} → {int(seg // 60)}:{int(seg % 60):02d} {'(corriendo)' if e['corriendo'] else '(detenido)'}")
@@ -132,8 +168,8 @@ def main():
     if ips:
         print("  Cada laptop abre (misma red wifi / router):")
         for ip in ips:
-            print(f"     http://{ip}:{PUERTO}/v2.html")
-    print(f"  En esta laptop: http://localhost:{PUERTO}/v2.html")
+            print(f"     http://{ip}:{PUERTO}/v2.html   (o /v3.html)")
+    print(f"  En esta laptop: http://localhost:{PUERTO}/v2.html   (o /v3.html)")
     print("  Para cerrar: Ctrl+C\n")
     try:
         servidor.serve_forever()

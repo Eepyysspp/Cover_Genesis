@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Genesis</title>
+<style>
+  :root { --fondo: #0b0a12; --panel: #15131f; --panel2: #1d1a2b; --borde: rgba(255,255,255,.09); --texto: #f2eff8; --muted: #9a95ad;
+    --acento: #ff6b9a; --acento2: #7c9cff; --ok: #5be3a1; --mal: #ffb44d; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; background: var(--fondo); color: var(--texto); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  body { display: grid; place-items: center; min-height: 100vh; padding: 24px 16px; }
+  main { width: min(920px, 100%); }
+  .marca { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 22px; }
+  .marca small { color: var(--acento); }
+  .punto { width: 11px; height: 11px; border-radius: 50%; background: var(--acento); box-shadow: 0 0 14px var(--acento); }
+  h1 { font-size: clamp(28px, 4vw, 38px); margin: 18px 0 4px; }
+  .muted { color: var(--muted); }
+  .equipo { margin: 0 0 22px; }
+  .equipo b { color: var(--texto); }
+  .opciones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .op { text-align: left; background: var(--panel); border: 1px solid var(--borde); border-radius: 16px; padding: 18px; color: inherit; font: inherit; cursor: pointer;
+    display: grid; gap: 6px; align-content: start; transition: transform .15s, border-color .15s, background .15s; }
+  .op:hover, .op.activa { transform: translateY(-2px); border-color: var(--acento); background: var(--panel2); }
+  .op .ico { font-size: 30px; }
+  .op b { font-size: 18px; }
+  .op span { color: var(--muted); font-size: 14px; }
+  .op.maestro { border-color: rgba(255,107,154,.45); }
+  .unirme { margin-top: 18px; background: var(--panel); border: 1px solid var(--borde); border-radius: 16px; padding: 18px; }
+  .unirme[hidden] { display: none; }
+  .unirme h2 { margin: 0 0 4px; font-size: 18px; }
+  .lista { list-style: none; margin: 12px 0; padding: 0; display: grid; gap: 8px; }
+  .lista button { width: 100%; display: flex; align-items: center; gap: 12px; text-align: left; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--borde);
+    background: var(--panel2); color: var(--texto); font: inherit; cursor: pointer; }
+  .lista button:hover { border-color: var(--acento); }
+  .lista small { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .buscando { display: flex; align-items: center; gap: 10px; color: var(--muted); padding: 10px 2px; }
+  .buscando[hidden] { display: none; }
+  .giro { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--borde); border-top-color: var(--acento); animation: g 1s linear infinite; }
+  @keyframes g { to { transform: rotate(360deg); } }
+  .manual { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; border-top: 1px solid var(--borde); padding-top: 12px; }
+  .manual input { background: var(--fondo); color: var(--texto); border: 1px solid var(--borde); border-radius: 10px; padding: 9px 12px; font: inherit; width: 200px; }
+  .btn { padding: 9px 14px; border-radius: 10px; border: 1px solid var(--borde); background: var(--panel2); color: var(--texto); font: inherit; font-weight: 600; cursor: pointer; }
+  .btn:hover { border-color: var(--acento); }
+  .msg { min-height: 1.5em; margin: 8px 0 0; font-size: 14px; }
+  .msg.mal { color: var(--mal); }
+  .pie { margin-top: 18px; font-size: 13px; }
+  @media (max-width: 760px) { .opciones { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="marca"><span class="punto"></span> Genesis <small>v3</small></div>
+  <h1>¿Cómo tocas hoy?</h1>
+  <p class="muted equipo">Esta laptop: <b id="nombre">…</b> <span id="ips"></span></p>
+
+  <div class="opciones">
+    <button class="op maestro" id="bMaestro"><span class="ico">🎛️</span><b>Abrir sala (maestro)</b><span>Esta laptop lleva el reloj e inicia la obra para todos. También puede tocar un instrumento.</span></button>
+    <button class="op" id="bUnirme"><span class="ico">🔗</span><b>Unirme a una sala</b><span>Busca al maestro en el wifi. Cuando inicie, partes con todos.</span></button>
+    <button class="op" id="bSolo"><span class="ico">🎧</span><b>Practicar solo</b><span>Sin red: tu propio cronómetro, para ensayar tu parte.</span></button>
+  </div>
+
+  <section class="unirme" id="panelUnirme" hidden>
+    <h2>Salas en esta red</h2>
+    <p class="muted" style="margin:0">Aparecen solas cuando una laptop abre la sala (mismo router).</p>
+    <ul class="lista" id="lista"></ul>
+    <div class="buscando" id="buscando"><span class="giro"></span> Buscando salas…</div>
+    <div class="manual">
+      <span class="muted">¿No aparece? Escribe la IP que muestra el maestro:</span>
+      <input id="ip" placeholder="192.168.0.12" inputmode="decimal" autocomplete="off">
+      <button class="btn" id="bIp">Conectar</button>
+    </div>
+    <p class="msg" id="msg"></p>
+  </section>
+
+  <p class="muted pie">Todas las laptops en el mismo router (no hace falta internet). Si el sistema pregunta por el firewall o la red local, permite el acceso.</p>
+</main>
+<script>
+  const A = window.genesisApp, $ = s => document.querySelector(s);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  A.info().then(i => { $("#nombre").textContent = i.nombre; $("#ips").textContent = i.ips.length ? "· IP " + i.ips.join(" / ") : "· sin red"; });
+  $("#bMaestro").onclick = () => A.abrirSala();
+  $("#bSolo").onclick = () => A.solo();
+  $("#bUnirme").onclick = () => { $("#panelUnirme").hidden = false; $("#bUnirme").classList.add("activa"); $("#panelUnirme").scrollIntoView({ behavior: "smooth" }); };
+  let salas = [];
+  function pintar() {
+    $("#lista").innerHTML = salas.map((s, i) => `<li><button data-i="${i}">🎛️ <b>${esc(s.nombre)}</b><small>${esc(s.ip)}</small></button></li>`).join("");
+    $("#buscando").hidden = salas.length > 0;
+    document.querySelectorAll("#lista button").forEach(b => { b.onclick = () => unirme(salas[+b.dataset.i].ip, salas[+b.dataset.i].puerto); });
+  }
+  A.alSalas(l => { salas = l; pintar(); }); pintar();
+  async function unirme(ip, puerto) {
+    $("#msg").className = "msg"; $("#msg").textContent = "Conectando con " + ip + "…";
+    const r = await A.unirme(ip, puerto);
+    if (!r.ok) { $("#msg").className = "msg mal"; $("#msg").textContent = "No responde " + ip + ": ¿abrió la sala? ¿están en el mismo router?"; }
+  }
+  $("#bIp").onclick = () => {
+    const v = $("#ip").value.trim(); if (!v) return;
+    const [ip, p] = v.replace(/^https?:\/\//, "").replace(/\/.*$/, "").split(":"); unirme(ip, p || 47800);
+  };
+  $("#ip").addEventListener("keydown", e => { if (e.key === "Enter") $("#bIp").click(); });
+</script>
+</body>
+</html>

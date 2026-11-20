@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Genesis · v3</title>
+  <meta name="description" content="Cover de Genesis para la Orquesta de Laptops UC: versión 3, para tocar en red local con la app de escritorio.">
+  <link rel="stylesheet" href="css/v3.css">
+</head>
+<body>
+<header class="cabecera">
+  <div class="marca"><span class="punto-vivo"></span> Genesis <small>v3</small></div>
+  <span class="chip-estado" id="estadoRed">…</span>
+  <span class="chip-estado ok" id="chipMidi" hidden></span>
+  <a class="enlace-v1" id="enlaceHub" href="index.html" title="Elegir otra versión">Otras versiones ↗</a>
+</header>
+
+<main id="inicio" class="inicio">
+  <h1>¿Qué tocas?</h1>
+  <p class="muted">Elige tu rol. Cada pantalla muestra lo justo: si tocas o no, el acorde, y tu instrumento.</p>
+  <div class="roles"></div>
+</main>
+
+<main id="escenario" class="escenario" hidden>
+  <div class="barra-rol">
+    <button class="btn" id="btnCambiar">← Cambiar rol</button>
+    <b id="rolNombre"></b>
+    <button class="chip" id="btnOrquesta" title="Para ensayar: elige qué partes del arreglo toca esta laptop y con qué sample">🎧 Orquesta</button>
+  </div>
+  <div class="columnas">
+    <aside id="colAhora" class="col-ahora"></aside>
+    <section id="instrumento" class="col-inst"></section>
+  </div>
+  <p class="ayuda muted" id="ayuda"></p>
+</main>
+
+<script src="js/partitura.js"></script>
+<script src="js/comun.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/pistas_midi.js"></script>
+<script src="js/midi.js"></script>
+<script src="js/v3_reloj.js"></script>
+<script src="js/v3.js"></script>
+</body>
+</html>
