@@ -206,7 +206,6 @@
       <div class="seccion"><span data-r="sec">—</span><span class="tiempo" data-r="tiempo">0:00</span></div>
       <div class="acordes"><div class="acorde" data-r="ac">—</div><div class="sig"><small>luego</small><span data-r="sig">—</span></div></div>
       <div class="barra"><i data-r="barra"></i></div>
-      <p class="instr" data-r="instr"></p>
     </section>`);
     const r = k => $(`[data-r=${k}]`, caja);
     let previo = "";
@@ -229,9 +228,6 @@
         r("sec").textContent = sec.nombre;
         r("ac").textContent = bonito(ac.nombre);
         r("sig").textContent = ac.siguiente ? bonito(ac.siguiente) : "fin";
-        const ins = perfil.tipo === "director" ? [] : instrucciones(sec, perfil);
-        const propia = ins.filter(i => i.propio).pop() || ins[0];
-        r("instr").textContent = propia ? propia.texto : "";
       },
     };
   }
@@ -499,7 +495,10 @@
     // tu parte, llevada a la octava visible del piano
     const mapear = m0 => { let m = m0 + desplaz + 12 * octavas; if (carriles0) return m; while (m < inicio) m += 12; while (m > fin) m -= 12; return m; };
     const cascada = pista && pista.notas.length ? crearCascada(pista, piano, mapear) : null;
-    caja.append(opciones, toques, estado, ...(cascada ? [cascada.caja] : []), piano, leyenda, pasoFx);
+    // Sonido, Tocar y Efectos van debajo del instrumento, en un panel que se abre al hacer clic (cerrado al entrar)
+    const ajustes = el(`<details class="ajustes"><summary><span>⚙️ Sonido · Tocar · Efectos</span><small>octava, soltar todo, cambio de acorde y efectos</small></summary><div class="ajustes-cuerpo"></div></details>`);
+    $(".ajustes-cuerpo", ajustes).append(opciones, toques, pasoFx);
+    caja.append(estado, ...(cascada ? [cascada.caja] : []), piano, leyenda, ajustes);
     const r = (x, raiz = caja) => $(`[data-r="${x}"]`, raiz);
 
     // sonido

@@ -347,3 +347,13 @@ kbd { font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 .sala-lista li { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; padding: 8px 12px; border-radius: 10px; background: var(--panel2); }
 .sala-lista li small { color: var(--muted); font-variant-numeric: tabular-nums; }
 .sala-lista li.muted { display: block; background: transparent; }
+/* Sonido · Tocar · Efectos: debajo del instrumento, plegable (cerrado al entrar) */
+.ajustes { border: 1px solid var(--borde); border-radius: 14px; background: var(--panel); }
+.ajustes > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 14px; font-weight: 700; border-radius: 14px; }
+.ajustes > summary::-webkit-details-marker { display: none; }
+.ajustes > summary::before { content: "▸"; color: var(--acento); transition: transform .15s; display: inline-block; }
+.ajustes[open] > summary::before { transform: rotate(90deg); }
+.ajustes > summary small { font-weight: 400; color: var(--muted); font-size: 13px; }
+.ajustes > summary:hover { background: var(--panel2); }
+.ajustes-cuerpo { display: flex; flex-direction: column; gap: 14px; padding: 4px 14px 16px; border-top: 1px solid var(--borde); padding-top: 14px; }
+.ajustes > summary:focus:not(:focus-visible) { outline: none; }
