@@ -829,7 +829,7 @@
     return [
       d("teclado-1", "Teclado medio · FL"), d("teclado-2", "Teclado agudo · FL"), d("teclado-3", "Bajo · FL"), d("teclado-4", "Bajo/medio 2 · FL"),
       ...(P.catalogo || []).map(c => ({ id: c.id, nombre: c.nombre.replace(" (FL)", "") + " · FL", muestras: c.muestras })),
-      g && { id: "gtr-nota", nombre: "Guitarra (una nota, sin rasgueo) · FL", archivo: g.archivo, real: g.base },
+      g && { id: "gtr-nota", nombre: "Líder (una nota) · FL", archivo: g.archivo, real: g.base },
       d("ambiente-1", "Ambiente drone · FL"), d("ambiente-3", "Ambiente brillo · FL"),
     ].filter(Boolean);
   })();
