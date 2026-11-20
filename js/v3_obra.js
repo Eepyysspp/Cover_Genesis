@@ -6,6 +6,20 @@
 (function () {
   const P = window.PARTITURA;
   if (!P) return;
+  // NIVEL DE REFERENCIA POR ROL (dB), el mismo en la página y en la app. Se ajusta en el ensayo con el sistema de sonido
+  // de la sala: 0 = como suena ahora; +3 ≈ un poco más fuerte; −3 ≈ un poco más suave; −6 ≈ la mitad.
+  // Vale para cada laptop que toca ese rol y para la orquesta de ensayo. ("guitarra" es el id interno del Teclado líder.)
+  P.niveles = {
+    "teclado-1": 0,
+    "teclado-2": 0,
+    "teclado-3": 0,
+    "teclado-4": 0,
+    "guitarra": 0,      // Teclado líder
+    "ambiente-1": 0,    // Ambiente
+    "ambiente-3": 0,    // Ambiente brillo
+  };
+  // Volumen general con que parte cada laptop al activar el sonido (0 a 1). El volumen del computador va aparte: fijarlo igual en todas.
+  P.volumenGeneral = 0.8;
   const NOMBRES = {
     "Intro · Ritmo batería": "Intro · Drone en Re♭",
     "Intro · Guitarra y teclados": "Intro · Melodía y teclados",

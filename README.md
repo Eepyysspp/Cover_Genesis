@@ -14,6 +14,8 @@ La versión 2 tal cual, lista para tocar en conjunto. La **app Genesis** (Electr
 - **Practicar solo:** sin red, con cronómetro propio.
 - No hace falta internet: solo que todas estén en el mismo router (las redes de la universidad suelen aislar a los equipos entre sí). Cada app sirve la página v3 desde su propia copia, así que por el wifi solo viaja el reloj.
 - **Limitador** al final de la mezcla (compresor rápido + saturación suave): no hay clipping aunque suenen muchas notas.
+- **Abre en silencio:** cada laptop parte con el sonido apagado y el mismo volumen general (80 %); el botón **🔇 Activar sonido** de la cabecera lo enciende, y al lado está el volumen general. Si el maestro inicia y una laptop sigue en silencio, la cuenta regresiva se lo avisa.
+- **Nivel de referencia por rol** en un solo lugar: `P.niveles` en `js/v3_obra.js` (dB; 0 = como suena ahora, −3 más suave, +3 más fuerte). Se ajusta en el ensayo con el sistema de sonido de la sala y vale para la página, la app y la orquesta de ensayo. El volumen del computador va aparte: fijarlo igual en todas las laptops.
 - **Teclado MIDI USB** para los teclados (y el teclado líder): la nota que tocas suena tal cual, con ← → para cambiar de octava. Un teclado MIDI no tiene el límite de teclas simultáneas de los teclados de notebook.
 - En el navegador (`v3.html`), sin la app, cada laptop tiene su propio cronómetro; con `python servidor.py` funciona en red como la versión 2 (con cuenta regresiva y sala).
 

@@ -395,6 +395,7 @@
   async function crearTeclado(perfil, caja) {
     // el "Teclado líder" usa el perfil de la guitarra (id "guitarra"): toca la melodía con preset lead
     const id = perfil.id, k = new Teclado(perfil.preset || "lead"), pista = await pistaDe(id);
+    k.p.vol *= nivelDe(id); k.aplicar();   // nivel de referencia del rol (partitura → niveles)
     const defFL0 = P.sonidos && P.sonidos[id];
     const defFL = defFL0 && !defFL0.archivo && defFL0.nota ? defFL0.nota : defFL0;   // la guitarra guarda su sample en .nota
     const desplaz = defFL && defFL.real != null ? defFL.base - defFL.real : 0;   // los teclados bajos se tocan una octava arriba de cómo suenan
@@ -725,6 +726,7 @@
   /* ============================== ambiente ============================== */
   async function crearAmbiente(perfil, caja) {
     const a = new Ambiente(perfil.preset), def = P.sonidos && P.sonidos[perfil.id], pista = await pistaDe(perfil.id);
+    a.p.vol *= nivelDe(perfil.id); a.aplicar();   // nivel de referencia del rol
     if (def) { try { const s = await cargarSonido(def.archivo); a.buffer = s.buffer; a.base = def.base; } catch (e) { console.warn(e.message); } }
     caja.innerHTML = "";
     const fila = el(`<div class="fila opciones"><button class="btn grande" data-r="on">Encender</button>
@@ -905,6 +907,7 @@
       alNota = (n, at) => vozMuestra(inst, s, mu.real, n.m + sube, n.v * ajuste * volNota(def.id, n.m), at, n.d);
     }
     parte.inst = inst;
+    inst.p.vol *= nivelDe(def.id); inst.aplicar();   // la orquesta de ensayo usa el mismo nivel de referencia
     parte.efx = efectosAuto(perfil, inst, mapa, null, { escala, guardarlo: false });
     parte.base = inst.p.vol;
     parte.prog = alNota ? programador(pista, aviso(alNota)) : null;
@@ -1050,7 +1053,23 @@
     Motor.comp.connect(lim); lim.connect(sat); sat.connect(post); post.connect(ctx.destination);
     if (Motor.analizador) Motor.comp.connect(Motor.analizador);
     Motor.limitador = lim;
+    Motor.master.gain.value = 0;   // al abrir, en silencio: el sonido se activa con 🔊
+    aplicarVolGeneral();
   }
+  // Nivel de referencia por rol (dB, en js/v3_obra.js) → factor de volumen
+  const nivelDe = id => Math.pow(10, (((P.niveles || {})[id]) || 0) / 20);
+  // Volumen general: cada laptop abre en SILENCIO y con el mismo volumen; el botón 🔊 activa el sonido
+  let sonidoOn = false, volGeneral = P.volumenGeneral != null ? P.volumenGeneral : 0.8;
+  function aplicarVolGeneral() {
+    if (Motor.ctx && Motor.limitador) Motor.master.gain.setTargetAtTime(sonidoOn ? 0.9 * volGeneral : 0, Motor.t, 0.04);
+    const b = $("#btnSonido"), r = $("#volGeneral");
+    if (b) { b.textContent = sonidoOn ? "🔊 Sonido activo" : "🔇 Activar sonido"; b.classList.toggle("on", sonidoOn); b.classList.toggle("apagado", !sonidoOn); }
+    if (r) { r.value = volGeneral; r.disabled = !sonidoOn; $("#volGeneralV").textContent = Math.round(volGeneral * 100) + " %"; }
+    document.body.classList.toggle("sin-sonido", !sonidoOn);
+  }
+  $("#btnSonido").onclick = () => { Motor.init(); limitador(); sonidoOn = !sonidoOn; aplicarVolGeneral(); };
+  $("#volGeneral").oninput = e => { volGeneral = +e.target.value; aplicarVolGeneral(); };
+  aplicarVolGeneral();
   // Teclado MIDI USB: las notas van al instrumento de la pantalla (los teclados)
   let midiListo = false;
   async function iniciarMidi() {
@@ -1072,7 +1091,7 @@
     } catch (e) { console.warn("MIDI:", e.message); }
   }
   // Cuenta regresiva grande cuando el maestro inicia (todas las laptops parten juntas al llegar a 0)
-  const cuentaAtras = el(`<div class="cuenta-atras" hidden><small>La obra parte en</small><b></b></div>`);
+  const cuentaAtras = el(`<div class="cuenta-atras" hidden><small>La obra parte en</small><b></b><em class="aviso-sonido">🔇 Tu sonido está apagado: actívalo arriba (🔊)</em></div>`);
   document.body.appendChild(cuentaAtras);
   let cuentaPrevia = -1;
   function pintarCuentaAtras() {
