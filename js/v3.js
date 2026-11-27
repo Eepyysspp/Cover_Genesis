@@ -53,7 +53,7 @@
       <section><h3>3 · Efectos</h3>
         <p>Con <b>🎛️ Efectos automáticos</b> encendido, la distorsión, el brillo, la reverb y el volumen cambian solos en cada parte de la obra. Si mueves un control a mano, el modo automático se apaga hasta que lo vuelvas a encender.</p></section>
       <section><h3>4 · Notas que caen</h3>
-        <p>Sobre el piano caen las notas de <b>tu parte del arreglo</b>. Cuando una nota <b>toca el piano</b>, tócala; su largo es cuánto mantenerla. Las líneas horizontales marcan los cambios de acorde.</p>
+        <p>Sobre el piano caen las notas de <b>tu parte del arreglo</b>. Cuando una nota <b>toca el piano</b>, tócala; su largo es cuánto mantenerla. Las líneas con nombre marcan los cambios de acorde; las finas sin texto, el pulso (130 BPM), más marcadas al empezar cada compás: síguelas para no perder el ritmo, también al improvisar.</p>
         <p>La nota que está sonando se pone amarilla. Puedes apagarlas o cambiar su velocidad en <b>⚙️ Sonido · Tocar · Efectos</b>, debajo del piano. Es una guía, no una obligación: improvisar sigue valiendo.</p></section>
       <section><h3>Tocar con el teclado de la computadora</h3>
         <div class="atajos">
@@ -336,6 +336,14 @@
       // carriles: un fondo más oscuro bajo las teclas negras
       cols.forEach(c => { if (c.negra) { g.fillStyle = "rgba(0,0,0,.28)"; g.fillRect(c.x, 0, c.w, H); } });
       cols.forEach((c, m) => { if (!c.negra && m % 12 === 0) { g.fillStyle = "rgba(255,255,255,.07)"; g.fillRect(c.x, 0, 1, H); } });
+      // el pulso de la obra (130 BPM, 4/4): una línea por tiempo, sin texto, del color de la sección; el primer tiempo
+      // de cada compás un poco más marcado. Sirve para no perder el ritmo, sobre todo al improvisar
+      const tiempo = 60 / (P.bpm || 130), porCompas = P.compas || 4;
+      for (let k = Math.max(0, Math.ceil(tc / tiempo - 1e-6)); k * tiempo <= tc + mirar; k++) {
+        const tb = k * tiempo, y = H - (tb - tc) * porSeg, uno = k % porCompas === 0;
+        g.fillStyle = acordeEn(tObra(tb)).color || "#7c9cff"; g.globalAlpha = uno ? 0.42 : 0.2;
+        g.fillRect(0, Math.round(y), W, uno ? 1.5 : 1); g.globalAlpha = 1;
+      }
       // cambios de acorde que vienen: una línea con el nombre
       let x = tc;
       g.font = "600 12px system-ui, sans-serif"; g.textBaseline = "bottom";
