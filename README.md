@@ -10,7 +10,7 @@ Cada integrante abre la página, elige su perfil y toca desde el navegador. No h
 La versión 2 tal cual, lista para tocar en conjunto. La **app Genesis** (Electron, para Mac y Windows) corre en cada laptop:
 
 - **Abrir sala (maestro):** esa laptop lleva el reloj de la obra y lo anuncia en la red (Bonjour, `_genesis._tcp`). También elige un instrumento y toca. Con **▶ Iniciar** hay una **cuenta regresiva de 3 s** y todas las laptops parten juntas: el maestro no dice "parte ya" sino "parte a la hora X", y cada laptop mide su diferencia de hora con el maestro (la medición de viaje más corto, repetida cada 10 s). En la prueba, dos laptops quedaron a ~2 ms. El botón **👥** muestra quién está conectado, con qué rol y su retardo de wifi.
-- **Unirme a una sala:** la app encuentra sola las salas del mismo router (o se escribe la IP del maestro). El cronómetro lo maneja el maestro.
+- **Unirme a una sala:** la app encuentra sola las salas del mismo router (o se escribe la IP del maestro). El cronómetro lo maneja el maestro. Para que funcione con muchas laptops (probado con 12 clientes simulados), la sala se busca por tres caminos a la vez: Bonjour (preguntando de nuevo cada 3 s), un aviso UDP del maestro cada segundo (puerto 47801) y un barrido directo de la red (puerto 47800).
 - **Practicar solo:** sin red, con cronómetro propio.
 - No hace falta internet: solo que todas estén en el mismo router (las redes de la universidad suelen aislar a los equipos entre sí). Cada app sirve la página v3 desde su propia copia, así que por el wifi solo viaja el reloj.
 - **Limitador** al final de la mezcla (compresor rápido + saturación suave): no hay clipping aunque suenen muchas notas.

@@ -49,12 +49,12 @@
         <p>Las marcas cambian solas con cada acorde de la partitura. Puedes tocar <b>cualquier tecla</b>: la disonancia está permitida.</p>
         <ul class="lista-colores">
           <li>${tecla("t-acorde")}<span><b>De color:</b> notas del acorde que suena ahora. Siempre encajan.</span></li>
-          <li>${tecla("t-acorde t-raiz")}<span><b>Con un punto:</b> la raíz del acorde, la nota más firme (buena para el bajo).</span></li>
           <li>${tecla("t-escala")}<span><b>Blanca o negra normal:</b> de la escala de la obra (Re♭ mayor). Suena con tensión: úsala de paso.</span></li>
           <li>${tecla("t-fuera")}<span><b>Rayada:</b> fuera de la escala. Choca a propósito: disonancia.</span></li>
-          <li>${tecla("t-guia")}<span><b>Borde rosado:</b> lo que toca tu parte en el arreglo grabado. Síguelo si te pierdes.</span></li>
+          <li>${tecla("t-guia")}<span><b>Rosado claro:</b> lo que toca tu parte ahora en el arreglo (las notas recomendadas). Síguelo si te pierdes.</span></li>
+          <li>${tecla("t-prox")}<span><b>Con un punto:</b> la próxima nota que toca tu parte (aparece hasta 4 s antes).</span></li>
           <li>${tecla("t-sig")}<span><b>Círculo punteado:</b> nota del acorde que viene (aparece unos segundos antes del cambio).</span></li>
-          <li>${tecla("t-on")}<span><b>Rosado:</b> la tecla que estás tocando.</span></li>
+          <li>${tecla("t-on")}<span><b>Rosado fuerte:</b> la tecla que estás tocando.</span></li>
         </ul></section>
       <section><h3>2 · Cómo suena</h3>
         <p>Cada nota suena <b>mientras mantienes apretada</b> su tecla, como un piano, y se apaga al soltar. <b>✋ Soltar todo</b> (o <kbd>Esc</kbd>) apaga todo de una vez.</p></section>
@@ -75,6 +75,16 @@
           <p class="muted small">¿Tienes un teclado MIDI USB? Conéctalo y toca: cada nota suena tal cual (arriba aparece «🎹 MIDI» con su nombre).</p>
         </div></section>
     </div>`), { clase: "ancha" });
+  }
+
+  /* ============================== soltar notas ============================== */
+  // Al soltar una tecla la nota se apaga en ~1 s (curva suave), en vez de cortarse de golpe
+  const SUELTA = 1.0;
+  function soltarSuave(g, t, rel, fuentes) {
+    const p = g.gain;
+    if (p.cancelAndHoldAtTime) p.cancelAndHoldAtTime(t); else { p.cancelScheduledValues(t); p.setValueAtTime(Math.max(p.value, 0.0001), t); }
+    p.setTargetAtTime(0.0001, t, rel / 3.2);
+    fuentes.forEach(f => { try { f.stop(t + rel * 2); } catch (e) { /* ya parada */ } });
   }
 
   /* ============================== roles ============================== */
@@ -207,6 +217,8 @@
       <div class="seccion"><span data-r="sec">—</span><span class="tiempo" data-r="tiempo">0:00</span></div>
       <div class="acordes"><div class="acorde" data-r="ac">—</div><div class="sig"><small>luego</small><span data-r="sig">—</span></div></div>
       <div class="barra"><i data-r="barra"></i></div>
+      <div class="aviso-impro" data-r="impro" hidden><b>🎧 No te vuelvas loco: escucha al resto.</b>
+        <span>Improvisa sin salirte de lo que ya vienes tocando: tus notas, tu registro y tu forma de la melodía. Deja espacio; menos es más.</span></div>
     </section>`);
     const r = k => $(`[data-r=${k}]`, caja);
     let previo = "";
@@ -227,6 +239,7 @@
         r("estado").textContent = fin ? "■ FIN" : perfil.tipo === "director" ? (R.estado.corriendo ? "▶ EN MARCHA" : "⏸ DETENIDO") : tocaYa ? "▶ TOCAS" : "⏸ SILENCIO";
         caja.classList.toggle("silencio", !tocaYa && !fin); caja.classList.toggle("toca", tocaYa && !fin);
         r("sec").textContent = sec.nombre;
+        r("impro").hidden = !(sec.libre && !fin && perfil.tipo !== "director");
         r("ac").textContent = bonito(ac.nombre);
         r("sig").textContent = ac.siguiente ? bonito(ac.siguiente) : "fin";
       },
@@ -279,6 +292,13 @@
   // Secciones libres (partitura → libre: true): ahí no caen notas, cada uno improvisa
   const LIBRES = SECCIONES.filter(s => s.libre).map(s => [s.ini, s.fin]);
   const enLibre = t => LIBRES.some(([a, b]) => t >= a && t < b);
+  // La próxima nota (o acorde) que pide tu parte, si llega dentro de 4 s
+  function siguientes(notas, tc) {
+    const i = lb(notas, tc + 0.04, n => n.t); if (i >= notas.length) return [];
+    const t1 = notas[i].t; if (t1 - tc > 4 || enLibre(t1)) return [];
+    const out = []; for (let j = i; j < notas.length && notas[j].t - t1 < 0.04; j++) out.push(notas[j]);
+    return out;
+  }
   const VELOCIDADES = [[4, "Lenta"], [2.6, "Normal"], [1.7, "Rápida"]];
   function crearCascada(pista, piano, mapear) {
     const caja = el(`<div class="cascada"><div class="cascada-lienzo"><canvas></canvas></div></div>`);
@@ -426,9 +446,9 @@
     </div>`);
     const estado = el(`<div class="estado-tec" aria-live="polite"></div>`);
     const piano = el(`<div class="piano" role="group" aria-label="Teclado"></div>`);
-    const leyenda = el(`<div class="leyenda"><span class="l-acorde">nota del acorde: suena segura</span><span class="l-raiz">raíz del acorde</span>
+    const leyenda = el(`<div class="leyenda"><span class="l-acorde">nota del acorde: suena segura</span><span class="l-prox">la próxima que toca tu parte</span>
       <span class="l-escala">de la escala: tensión</span><span class="l-fuera">fuera de la escala: disonancia</span>
-      <span class="l-guia">lo que toca tu parte en el arreglo</span><span class="l-sig">nota del acorde que viene</span></div>`);
+      <span class="l-guia">lo que toca tu parte ahora</span><span class="l-sig">nota del acorde que viene</span></div>`);
     // "Cuando cambia el acorde" vive en una ventana que se abre con su botón
     const glis = el(`<div class="glis-ventana">
       <div class="fila"><label class="campo">Las notas que siguen sonando
@@ -481,7 +501,7 @@
       g.connect(k.filtro); s.connect(g);
       g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vel * ajusteVol, t + 0.008);
       s.start(t);
-      return { g, fuentes: [s], rel: 0.45 };
+      return { g, fuentes: [s], rel: SUELTA };
     }
     function on(m, fija = false, vel = 0.85) {
       if (voces.has(m)) return;
@@ -490,7 +510,7 @@
     }
     function off(m) {
       const x = voces.get(m); if (!x) return;
-      Motor.soltar(x.v.g, Motor.t, x.v.rel, x.v.fuentes); voces.delete(m); pintarTeclas();
+      soltarSuave(x.v.g, Motor.t, Math.max(SUELTA, x.v.rel || 0), x.v.fuentes); voces.delete(m); pintarTeclas();
     }
     function soltarTodo() { [...voces.keys()].forEach(off); pintarOpciones(); }
     // Glissando: se mueve el "detune" de cada fuente (en centésimas) desde donde está hasta la nota nueva
@@ -563,15 +583,15 @@
       if (cascada && nueva) cascada.golpe(m, tObra(R.ahora()));
     }
     function soltarTecla(m) { if (!mantener) { const x = voces.get(m); if (x && !x.fija) off(m); } }
-    let ultimoPintado = "", guia = [], sigTonos = [];
+    let ultimoPintado = "", guia = [], sigTonos = [], proxima = [];
     function pintarTeclas() {
       const ac = acordeEn(tObra(R.ahora())), a = parseAcorde(ac.nombre), tn = tonosDe(ac.nombre);
       const suenan = new Set([...voces.values()].map(x => x.actual)), apretadas = new Set(voces.keys());
-      const clave = [ac.nombre, [...suenan].join(","), [...apretadas].join(","), guia.join(","), sigTonos.join(",")].join("|");
+      const clave = [ac.nombre, [...suenan].join(","), [...apretadas].join(","), guia.join(","), sigTonos.join(","), proxima.join(",")].join("|");
       if (clave === ultimoPintado) return; ultimoPintado = clave;
       teclas.forEach(t => {
         const m = +t.dataset.m, pc = m % 12;
-        t.classList.toggle("acorde", tn.includes(pc)); t.classList.toggle("raiz", !!a && pc === a.raiz);
+        t.classList.toggle("acorde", tn.includes(pc)); t.classList.toggle("prox", proxima.includes(m));
         t.classList.toggle("escala", !tn.includes(pc) && ESCALA.has(pc)); t.classList.toggle("fuera", !ESCALA.has(pc));
         t.classList.toggle("on", apretadas.has(m)); t.classList.toggle("suena", suenan.has(m) && !apretadas.has(m));
         t.classList.toggle("guia", guia.includes(m)); t.classList.toggle("sig", sigTonos.includes(pc) && !tn.includes(pc));
@@ -603,7 +623,7 @@
       const lista = [...voces.values()].sort((a, b) => a.actual - b.actual);
       let html;
       if (!lista.length) {
-        html = `Acorde ahora: <b class="ac">${esc(bonito(ac.nombre))}</b> · toca una tecla de color: son sus notas (el punto marca la raíz).`;
+        html = `Acorde ahora: <b class="ac">${esc(bonito(ac.nombre))}</b> · toca una tecla de color: son sus notas. Las rosadas son las que pide tu parte; el punto marca la próxima.`;
       } else {
         html = `Suenan: <b>${lista.map(x => nombreNota(x.actual)).join(" · ")}</b>`;
         if (ac.siguiente && ac.falta < Math.max(2.5, deslizT + 0.6)) {
@@ -669,6 +689,7 @@
         if (ac.nombre === acordeActual && agendado != null && agendado / 20 < tc - 0.5) agendado = null;
         // guía: notas de tu pista MIDI que suenan ahora, llevadas a la octava visible
         guia = pista && !enLibre(tc) ? window.MIDI.sonando(pista, tc).map(n => mapear(n.m)) : [];
+        proxima = pista && !enLibre(tc) ? siguientes(pista.notas, tc).map(n => mapear(n.m)) : [];
         if (cascada) cascada.dibujar(tc, corriendo && t >= 0 && t < DURACION);
         sigTonos = ac.falta < 2.2 && ac.siguiente ? tonosDe(ac.siguiente) : [];
         pintarTeclas(); pintarEstado(ac);
@@ -884,7 +905,7 @@
     f.connect(g); g.connect(k.filtro);
     g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vel, t + 0.008);
     f.start(t);
-    Motor.liberar(g, t + Math.max(0.04, dur), 0.5, [f]);
+    Motor.liberar(g, t + Math.max(0.04, dur), SUELTA, [f]);
   }
   const MAPA_TEC = { dist: "dist", filtro: "filtro", reverb: "reverb", vol: "vol" };
   // el teclado líder sigue la fila "guitarra" de la tabla de efectos: fuzz → distorsión, tono → brillo

@@ -79,6 +79,10 @@ select option { color: #111; background: #fff; }
 .acorde { font-size: clamp(46px, 6vw, 64px); font-weight: 900; line-height: 1; color: var(--texto); text-shadow: 0 0 30px var(--color); }
 .sig { display: flex; flex-direction: column; color: var(--muted); font-size: 22px; font-weight: 700; padding-bottom: 6px; }
 .sig small { font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; }
+.aviso-impro { margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: rgba(255,180,77,.12); border: 1px solid rgba(255,180,77,.55); display: grid; gap: 4px; }
+.aviso-impro[hidden] { display: none; }
+.aviso-impro b { color: var(--mal); font-size: 17px; }
+.aviso-impro span { color: var(--texto); font-size: 14px; }
 .barra { height: 6px; border-radius: 3px; background: rgba(255,255,255,.08); margin-top: 12px; overflow: hidden; }
 .barra i { display: block; height: 100%; background: var(--color); }
 .instr { margin: 12px 0 0; color: #d8d3e6; font-size: 15px; min-height: 1.4em; }
@@ -121,19 +125,20 @@ input[type=range] { accent-color: var(--acento); width: 100%; }
 .tecla.negra.fuera { background: #121018; }
 .tecla.acorde.blanca { background: color-mix(in srgb, var(--color) 55%, #fff); color: #120f1c; }
 .tecla.acorde.negra { background: color-mix(in srgb, var(--color) 70%, #000); color: #fff; }
-.tecla.raiz::after { content: ""; position: absolute; top: 12px; width: 11px; height: 11px; border-radius: 50%; background: #120f1c; box-shadow: 0 0 0 2px #fff; }
-.tecla.negra.raiz::after { background: #fff; box-shadow: 0 0 0 2px #120f1c; }
+.tecla.prox::after { content: ""; position: absolute; top: 12px; width: 12px; height: 12px; border-radius: 50%; background: var(--acento); box-shadow: 0 0 0 2px #fff, 0 0 10px var(--acento); }
+.tecla.negra.prox::after { box-shadow: 0 0 0 2px #120f1c, 0 0 10px var(--acento); }
 .tecla.sig::before { content: ""; position: absolute; top: 30px; width: 8px; height: 8px; border-radius: 50%; border: 2px dashed currentColor; opacity: .8; }
-.tecla.guia { box-shadow: inset 0 0 0 4px var(--acento); }
+.tecla.guia.blanca, .tecla.guia.blanca.acorde, .tecla.guia.blanca.fuera { background: color-mix(in srgb, var(--acento) 42%, #fff); color: #19060e; box-shadow: inset 0 0 0 3px var(--acento); }
+.tecla.guia.negra, .tecla.guia.negra.acorde, .tecla.guia.negra.fuera { background: color-mix(in srgb, var(--acento) 62%, #1e1b28); color: #fff; box-shadow: inset 0 0 0 3px var(--acento), 0 3px 6px rgba(0,0,0,.5); }
 .tecla.on { background: var(--acento) !important; color: #19060e !important; }
-.tecla.suena { background: color-mix(in srgb, var(--acento) 55%, #fff) !important; }
+.tecla.suena { box-shadow: inset 0 0 0 4px var(--acento) !important; }
 .leyenda { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--muted); }
 .leyenda span::before { content: ""; display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
 .l-acorde::before { background: color-mix(in srgb, var(--color) 60%, #fff); }
-.l-raiz::before { background: #120f1c; box-shadow: inset 0 0 0 2px #fff; border-radius: 50% !important; }
+.l-prox::before { background: var(--acento); box-shadow: 0 0 0 2px #fff; border-radius: 50% !important; }
 .l-escala::before { background: #ece8f3; }
 .l-fuera::before { background: repeating-linear-gradient(135deg, #b4adc4 0 3px, #8e879f 3px 6px); }
-.l-guia::before { box-shadow: inset 0 0 0 3px var(--acento); background: transparent; }
+.l-guia::before { background: color-mix(in srgb, var(--acento) 42%, #fff); box-shadow: inset 0 0 0 2px var(--acento); }
 .l-sig::before { border: 2px dashed var(--muted); border-radius: 50% !important; }
 
 /* recuadro X/Y */
@@ -245,9 +250,9 @@ kbd { font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 .ayuda-tec .lista-colores b { color: var(--texto); }
 .mini-tecla { --color: #7c9cff; position: relative; flex: none; width: 26px; height: 40px; border-radius: 0 0 5px 5px; background: #ece8f3; display: inline-flex; justify-content: center; }
 .mini-tecla.t-acorde { background: color-mix(in srgb, var(--color) 55%, #fff); }
-.mini-tecla.t-raiz::after { content: ""; position: absolute; top: 7px; width: 9px; height: 9px; border-radius: 50%; background: #120f1c; box-shadow: 0 0 0 2px #fff; }
+.mini-tecla.t-prox::after { content: ""; position: absolute; top: 7px; width: 9px; height: 9px; border-radius: 50%; background: var(--acento); box-shadow: 0 0 0 2px #fff; }
 .mini-tecla.t-fuera { background: repeating-linear-gradient(135deg, #b4adc4 0 4px, #a39cb5 4px 8px); }
-.mini-tecla.t-guia { box-shadow: inset 0 0 0 3px var(--acento); }
+.mini-tecla.t-guia { background: color-mix(in srgb, var(--acento) 42%, #fff); box-shadow: inset 0 0 0 3px var(--acento); }
 .mini-tecla.t-sig::before { content: ""; position: absolute; top: 14px; width: 8px; height: 8px; border-radius: 50%; border: 2px dashed #3a3550; }
 .mini-tecla.t-on { background: var(--acento); }
 .ayuda-tec dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; font-size: 14px; }
