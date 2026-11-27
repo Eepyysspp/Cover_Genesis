@@ -120,26 +120,15 @@ input[type=range] { accent-color: var(--acento); width: 100%; }
 .tecla .pc:empty { display: none; }
 .tecla.negra .pc { background: #fff; color: #120f1c; font-size: 13px; min-width: 20px; padding: 3px 4px; }
 @media (max-width: 560px) { .tecla .pc { font-size: 12px; min-width: 18px; padding: 3px; } .tecla.negra .pc { font-size: 11px; min-width: 15px; padding: 2px; } }
-/* marcas: escala (neutra), fuera de la escala (disonancia), notas del acorde (color del acorde) */
-.tecla.blanca.fuera { background: repeating-linear-gradient(135deg, #b4adc4 0 6px, #a39cb5 6px 12px); color: #3a3550; }
-.tecla.negra.fuera { background: #121018; }
-.tecla.acorde.blanca { background: color-mix(in srgb, var(--color) 55%, #fff); color: #120f1c; }
-.tecla.acorde.negra { background: color-mix(in srgb, var(--color) 70%, #000); color: #fff; }
-.tecla.prox::after { content: ""; position: absolute; top: 12px; width: 12px; height: 12px; border-radius: 50%; background: var(--acento); box-shadow: 0 0 0 2px #fff, 0 0 10px var(--acento); }
-.tecla.negra.prox::after { box-shadow: 0 0 0 2px #120f1c, 0 0 10px var(--acento); }
-.tecla.sig::before { content: ""; position: absolute; top: 30px; width: 8px; height: 8px; border-radius: 50%; border: 2px dashed currentColor; opacity: .8; }
-.tecla.guia.blanca, .tecla.guia.blanca.acorde, .tecla.guia.blanca.fuera { background: color-mix(in srgb, var(--acento) 42%, #fff); color: #19060e; box-shadow: inset 0 0 0 3px var(--acento); }
-.tecla.guia.negra, .tecla.guia.negra.acorde, .tecla.guia.negra.fuera { background: color-mix(in srgb, var(--acento) 62%, #1e1b28); color: #fff; box-shadow: inset 0 0 0 3px var(--acento), 0 3px 6px rgba(0,0,0,.5); }
+/* marcas: solo rosado. Recomendadas (lo que pide tu parte) = rosado oscuro; la que tocas = rosado; punto = la próxima */
+.tecla.guia { background: color-mix(in srgb, var(--acento) 70%, #3a0a1c) !important; color: #fff !important; }
+.tecla.guia .pc { background: rgba(255,255,255,.92); color: #3a0a1c; }
+.tecla.prox::after { content: ""; position: absolute; top: 12px; width: 14px; height: 14px; border-radius: 50%; background: var(--acento); box-shadow: 0 0 0 3px #fff, 0 0 12px var(--acento); }
+.tecla.negra.prox::after { box-shadow: 0 0 0 3px #120f1c, 0 0 12px var(--acento); }
+.tecla.guia.prox::after { background: #fff; box-shadow: 0 0 0 3px var(--acento), 0 0 12px #fff; }
 .tecla.on { background: var(--acento) !important; color: #19060e !important; }
+.tecla.on .pc { background: rgba(18,15,28,.82); color: #fff; }
 .tecla.suena { box-shadow: inset 0 0 0 4px var(--acento) !important; }
-.leyenda { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--muted); }
-.leyenda span::before { content: ""; display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
-.l-acorde::before { background: color-mix(in srgb, var(--color) 60%, #fff); }
-.l-prox::before { background: var(--acento); box-shadow: 0 0 0 2px #fff; border-radius: 50% !important; }
-.l-escala::before { background: #ece8f3; }
-.l-fuera::before { background: repeating-linear-gradient(135deg, #b4adc4 0 3px, #8e879f 3px 6px); }
-.l-guia::before { background: color-mix(in srgb, var(--acento) 42%, #fff); box-shadow: inset 0 0 0 2px var(--acento); }
-.l-sig::before { border: 2px dashed var(--muted); border-radius: 50% !important; }
 
 /* recuadro X/Y */
 .xy-caja { display: flex; flex-direction: column; gap: 10px; }
@@ -322,8 +311,6 @@ kbd { font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 .piano.en-carriles .tecla .nom { font-size: 20px; margin-bottom: 10px; }
 .piano.en-carriles .tecla .pc { font-size: 20px; min-width: 34px; padding: 6px 8px; margin-bottom: 14px; }
 @media (max-width: 560px) { .piano.en-carriles .tecla .nom { font-size: 16px; } .piano.en-carriles .tecla .pc { font-size: 16px; min-width: 28px; padding: 5px; } }
-/* notas libres de la escala (para improvisar): se ven, pero más apagadas que las de tu parte */
-.piano.en-carriles .tecla.libre { filter: saturate(.55) brightness(.82); }
 @media (max-width: 560px) {
   .piano.en-carriles { gap: 3px; }
   .piano.en-carriles .tecla .nom { font-size: 12px; }
@@ -349,7 +336,16 @@ kbd { font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 @keyframes latido { from { transform: scale(1.12); opacity: 1; } to { transform: scale(.94); opacity: .8; } }
 /* sala del maestro */
 .sala-lista { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
-.sala-lista li { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; padding: 8px 12px; border-radius: 10px; background: var(--panel2); }
+.sala-lista li { display: grid; grid-template-columns: 1fr auto auto auto; gap: 12px; align-items: center; padding: 8px 12px; border-radius: 10px; background: var(--panel2); }
+.sala-lista li.sin-son small:first-of-type { color: var(--mal); }
+/* volumen de la sala (maestro) */
+.vol-sala { margin: 12px 0 4px; padding: 12px 14px; border: 1px solid var(--borde); border-radius: 12px; background: color-mix(in srgb, var(--acento) 7%, var(--panel2)); }
+.vol-sala p { margin: 4px 0 10px; }
+.vol-sala .desliz { flex: 1 1 220px; }
+.aviso-vol { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 60; max-width: min(560px, calc(100vw - 32px));
+  padding: 12px 16px; border-radius: 12px; background: var(--panel); border: 1px solid var(--acento); box-shadow: 0 12px 30px rgba(0,0,0,.5); font-size: 14px; }
+.aviso-vol[hidden] { display: none; }
+@media (max-width: 560px) { .sala-lista li { grid-template-columns: 1fr auto; } }
 .sala-lista li small { color: var(--muted); font-variant-numeric: tabular-nums; }
 .sala-lista li.muted { display: block; background: transparent; }
 /* Sonido · Tocar · Efectos: debajo del instrumento, plegable (cerrado al entrar) */

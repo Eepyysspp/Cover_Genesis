@@ -34,8 +34,9 @@ function ips() {
 
 /* ---------------- reloj de la obra (solo cuenta cuando esta app es el maestro) ---------------- */
 // t0: hora (ms) en que la obra estaría en 0:00 · pos: segundo de la obra detenida (o donde parte) · empieza: fin de la cuenta regresiva
-const estado = { corriendo: false, t0: 0, pos: 0, version: 0, empieza: null };
-const sala = new Map();   // id → { nombre, rol, rtt, visto }
+const estado = { corriendo: false, t0: 0, pos: 0, version: 0, empieza: null,
+  volSala: null, volVersion: 0 };   // volumen que el maestro fija para las demás laptops (0–1; null = cada una el suyo)
+const sala = new Map();   // id → { nombre, rol, rtt, vol, son, maestro, visto }  (la página del propio maestro no cuenta)
 let modo = null;          // "maestro" | "musico" | "solo" | null (pantalla de inicio)
 const ahoraMs = () => Date.now();
 function foto() {
@@ -43,7 +44,7 @@ function foto() {
   for (const [id, c] of sala) if (n - c.visto > 10000) sala.delete(id);
   return Object.assign({}, estado, {
     ms: n, servidor: "genesis", nombre: EQUIPO,
-    sala: [...sala.values()].filter(c => n - c.visto < 3000).map(({ nombre, rol, rtt }) => ({ nombre, rol, rtt })),
+    sala: [...sala.values()].filter(c => n - c.visto < 3000 && !c.maestro).map(({ nombre, rol, rtt, vol, son }) => ({ nombre, rol, rtt, vol, son })),
   });
 }
 function aplicar(accion, t, cuenta) {
@@ -61,7 +62,7 @@ function aplicar(accion, t, cuenta) {
   } else if (accion === "detener") Object.assign(estado, { corriendo: false, pos: 0, empieza: null });
   estado.version++;
 }
-function reiniciarReloj() { Object.assign(estado, { corriendo: false, t0: 0, pos: 0, empieza: null }); estado.version++; sala.clear(); }
+function reiniciarReloj() { Object.assign(estado, { corriendo: false, t0: 0, pos: 0, empieza: null, volSala: null }); estado.version++; estado.volVersion++; sala.clear(); }
 
 /* ---------------- servidor: la página v3 (web/), la pantalla de inicio (ui/) y el reloj (api/) ---------------- */
 const TIPOS = { ".html": "text/html; charset=utf-8", ".js": "application/javascript; charset=utf-8", ".css": "text/css; charset=utf-8",
@@ -94,7 +95,8 @@ function manejar(req, res) {
     if (ruta === "/api/info") return responder(res, { ips: ips(), puerto: puerto, nombre: EQUIPO });
     if (ruta === "/api/reloj" && req.method === "GET") {
       const id = u.searchParams.get("id");
-      if (id) sala.set(id, { nombre: u.searchParams.get("nombre") || "", rol: u.searchParams.get("rol") || "", rtt: u.searchParams.get("rtt") ? +u.searchParams.get("rtt") : null, visto: ahoraMs() });
+      const num = k => (u.searchParams.get(k) ? +u.searchParams.get(k) : null);
+      if (id) sala.set(id, { nombre: u.searchParams.get("nombre") || "", rol: u.searchParams.get("rol") || "", rtt: num("rtt"), vol: num("vol"), son: u.searchParams.get("son") === "1", maestro: u.searchParams.get("yo") === "maestro", visto: ahoraMs() });
       return responder(res, foto());
     }
     if (ruta === "/api/reloj" && req.method === "POST") {
@@ -103,6 +105,12 @@ function manejar(req, res) {
       req.on("end", () => {
         try {
           const d = JSON.parse(cuerpo || "{}");
+          if (d.accion === "volumen") {   // el maestro fija el volumen de todas las demás laptops (no toca el reloj)
+            const v = +d.t;
+            if (!(v >= 0 && v <= 1)) return responder(res, { error: "volumen entre 0 y 1" }, 400);
+            estado.volSala = v; estado.volVersion++;
+            return responder(res, foto());
+          }
           if (!["iniciar", "pausar", "ir", "detener"].includes(d.accion)) return responder(res, { error: "acción desconocida" }, 400);
           aplicar(d.accion, d.t == null ? null : +d.t, d.cuenta);
           responder(res, foto());

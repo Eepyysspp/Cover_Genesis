@@ -14,8 +14,9 @@
   const CUENTA = 3;   // segundos de cuenta regresiva al iniciar en red
   const ID = (() => { try { let v = sessionStorage.getItem("v3:id"); if (!v) { v = Math.random().toString(36).slice(2, 10); sessionStorage.setItem("v3:id", v); } return v; } catch (e) { return Math.random().toString(36).slice(2, 10); } })();
   const st = { modo: "local", corriendo: false, pos: 0, base: 0, t0: 0, empieza: null, offset: 0, rtt: null, conectado: false, version: -1,
-    practica: false, app: APP, maestro: APP === "maestro", sala: [], rol: "" };
-  const oyentes = [];
+    practica: false, app: APP, maestro: APP === "maestro", sala: [], rol: "",
+    vol: null, son: false, volVersion: null, volSala: null };   // vol/son: los de esta laptop (se informan al maestro)
+  const oyentes = [], oyentesVol = [];
   const avisar = () => oyentes.forEach(f => { try { f(st); } catch (e) { console.warn(e); } });
   const enRed = () => st.modo === "red" && !st.practica;
   const horaMaestro = () => Date.now() + st.offset;
@@ -33,7 +34,7 @@
 
   const url = ruta => BASE + ruta;
   async function api(metodo, cuerpo) {
-    const extra = metodo === "GET" ? `?id=${ID}&rol=${encodeURIComponent(st.rol)}&nombre=${encodeURIComponent(NOMBRE)}&rtt=${st.rtt == null ? "" : st.rtt}` : "";
+    const extra = metodo === "GET" ? `?id=${ID}&rol=${encodeURIComponent(st.rol)}&nombre=${encodeURIComponent(NOMBRE)}&rtt=${st.rtt == null ? "" : st.rtt}&vol=${st.vol == null ? "" : st.vol}&son=${st.son ? 1 : 0}${st.maestro ? "&yo=maestro" : ""}` : "";
     const r = await fetch(url("api/reloj") + extra, { method: metodo, cache: "no-store",
       headers: cuerpo ? { "Content-Type": "application/json" } : undefined, body: cuerpo ? JSON.stringify(cuerpo) : undefined });
     if (!r.ok) throw new Error("reloj " + r.status);
@@ -44,6 +45,11 @@
     const cambio = e.version !== st.version || e.corriendo !== st.corriendo || !st.conectado;
     Object.assign(st, { corriendo: e.corriendo, pos: e.pos, t0: e.t0, empieza: e.empieza != null ? e.empieza : null, version: e.version, conectado: true });
     if (e.sala) st.sala = e.sala;
+    // volumen fijado por el maestro: se aplica una vez por cada cambio (también al unirse tarde a la sala)
+    if (e.volVersion != null && e.volVersion !== st.volVersion) {
+      st.volVersion = e.volVersion; st.volSala = e.volSala;
+      if (e.volSala != null) oyentesVol.forEach(f => { try { f(e.volSala); } catch (err) { console.warn(err); } });
+    }
     if (cambio) avisar();
   }
   // Diferencia de hora con el maestro: se queda con la medición de viaje más corto
@@ -109,5 +115,12 @@
     ponerRol: rol => { st.rol = rol || ""; },
     iniciar: t => enviar("iniciar", t), pausar: () => enviar("pausar"), ir: t => enviar("ir", t), detener: () => enviar("detener"),
     alCambiar: f => oyentes.push(f),
+    // volumen de la sala (app): el maestro lo fija para todas las demás laptops con un clic
+    alVolumenSala: f => oyentesVol.push(f),
+    informarVolumen: (vol, son) => { st.vol = Math.round(vol * 100) / 100; st.son = !!son; },
+    fijarVolumenSala: async v => {
+      if (!enRed() || !st.maestro) return false;
+      try { aplicarEstado(await api("POST", { accion: "volumen", t: v })); return true; } catch (e) { return false; }
+    },
   };
 })();

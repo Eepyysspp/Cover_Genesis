@@ -12,7 +12,7 @@
   P.niveles = {
     "teclado-1": 0,
     "teclado-2": 0,
-    "teclado-3": 0,
+    "teclado-3": -5,    // el bajo: sonaba ~14 dB sobre el resto y era lo que saturaba la mezcla y los parlantes
     "teclado-4": 0,
     "guitarra": 0,      // Teclado líder
     "ambiente-1": 0,    // Ambiente
