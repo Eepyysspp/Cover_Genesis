@@ -327,6 +327,20 @@
     // sin juego: no hay puntaje, racha ni avisos; las notas solo muestran qué tocar y cuándo
     function reiniciar() {}
     function golpe() {}
+    // el color de la sección, pero con un mínimo de luz: las secciones oscuras (intro, azul casi negro) no se verían
+    const claros = new Map();
+    function claro(hex) {
+      if (claros.has(hex)) return claros.get(hex);
+      const n = parseInt(String(hex).replace("#", ""), 16); let out = hex;
+      if (!isNaN(n)) {
+        let r = (n >> 16 & 255) / 255, gg = (n >> 8 & 255) / 255, b = (n & 255) / 255;
+        const mx = Math.max(r, gg, b), mn = Math.min(r, gg, b), l = (mx + mn) / 2, d = mx - mn;
+        let h = 0, s = d ? d / (1 - Math.abs(2 * l - 1)) : 0;
+        if (d) h = mx === r ? ((gg - b) / d) % 6 : mx === gg ? (b - r) / d + 2 : (r - gg) / d + 4;
+        out = `hsl(${Math.round((h * 60 + 360) % 360)}, ${Math.round(Math.max(s, 0.55) * 100)}%, ${Math.round(Math.max(l, 0.62) * 100)}%)`;
+      }
+      claros.set(hex, out); return out;
+    }
     function rect(x, y, w, h, rad) { g.beginPath(); if (g.roundRect) g.roundRect(x, y, w, h, rad); else g.rect(x, y, w, h); g.fill(); }
     function dibujar(tc, corriendo) {
       if (!activo) return;
@@ -341,8 +355,8 @@
       const tiempo = 60 / (P.bpm || 130), porCompas = P.compas || 4;
       for (let k = Math.max(0, Math.ceil(tc / tiempo - 1e-6)); k * tiempo <= tc + mirar; k++) {
         const tb = k * tiempo, y = H - (tb - tc) * porSeg, uno = k % porCompas === 0;
-        g.fillStyle = acordeEn(tObra(tb)).color || "#7c9cff"; g.globalAlpha = uno ? 0.42 : 0.2;
-        g.fillRect(0, Math.round(y), W, uno ? 1.5 : 1); g.globalAlpha = 1;
+        g.fillStyle = claro(acordeEn(tObra(tb)).color || "#7c9cff"); g.globalAlpha = uno ? 0.7 : 0.38;
+        g.fillRect(0, Math.round(y) - (uno ? 1 : 0.5), W, uno ? 2.5 : 1.5); g.globalAlpha = 1;
       }
       // cambios de acorde que vienen: una línea con el nombre
       let x = tc;
@@ -351,7 +365,7 @@
         const a = acordeEn(tObra(x)); if (!a.siguiente || a.falta == null) break;
         const tCambio = x + a.falta; if (tCambio > tc + mirar) break;
         const y = H - (tCambio - tc) * porSeg, sig = acordeEn(tObra(tCambio + 0.01));
-        g.fillStyle = sig.color || "#7c9cff"; g.globalAlpha = 0.55; g.fillRect(0, y, W, 1.5); g.globalAlpha = 1;
+        g.fillStyle = claro(sig.color || "#7c9cff"); g.globalAlpha = 0.95; g.fillRect(0, y - 1.5, W, 3); g.globalAlpha = 1;
         g.fillStyle = "rgba(242,239,248,.85)"; g.fillText(bonito(a.siguiente), 6, y - 2);
         x = tCambio + 0.02;
       }
