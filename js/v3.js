@@ -909,7 +909,9 @@
     if (son === "sint" && def.tipo === "ambiente") {
       inst = new Ambiente("drone"); alNota = (n, at) => inst.nota(n.m, n.v, at, n.d); mapa = {};
     } else if (son === "sint") {
-      inst = new Teclado(def.tipo === "guitarra" ? "lead" : perfil.preset); alNota = (n, at) => inst.nota(n.m, n.v * volNota(def.id, n.m), at, n.d);
+      inst = new Teclado(def.tipo === "guitarra" ? "lead" : perfil.preset);
+      // misma caída suave (~1 s) que al tocar a mano, en vez de la liberación corta del sintetizador
+      alNota = (n, at) => { const v = inst.crearVoz(n.m, n.v * volNota(def.id, n.m), at); Motor.liberar(v.g, at + Math.max(0.04, n.d), Math.max(SUELTA, v.rel || 0), v.fuentes); };
     } else {
       // un sample de FL: se toca con la cadena de efectos de un teclado
       const mu0 = MUESTRAS.find(m => m.id === son) || MUESTRAS[0], med = mediana(pista.notas);
@@ -940,9 +942,12 @@
     return parte;
   }
 
+  // Tope del volumen de la orquesta de ensayo: con todas las partes sumadas en UNA laptop, más arriba el limitador
+  // tendría que bajar 2–4 dB (se oye "respirar"). Medido: a 0,85 queda limpio en las partes más fuertes.
+  const ORQ_VOL_MAX = 0.85;
   function crearOrquesta() {
     const guardado = leer("v3:orq", {}) || {};
-    const conf = { vol: guardado.vol != null ? guardado.vol : 0.6, on: Object.assign({}, guardado.on), son: Object.assign({}, guardado.son) };
+    const conf = { vol: guardado.vol != null ? Math.min(ORQ_VOL_MAX, guardado.vol) : 0.6, on: Object.assign({}, guardado.on), son: Object.assign({}, guardado.son) };
     const partes = new Map();   // id → parte creada (o { cargando })
     const oyentes = [];
     let activa = false, propio = null, propioSuena = false, version = 0;
@@ -995,7 +1000,7 @@
     const caja = el(`<div class="orq">
       <p class="muted small">Para ensayar: esta laptop toca las partes del arreglo siguiendo el cronómetro. Elige cuáles suenan y con qué sample. Tu propio rol viene apagado porque lo tocas tú.</p>
       <div class="fila orq-master"><button class="btn grande" data-r="on"></button>
-        <label class="desliz"><span>Volumen</span><input type="range" min="0" max="1.2" step="0.01" data-r="vol"><b data-r="volv"></b></label></div>
+        <label class="desliz"><span>Volumen</span><input type="range" min="0" max="${ORQ_VOL_MAX}" step="0.01" data-r="vol"><b data-r="volv"></b></label></div>
       <div class="fila orq-atajos"><span class="muted small">Elegir:</span>
         <button class="chip" data-r="todos">Todos</button><button class="chip" data-r="ninguno">Ninguno</button>
         <button class="chip" data-r="base" title="Teclado 3 (el bajo) y Ambiente">Solo la base</button>

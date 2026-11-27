@@ -9,14 +9,17 @@
   // NIVEL DE REFERENCIA POR ROL (dB), el mismo en la página y en la app. Se ajusta en el ensayo con el sistema de sonido
   // de la sala: 0 = como suena ahora; +3 ≈ un poco más fuerte; −3 ≈ un poco más suave; −6 ≈ la mitad.
   // Vale para cada laptop que toca ese rol y para la orquesta de ensayo. ("guitarra" es el id interno del Teclado líder.)
+  // Balance medido (27-11-2026) con un filtro de parlante de laptop (bajo 150 Hz casi no suena), promediando 4 partes:
+  // la melodía quedaba enterrada (−27 dB) y la voz interior era lo más fuerte (−15 dB). Objetivo: melodía adelante
+  // (−20), arpegios 3 dB atrás (−23), bajo presente (−22), voz interior y ambientes de fondo (−24 / −25).
   P.niveles = {
-    "teclado-1": 0,
-    "teclado-2": 0,
-    "teclado-3": -5,    // el bajo: sonaba ~14 dB sobre el resto y era lo que saturaba la mezcla y los parlantes
-    "teclado-4": 0,
-    "guitarra": 0,      // Teclado líder
+    "teclado-1": 0,     // arpegio
+    "teclado-2": 4,     // arpegio (sonaba 4 dB más bajo que el teclado 1)
+    "teclado-3": -7,    // bajo (antes era lo que saturaba la mezcla y los parlantes)
+    "teclado-4": -8.5,  // voz interior (era lo más fuerte de la orquesta)
+    "guitarra": 7.5,    // Teclado líder: la melodía, adelante
     "ambiente-1": 0,    // Ambiente
-    "ambiente-3": 0,    // Ambiente brillo
+    "ambiente-3": -1,   // Ambiente brillo
   };
   // Volumen general con que parte cada laptop al activar el sonido (0 a 1). El volumen del computador va aparte: fijarlo igual en todas.
   P.volumenGeneral = 0.8;
