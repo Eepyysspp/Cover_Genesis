@@ -243,7 +243,7 @@
       <select data-r="ir" aria-label="Ir a sección"></select>
       <span class="red" data-r="red"></span>
       <button class="chip" data-r="sala" hidden title="Quiénes están conectados a tu sala">👥 Sala</button>
-      <button class="chip" data-r="volsala" hidden title="Pone el volumen de la app de todas las demás laptops en el nivel de la sala (ellas con el volumen del computador al 100 %). Se cambia en 👥 Sala.">🔊 Igualar volumen</button>
+      <button class="chip" data-r="volsala" hidden title="Pone el volumen de la app de toda la orquesta (esta laptop incluida) en el nivel de la sala y enciende el sonido de las que lo tenían apagado. Todas con el volumen del computador al 100 %. El nivel se cambia en 👥 Sala.">🔊 Igualar volumen</button>
       <button class="chip" data-r="solo" hidden title="Deja de seguir al cronómetro en red y usa uno propio">Practicar solo</button>
     </div>`);
     const r = k => $(`[data-r=${k}]`, caja);
@@ -1100,8 +1100,8 @@
   $("#btnSonido").onclick = () => { Motor.init(); limitador(); sonidoOn = !sonidoOn; aplicarVolGeneral(); };
   $("#volGeneral").oninput = e => { volGeneral = +e.target.value; aplicarVolGeneral(); };
   aplicarVolGeneral();
-  /* Volumen de la sala (app): el maestro, con un clic, deja el volumen de la app de todas las demás laptops en el mismo
-     nivel. Cuenta con que cada laptop tenga el volumen del computador al 100 %: así todas suenan parejo y, con el final
+  /* Volumen de la sala (app): el maestro, con un clic, deja el volumen de la app de toda la orquesta (él incluido) en el
+     mismo nivel y enciende el sonido de las que lo tenían apagado. Cuenta con que cada laptop tenga el volumen del computador al 100 %: así todas suenan parejo y, con el final
      de la mezcla sin saturar, a ese volumen no se distorsiona. Cada músico puede moverlo después si hace falta. */
   const VOL_SALA_DEF = P.volumenGeneral != null ? P.volumenGeneral : 0.8;
   let volSala = (() => { const v = +leer("v3:volSala", VOL_SALA_DEF); return v >= 0 && v <= 1 ? v : VOL_SALA_DEF; })();
@@ -1109,16 +1109,20 @@
   let avisoVolT = 0;
   function mostrarAvisoVol(txt) { avisoVol.textContent = txt; avisoVol.hidden = false; clearTimeout(avisoVolT); avisoVolT = setTimeout(() => { avisoVol.hidden = true; }, 3500); }
   R.alVolumenSala(v => {
-    if (R.estado.maestro) return;   // el maestro maneja el suyo
-    volGeneral = v; aplicarVolGeneral();
+    // vale para TODA la orquesta, también la laptop maestro; y si el sonido estaba apagado, lo enciende
+    // (la app permite sonar sin un toque: autoplay-policy en app/main.js)
+    const estabaApagado = !sonidoOn;
+    Motor.init(); limitador();
+    volGeneral = v; sonidoOn = true; aplicarVolGeneral();
     $("#volGeneral").title = "Volumen general de esta laptop · lo fijó el maestro";
-    mostrarAvisoVol(`🔊 El maestro fijó el volumen en ${Math.round(v * 100)} %. Deja el volumen del computador al 100 %.` + (sonidoOn ? "" : " Activa el sonido arriba."));
+    mostrarAvisoVol((R.estado.maestro ? `🔊 Volumen de toda la orquesta: ${Math.round(v * 100)} %.` : `🔊 El maestro fijó el volumen en ${Math.round(v * 100)} %.`)
+      + (estabaApagado ? " Se encendió el sonido." : "") + " Deja el volumen del computador al 100 %.");
   });
   async function igualarVolumen(boton) {
     const ok = await R.fijarVolumenSala(volSala);
     const n = R.estado.sala.length;
     if (boton) {
-      const txt = boton.textContent; boton.textContent = ok ? `✓ ${Math.round(volSala * 100)} % a ${n} ${n === 1 ? "laptop" : "laptops"}` : "⚠ No se pudo enviar";
+      const txt = boton.textContent; boton.textContent = ok ? `✓ ${Math.round(volSala * 100)} % a ${n + 1} laptops (contigo)` : "⚠ No se pudo enviar";
       setTimeout(() => { boton.textContent = txt; }, 2200);
     }
     return ok;
@@ -1156,7 +1160,7 @@
   function ventanaSala() {
     const cuerpo = el(`<div class="sala"><p class="muted small">Las laptops aparecen al abrir la app → <b>Unirme a una sala</b>. Retardo = ida y vuelta por el wifi (lo que importa es que sea estable; el inicio ya lo compensa).</p>
       <div class="vol-sala"><b>🔊 Volumen de la sala</b>
-        <p class="muted small">Que cada laptop tenga el volumen del <b>computador al 100 %</b>; con un clic, la app de todas queda en este nivel.</p>
+        <p class="muted small">Que cada laptop tenga el volumen del <b>computador al 100 %</b>; con un clic, la app de toda la orquesta (esta incluida) queda en este nivel y se enciende el sonido de las que lo tenían apagado.</p>
         <div class="fila"><label class="desliz"><span>Nivel</span><input type="range" min="0.3" max="1" step="0.05" data-r="nivel"><b data-r="nivelv"></b></label>
           <button class="btn" data-r="aplicar">📢 Aplicar a todas</button></div></div>
       <ul class="sala-lista"></ul></div>`);
